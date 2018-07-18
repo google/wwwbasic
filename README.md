@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/google/wwwbasic.svg?branch=master)](https://travis-ci.org/google/wwwbasic)
+
 # WWWBasic
 
 WWWBasic is an implementation of BASIC (Beginner's All-purpose Symbolic
