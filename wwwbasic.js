@@ -118,6 +118,15 @@
           code = code.substr(1);
           return;
         }
+        if (tok == '' && /[.0-9]/.test(code.substr(0, 1))) {
+          var n = code.match(/^([0-9]*([.][0-9]*)?([eE][+-]?[0-9]+)?)/);
+          if (n === null) {
+            Throw('Bad number');
+          }
+          tok = n[1];
+          code = code.substr(tok.length);
+          return;
+	}
         for (var i = 0; i < toklist.length; ++i) {
           if (code.substr(0, toklist[i].length) == toklist[i]) {
             if (tok != '') {
@@ -134,12 +143,13 @@
               ++line;
               tok = '<EOL>';
             } else if (tok == '&' && code.substr(0, 1).toLowerCase() == 'h') {
-              tok = '0x';
               code = code.substr(1);
-              while (code.substr(0, 1).search(/[A-Fa-f0-9]/) != -1) {
-                tok += code.substr(0, 1);
-                code = code.substr(1);
+              var n = code.match(/^([0-9a-fA-F]+)/);
+              if (n === null) {
+                Throw('Bad hex number');
               }
+              tok = '0x' + n[1];
+              code = code.substr(n[1].length);
             }
             return;
           }
@@ -229,7 +239,11 @@
       } else {
         var name = tok;
         Next();
-        var v = vars[name];
+        if (name.substr(0, 1) == '"' ||
+            /^[0-9]*([.][0-9]*)?([eE][+-]?[0-9]+)?$/.test(name) ||
+            /^0x[0-9a-fA-F]+$/.test(name)) {
+          return name;
+        }
         if (name == 'rnd') {
           Skip('(');
           if (tok != ')') {
@@ -277,26 +291,13 @@
         if (name == 'timer') {
           return '(new Date().getTime() / 1000.0)';
         }
+/*
+        var v = vars[name];
         if (v === undefined) {
-          // TODO: Parse numbers.
-          return name;
+          Throw('Invalid variable or number ' + name);
         }
-        if (vars[name] != undefined) {
-          return IndexVariable(name);
-        } else {
-          if (tok == '(') {
-            Skip('(');
-            var e = Expression();
-            while (tok == ',') {
-              Skip(',');
-              var e = Expression();
-            }
-            Skip(')');
-            return 'xxx' + v[0];
-          } else {
-            return v[0];
-          }
-        }
+*/
+        return IndexVariable(name);
       }
     }
 
@@ -1455,7 +1456,7 @@
       if (canvas) {
         Locate(1, 1);
         Color(0xffffff);
-        Print(e.toString());
+        Print([e.toString(), ';']);
       } else {
         console.error(e.toString());
       }
