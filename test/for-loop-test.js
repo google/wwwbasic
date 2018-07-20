@@ -20,8 +20,7 @@ basic_test.BASIC_TEST('ForLoop', 'OneToTen', `
 FOR i = 1 to 10
   PRINT i
 NEXT i
-`,
-  `
+`, `
 1
 2
 3
@@ -32,39 +31,36 @@ NEXT i
 8
 9
 10
-`)
+`);
 
 basic_test.BASIC_TEST('ForLoop', 'OneToTenStep2', `
 FOR i = 1 to 10 STEP 2
   PRINT i
 NEXT i
-`,
-  `
+`, `
 1
 3
 5
 7
 9
-`)
+`);
 
 basic_test.BASIC_TEST('ForLoop', 'OneToTenStep3', `
 FOR i = 1 to 10 STEP 3
   PRINT i
 NEXT i
-`,
-  `
+`, `
 1
 4
 7
 10
-`)
+`);
 
 basic_test.BASIC_TEST('ForLoop', 'TenToOneStepMinusOne', `
 FOR i = 10 to 1 STEP -1
   PRINT i
 NEXT i
-`,
-  `
+`, `
 10
 9
 8
@@ -75,7 +71,7 @@ NEXT i
 3
 2
 1
-`)
+`);
 
 basic_test.BASIC_TEST('ForLoop', 'Nested3', `
 FOR i = 1 to 3
@@ -83,8 +79,7 @@ FOR i = 1 to 3
     PRINT i; " "; j
   NEXT j
 NEXT i
-`,
-  `
+`, `
 1 1
 1 2
 1 3
@@ -94,5 +89,5 @@ NEXT i
 3 1
 3 2
 3 3
-`)
+`);
 

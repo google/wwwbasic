@@ -16,21 +16,19 @@
 
 var basic_test = require('./basic-tester.js');
 
-global.debug = 1;
 basic_test.BASIC_TEST('DoLoopWhile', 'OneToFive', `
 i = 1
 DO
   PRINT i
   i = i + 1
 LOOP WHILE i <= 5
-`,
-  `
+`, `
 1
 2
 3
 4
 5
-`)
+`);
 
 basic_test.BASIC_TEST('DoLoopWhile', 'SixToOne', `
 i = 6
@@ -38,8 +36,7 @@ DO
   PRINT i
   i = i + 1
 LOOP WHILE i <= 5
-`,
-  `
+`, `
 6
-`)
+`);
 
