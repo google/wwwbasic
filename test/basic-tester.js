@@ -16,8 +16,6 @@
 
 var basic = require('../wwwbasic.js');
 
-global.debug = 1;
-
 function BASIC_TEST(suite, name, code, expected_log, expected_error) {
   var full_name = suite + '.' + name;
   console.log('...... ' + full_name);
