@@ -669,7 +669,72 @@
       }
     }
 
+    function Using(format, value) {
+      var sgn = Math.sign(value);
+      value = Math.abs(value);
+      var before = 0;
+      var after = 0;
+      var found_point = false;
+      for (var i = 0; i < format.length; ++i) {
+        if (format[i] == '.') {
+          found_point = true;
+        } else if (format[i] == '#') {
+          if (found_point) {
+            ++after;
+          } else {
+            ++before;
+          }
+        }
+      }
+      var t = value;
+      var fail = Math.floor(t * Math.pow(10, -before)) > 0;
+      value = value * Math.pow(10, after);
+      var ret = '';
+      var done = false;
+      for (var i = format.length - 1; i >= 0; --i) {
+        if (format[i] == '#') {
+          if (fail) {
+            ret = '*' + ret;
+          } else if (done) {
+            ret = ' ' + ret;
+          } else {
+            ret = Math.floor(value % 10) + ret;
+            value = Math.floor(value / 10);
+            if (value == 0) {
+              done = true;
+            }
+          }
+        } else if (format[i] == '+' || format[i] == '-') {
+          if (fail) {
+            ret = '*' + ret;
+          } else if (sgn < 0) {
+            ret = '-' + ret;
+          } else if (sgn > 0) {
+            if (format[i] == '+') {
+              ret = '+' + ret;
+            }
+          } else {
+            ret = ' ' + ret;
+          }
+        } else if (format[i] == ',') {
+          if (fail) {
+            ret = '*' + ret;
+          } else if (done) {
+            ret = ' ' + ret;
+          } else {
+            ret = ',' + ret;
+          }
+        } else {
+          ret = format[i] + ret;
+        }
+      }
+      return ret;
+    }
+
     function PrintUsing(format, items) {
+      for (var i = 0; i < items.length; i += 2) {
+        items[i] = Using(format, items[i]);
+      }
       Print(items);
     }
 
