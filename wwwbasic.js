@@ -1470,15 +1470,12 @@
 
   function SetupCanvas(tag, full_window) {
     if (full_window) {
-      document.body.width = '100%';
-      document.body.height = '100%';
-      document.body.leftMargin = 0;
-      document.body.rightMargin = 0;
-      document.body.bottomMargin = 0;
-      document.body.topMargin = 0;
-      document.body.border = '0';
-      document.body.overflow = 'hidden';
-      document.body.display = 'block';
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.margin = '0';
+      document.body.style.border = '0';
+      document.body.style.overflow = 'hidden';
+      document.body.style.display = 'block';
     }
     var canvas = document.createElement('canvas');
     canvas.width = 800;
@@ -1505,7 +1502,7 @@
       }
       ++count;
     }
-    var full_window = count == 1 && document.body.innerHTML == '';
+    var full_window = count == 1 && document.body.innerText == '';
     for (var t = 0; t < tags.length; ++t) {
       if (tags[t].type != 'text/basic') {
         continue;
