@@ -671,7 +671,7 @@
     }
 
     function Using(format, value) {
-      var sgn = Math.sign(value);
+      var sgn = value < 0 ? -1 : (value > 0 ? 1 : 0);
       value = Math.abs(value);
       var before = 0;
       var after = 0;
@@ -1414,7 +1414,9 @@
         keys.push(k);
       }, false);
       real_canvas.addEventListener('mousemove', function(e) {
-        var rect = canvas.getBoundingClientRect();
+        // TODO: Generalize for non-fullscreen.
+        //var rect = canvas.getBoundingClientRect();
+        var rect = {left: 0, top: 0};
         mouse_x = Math.floor(
           (e.clientX - rect.left - viewport_x) * canvas.width / viewport_w);
         mouse_y = Math.floor(
@@ -1468,9 +1470,15 @@
 
   function SetupCanvas(tag, full_window) {
     if (full_window) {
-      var style = 'width:  100%; height: 100%; margin: 0px; border: 0; ' +
-        'overflow: hidden; display: block;';
-      document.body.style = style;
+      document.body.width = '100%';
+      document.body.height = '100%';
+      document.body.leftMargin = 0;
+      document.body.rightMargin = 0;
+      document.body.bottomMargin = 0;
+      document.body.topMargin = 0;
+      document.body.border = '0';
+      document.body.overflow = 'hidden';
+      document.body.display = 'block';
     }
     var canvas = document.createElement('canvas');
     canvas.width = 800;
