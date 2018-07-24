@@ -231,6 +231,15 @@
       }
     }
 
+    function AddLabel(name) {
+      if (labels[name] !== undefined) {
+        Throw('Label ' + name + ' defined twice');
+      }
+      NewOp();
+      curop += '// LABEL ' + name + ':\n';
+      labels[name] = ops.length;
+    }
+
     function Factor3() {
       if (tok == '(') {
         Skip('(');
@@ -1291,12 +1300,7 @@
         Next();
         if (tok == ':') {
           Skip(':');
-          if (labels[name] !== undefined) {
-            Throw('Label ' + name + ' defined twice');
-          }
-          NewOp();
-          curop += '// LABEL ' + name + ':\n';
-          labels[name] = ops.length;
+          AddLabel(name);
           return;
         }
         var vname = IndexVariable(name);
@@ -1325,6 +1329,11 @@
       NewOp();
       while (tok != '') {
         for (;;) {
+          // Implement line numbers.
+          if (tok.match(/^[0-9]+$/)) {
+            AddLabel(tok);
+            Next();
+          }
           Statement();
           while (tok == ':') {
             Next();
