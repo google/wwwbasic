@@ -292,12 +292,6 @@
         if (name == 'timer') {
           return '(new Date().getTime() / 1000.0)';
         }
-/*
-        var v = vars[name];
-        if (v === undefined) {
-          Throw('Invalid variable or number ' + name);
-        }
-*/
         return IndexVariable(name);
       }
     }
