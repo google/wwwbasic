@@ -15,6 +15,10 @@
 'use strict';
 
 (function() {
+  function NextChar(ch) {
+    return String.fromCharCode(ch.charCodeAt(0) + 1);
+  }
+
   function Interpret(code, real_canvas) {
     var canvas;
     if (real_canvas) {
@@ -46,6 +50,15 @@
     // Language Options
     var option_base = 0;
     var option_explicit = false;
+
+    // Variable declaration defaults.
+    var letter_default = {};
+    // Default is single.
+    var i = 'a';
+    do {
+      letter_default[i] = 'Float32Array';
+      i = NextChar(i);
+    } while (i != 'z');
 
     // Yield State
     var yielding = 0;
@@ -455,7 +468,7 @@
       } else if (name[name.length-1] == '#') {
         return 'Float64Array';
       } else {
-        return 'Float64Array';
+        return letter_default[name[0]] || 'Float32Array';
       }
     }
 
@@ -814,6 +827,14 @@
       return vars[name];
     }
 
+    var DEFAULT_TYPES = {
+      'defdbl': 'Float64Array',
+      'defsng': 'Float32Array',
+      'defint': 'Int32Array',
+      'deflng': 'Int32Array',
+      'defstr': 'Array',
+    };
+
     function Statement() {
       if (tok == '<EOL>') {
         // Ignore empty lines.
@@ -998,13 +1019,32 @@
         } else {
           Throw('Unexpected option "' + tok + '"');
         }
-      } else if (tok == 'defdbl') {
-        Skip('defdbl');
-        var start = tok;
+      } else if (tok == 'defdbl' || tok == 'defsng' || tok == 'deflng' ||
+                 tok == 'defint' || tok == 'defstr') {
+        var def_type = tok;
         Next();
-        Skip('-');
-        var end = tok;
-        Next();
+        for (;;) {
+          var start = tok;
+          Next();
+          Skip('-');
+          var end = tok;
+          Next();
+          if (!start.match(/^[a-z]$/) ||
+              !end.match(/^[a-z]$/) ||
+              start.charCodeAt(0) > end.charCodeAt(0)) {
+            Throw('Invalid variable range');
+          }
+          var i = start;
+          do {
+            letter_default[i] = DEFAULT_TYPES[def_type];
+            i = NextChar(i);
+          } while (i != end);
+          if (tok == ',') {
+            Skip(',');
+            continue;
+          }
+          break;
+        }
       } else if (tok == 'for') {
         Skip('for');
         var name = tok;
