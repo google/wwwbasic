@@ -126,7 +126,7 @@
           tok = n[1];
           code = code.substr(tok.length);
           return;
-	}
+        }
         for (var i = 0; i < toklist.length; ++i) {
           if (code.substr(0, toklist[i].length) == toklist[i]) {
             if (tok != '') {
@@ -211,6 +211,7 @@
       ops[pos] += 'ip = ';
       NewOp();
       ops[f[1]] += ops.length + '; }\n';
+      NewOp();
       ops[ops.length - 1] += 'if (!(' + e + ')) { ip = ';
       flow.push(['if', ops.length - 1, f[2].concat([pos])]);
     }
@@ -1341,6 +1342,13 @@
           Skip('<EOL>');
         }
       }
+
+      // Check for matching flow control.
+      if (flow.length != 0) {
+        var f = flow.pop();
+        Throw('Unmatched ' + f[0]);
+      }
+
       // Implicit End.
       NewOp();
       curop += 'End();';
@@ -1356,12 +1364,12 @@
       total += var_decls;
       total += 'for (var j = 0; j < ops.length; ++j) {\n';
       if (debugging_mode) {
-        total += '  console.log("L" + j + ":\\n" + ops[j]);\n';
+        total += '  console.info("L" + j + ":\\n" + ops[j]);\n';
       }
       total += '  ops[j] = eval("(function() {\\n" + ops[j] + "})\\n");\n';
       total += '}\n';
       if (debugging_mode) {
-        console.log(total);
+        console.info(total);
       }
       eval(total);
     }
@@ -1452,20 +1460,25 @@
       }
     }
 
+    var compiled_ok = false;
     try {
       Compile();
+      compiled_ok = true;
     } catch (e) {
       if (canvas) {
         Locate(1, 1);
         Color(0xffffff);
         Print([e.toString(), ';']);
       } else {
+        console.info(e.toString());
         console.error(e.toString());
       }
     }
     InitEvents();
     Render();
-    Run();
+    if (compiled_ok) {
+      Run();
+    }
   }
 
   function SetupCanvas(tag, full_window) {
