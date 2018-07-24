@@ -446,7 +446,7 @@
       } else if (name[name.length-1] == '#') {
         return 'Float64Array';
       } else {
-        return 'Float32Array';
+        return 'Float64Array';
       }
     }
 
