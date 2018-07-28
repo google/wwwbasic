@@ -20,15 +20,15 @@
   }
 
   function Interpret(code, real_canvas) {
-    var text_width = 40;
-    var text_height = 30;
-    var font_height = 8;
+    var text_width = 80;
+    var text_height = 60;
+    var font_height = 16;
     var screen_aspect = 1;
     var canvas;
     if (real_canvas) {
       canvas = document.createElement('canvas');
-      canvas.width = 320;
-      canvas.height = 240;
+      canvas.width = 640;
+      canvas.height = 480;
     }
 
     var debugging_mode = typeof debug == 'boolean' && debug;
@@ -82,8 +82,6 @@
       ctx = canvas.getContext('2d', { alpha: false });
       ctx.fillStyle = '#000000';
       ctx.strokeStyle = '#000000';
-      ctx.imageSmoothingEnabled = false;
-      ctx.imageSmoothingQuality = 'low';
     }
 
     var toklist = [
@@ -1590,7 +1588,6 @@
       var ctx = real_canvas.getContext('2d');
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, real_canvas.width, real_canvas.height);
-      ctx.imageSmoothingEnabled = canvas.width > viewport_w;
       ctx.drawImage(
         canvas, 0, 0, canvas.width, canvas.height,
         viewport_x, viewport_y, viewport_w, viewport_h);
