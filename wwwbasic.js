@@ -898,6 +898,8 @@
     function Cls() {
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      text_x = 0;
+      text_y = 0;
     }
 
     function Pset(x, y, c) {
