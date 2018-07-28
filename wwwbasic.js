@@ -320,7 +320,7 @@
           return 'Inkey()';
         }
         if (name == 'timer') {
-          return '(new Date().getTime() / 1000.0)';
+          return 'GetTimer()';
         }
         return IndexVariable(name);
       }
@@ -1599,6 +1599,14 @@
     return canvas;
   }
 
+  var timer_halted = 0;
+  var timer_offset = 0;
+
+  function GetTimer() {
+    var t = new Date().getTime() / 1000;
+    return t + timer_offset;
+  }
+
   function Init() {
     var tags = document.getElementsByTagName('script');
     var count = 0;
@@ -1630,6 +1638,12 @@
 
   if (typeof window !== 'undefined') {
     window.addEventListener('load', Init);
+    window.addEventListener('focusout', function() {
+      timer_halted = GetTimer();
+    });
+    window.addEventListener('focusin', function() {
+      timer_offset = timer_halted - (new Date().getTime() / 1000);
+    });
   } else {
     exports.Basic = function(code) {
       Interpret(code, null);
