@@ -845,7 +845,9 @@
     var last = 0;
 
     function Pset(x, y, c) {
-      WithColor(c);
+      if (c !== ctx_color) {
+        WithColor(c);
+      }
       ctx.fillRect(x, y, 1, 1);
     }
 
