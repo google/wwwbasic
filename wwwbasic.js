@@ -844,6 +844,11 @@
     }
     var last = 0;
 
+    function Cls() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
     function Pset(x, y, c) {
       if (c !== ctx_color) {
         WithColor(c);
@@ -1251,6 +1256,9 @@
         }
         ret += ');\n'
         curop += ret;
+      } else if (tok == 'cls') {
+        Skip('cls');
+        curop += 'Cls();\n';
       } else if (tok == 'sleep') {
         Skip('sleep');
         var e = Expression();
@@ -1261,11 +1269,21 @@
         var y = Expression();
         Skip(',');
         var x = Expression();
+        if (tok == ',') {
+          Skip(',');
+          var cursor = Expression();
+          // TODO: Support cursor + start + stop
+        }
         curop += 'Locate(' + x + ', ' + y + ');\n';
       } else if (tok == 'color') {
         Skip('color');
-        var e = Expression();
-        curop += 'Color(' + e + ');\n';
+        var fg = Expression();
+        if (tok == ',') {
+          Skip(',');
+          var bg = Expression();
+          // TODO: Support background color
+        }
+        curop += 'Color(' + fg + ');\n';
       } else if (tok == 'swap') {
         Skip('swap');
         var a = tok;
