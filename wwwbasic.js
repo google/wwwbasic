@@ -34,11 +34,14 @@
     var debugging_mode = typeof debug == 'boolean' && debug;
     // Parsing and Run State.
     var labels = {};
+    var data_labels = {};
     var flow = [];
     var vars = {};
     var var_count = 0;
     var var_decls = '';
     var rstack = [];
+    var data = [];
+    var data_pos = 0;
     var ops = [];
     var curop = '';
     var ip = 0;
@@ -184,6 +187,55 @@
     }
     Next();
 
+    function ConsumeData() {
+      var quote = false;
+      var had_quote = false;
+      var item = '';
+      for (;;) {
+        var ch = code.substr(0, 1);
+        if (ch == '\n' || ch == '') {
+          if (!had_quote) {
+            if (!quote) {
+              item = item.trim();
+            }
+            data.push(item);
+          }
+          break;
+        } else if (ch == '"') {
+          if (quote) {
+            data.push(item);
+            item = '';
+            quote = false;
+            had_quote = true;
+          } else {
+            quote = true;
+            if (item.search(/[^ \t]/) != -1) {
+              Throw('Data statement extra text: "' + item + '"');
+            }
+            item = '';
+          }
+        } else if (ch == ',') {
+          if (!quote) {
+            if (!had_quote) {
+              data.push(item.trim());
+            } else {
+              had_quote = false;
+              if (item.search(/[^ \t]/) != -1) {
+                Throw('Data statement extra text: "' + item + '"');
+              }
+            }
+            item = '';
+          } else {
+            item += ',';
+          }
+        } else {
+          item += ch;
+        }
+        code = code.substr(1);
+      }
+      Next();
+    }
+
     function Throw(msg) {
       throw msg + ' at line ' + line;
     }
@@ -259,6 +311,7 @@
       NewOp();
       curop += '// LABEL ' + name + ':\n';
       labels[name] = ops.length;
+      data_labels[name] = data.length;
     }
 
     function Factor3() {
@@ -1302,6 +1355,27 @@
         curop += 'var t = ' + va[0] + ';\n';
         curop += va[0] + ' = ' + vb[0] + ';\n';
         curop += vb[0] + ' = ' + va[0] + ';\n';
+      } else if (tok == 'data') {
+        ConsumeData();
+      } else if (tok == 'read') {
+        Skip('read');
+        var v = GetVar(tok);
+        Next();
+        curop += v[0] + ' = data[data_pos++];\n';
+        while (tok == ',') {
+          Skip(',');
+          var v = GetVar(tok);
+          Next();
+          curop += v[0] + ' = data[data_pos++];\n';
+        }
+      } else if (tok == 'restore') {
+        Skip('restore');
+        if (tok != ':' && tok != '<EOL>') {
+          curop += 'data_pos = data_labels["' + tok + '"];\n';
+          Next();
+        } else {
+          curop += 'data_pos = 0;\n';
+        }
       } else if (tok == 'print') {
         Skip('print');
         if (tok == '<EOL>') {
