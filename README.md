@@ -11,7 +11,7 @@ You can include WWWBasic directly in Web pages:
 
 ```
 <!DOCTYPE html>
-<script src="wwwbasic.js"></script>
+<script src="https://google.github.io/wwwbasic/wwwbasic.js"></script>
 <script type="text/basic">
 PRINT "Hello World!"
 FOR i = 1 to 10
