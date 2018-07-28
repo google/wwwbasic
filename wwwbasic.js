@@ -20,11 +20,15 @@
   }
 
   function Interpret(code, real_canvas) {
+    var text_width = 40;
+    var text_height = 30;
+    var font_height = 8;
+    var screen_aspect = 1;
     var canvas;
     if (real_canvas) {
-      canvas= document.createElement('canvas');
-      canvas.width = 1280;
-      canvas.height = 1024;
+      canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 240;
     }
 
     var debugging_mode = typeof debug == 'boolean' && debug;
@@ -67,12 +71,16 @@
 
     // Drawing and Console State
     var color = 0xffffff;
+    var ctx_color = 0;
     var text_x = 0;
-    var text_y = 1;
+    var text_y = 0;
     var ctx;
     if (canvas) {
-      ctx = canvas.getContext('2d');
-      ctx.font = '14px monospace';
+      ctx = canvas.getContext('2d', { alpha: false });
+      ctx.fillStyle = '#000000';
+      ctx.strokeStyle = '#000000';
+      ctx.imageSmoothingEnabled = false;
+      ctx.imageSmoothingQuality = 'low';
     }
 
     var toklist = [
@@ -629,8 +637,35 @@
     }
 
     function Screen(mode) {
-      // TODO: Handle for real.
-      console.log('screen ' + mode);
+      // TODO: Handle color right in CGA, EGA, VGA modes.
+      var modes = {
+        1: [320, 200, 1.2, 8],
+        2: [640, 200, 1.2, 8],
+        7: [320, 200, 1.2, 8],
+        8: [640, 200, 1.2, 8],
+        9: [640, 350, 480 / 350, 14],
+        11: [640, 480, 1, 16],
+        12: [640, 380, 1, 16],
+        13: [320, 200, 1.2, 8],
+        14: [320, 240, 1, 16],
+        15: [400, 300, 1, 16],
+        16: [512, 384, 1, 16],
+        17: [640, 400, 1, 16],
+        18: [640, 480, 1, 16],
+        19: [800, 600, 1, 16],
+        20: [1024, 768, 1, 16],
+        21: [1280, 1024, 1, 16],
+      };
+      var m = modes[mode];
+      if (m === undefined) {
+        Throw('Invalid mode ' + mode);
+      }
+      canvas.width = m[0];
+      canvas.height = m[1];
+      text_width = Math.floor(m[0] / 8);
+      text_height = Math.floor(m[1] / 8);
+      screen_aspect = m[2];
+      font_height = m[3];
     }
 
     var output_buffer = '';
@@ -643,11 +678,17 @@
           return;
         }
         WithColor(0);
-        ctx.fillRect(text_x * 8, text_y * 16 - 16, 8, 16);
+        ctx.fillRect(text_x * 8, text_y * font_height, 8, font_height);
         WithColor();
-        ctx.fillText(ch, text_x * 8, text_y * 16 - 3);
+        ctx.textBaseline = 'top';
+        ctx.font = '14px monospace';
+        ctx.save();
+        ctx.translate(text_x * 8, text_y * font_height);
+        ctx.scale(1, font_height / 16);
+        ctx.fillText(ch, 0, 0);
+        ctx.restore();
         text_x++;
-        if (text_x > 160) {
+        if (text_x > text_width) {
           text_y++;
           text_x = 0;
         }
@@ -757,9 +798,13 @@
     }
 
     function WithColor(c) {
+      if (c === ctx_color) {
+        return;
+      }
       if (c === undefined) {
         c = color;
       }
+      ctx_color = c;
       c = c|0;
       var cc = '00000' + c.toString(16)
       ctx.strokeStyle = '#' + cc.substr(cc.length - 6);
@@ -772,7 +817,7 @@
 
     function Locate(x, y) {
       text_x = x - 1;
-      text_y = y;
+      text_y = y - 1;
     }
 
     function Line(x1, y1, x2, y2, c, fill) {
@@ -838,6 +883,10 @@
     function Statement() {
       if (tok == '<EOL>') {
         // Ignore empty lines.
+      } else if (tok == 'rem') {
+        do {
+          Next();
+        } while (tok != '<EOL>');
       } else if (tok == 'if') {
         Skip('if');
         var e = Expression();
@@ -1447,6 +1496,7 @@
       var ctx = real_canvas.getContext('2d');
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, real_canvas.width, real_canvas.height);
+      ctx.imageSmoothingEnabled = canvas.width > viewport_w;
       ctx.drawImage(
         canvas, 0, 0, canvas.width, canvas.height,
         viewport_x, viewport_y, viewport_w, viewport_h);
