@@ -73,8 +73,10 @@
     var delay = 0;
 
     // Drawing and Console State
-    var color = 0xffffff;
+    var fg_color = 0xffffff;
+    var bg_color = 0;
     var ctx_color = 0;
+    var color_map;
     var text_x = 0;
     var text_y = 0;
     var ctx;
@@ -88,7 +90,7 @@
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
       '+=', '-=', '*=', '/=', '\\=', '^=', '&=',
       '+', '-', '*', '/', '\\','^', '&',
-      '<=', '>=', '<>', '=', '<', '>', '@', '\n',
+      '<=', '>=', '<>', '=>', '=', '<', '>', '@', '\n',
     ];
     if (canvas) {
       code = code.replace(/&lt;/g, '<');
@@ -133,6 +135,12 @@
           tok = '"';
           code = code.substr(1);
           while (code.length > 0 && code.substr(0, 1) != '"') {
+            if (code.substr(0, 1) == '\n') {
+              // Allow strings to cut off at end of line.
+              // GW-Basic seems to allow it.
+              tok += '"';
+              return;
+            }
             tok += code.substr(0, 1);
             code = code.substr(1);
           }
@@ -327,18 +335,20 @@
           return name;
         }
         if (name == 'rnd') {
-          Skip('(');
-          if (tok != ')') {
-            var e = Expression();
+          if (tok == '(') {
+            Skip('(');
+            if (tok != ')') {
+              var e = Expression();
+            }
+            Skip(')');
           }
-          Skip(')');
           return 'Math.random()';
         }
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
             name == 'chr$' || name == 'sqr' || name == 'int' ||
-            name == 'abs' ||
+            name == 'abs' || name == 'len' ||
             name == 'cos' || name == 'sin' || name == 'tan' ||
-            name == 'exp' || name == 'str$') {
+            name == 'exp' || name == 'str$' || name == 'peek') {
           Skip('(');
           var e = Expression();
           Skip(')');
@@ -356,16 +366,22 @@
             case 'tan': return 'Math.tan(' + e + ')';
             case 'exp': return 'Math.exp(' + e + ')';
             case 'str$': return '(' + e + ').toString()';
+            case 'peek': return 'Peek(' + e + ').toString()';
+            case 'len': return '((' + e + ').length)';
           }
           Throw('This cannot happen');
         }
-        if (name == 'atan2') {
+        if (name == 'atan2' || name == 'string$') {
           Skip('(');
           var a = Expression();
           Skip(',');
           var b = Expression();
           Skip(')');
-          return 'Math.atan2(' + a + ', ' + b + ')';
+          if (name == 'atan2') {
+            return 'Math.atan2(' + a + ', ' + b + ')';
+          } else if (name == 'string$') {
+            return 'StringRep(' + a + ', ' + b + ')';
+          }
         }
         if (name == 'inkey$') {
           return 'Inkey()';
@@ -441,9 +457,12 @@
     function Relational() {
       var a = Term();
       while (tok == '=' || tok == '<' || tok == '>' ||
-             tok == '<>' || tok == '<=' || tok == '>=') {
+             tok == '<>' || tok == '<=' || tok == '>=' || tok == '=>') {
         var op = tok;
         Next();
+        if (op == '=>') {
+          op = '>=';
+        }
         var b = Term();
         if (op == '=') {
           a = '(' + a + ') == (' + b + ') ? -1 : 0';
@@ -532,6 +551,7 @@
     }
 
     function ImplicitDimVariable(name) {
+      // TODO: Handle array variables.
       var vdef = [var_count++, ImplicitType(name)];
       vdef[0] = TypeMap[vdef[1]] + '[' + vdef[0] + ']';
       var_decls += '// ' + vdef[0] + ' is ' + name + '\n';
@@ -644,6 +664,9 @@
         Skip(')');
         vname += '[';
         for (var i = 0; i < dims.length; ++i) {
+          if (i + 2 >= v.length) {
+            Throw('Bad array name: ' + name);
+          }
           vname += '(((' + dims[i] + ')|0)-' + v[i + 2][0] + ')';
           for (var j = 0; j < i; ++j) {
             vname += '*(' + v[j + 2][1] + '-' + v[j + 2][0] + ' + 1)';
@@ -687,25 +710,53 @@
       yielding = 1;
     }
 
+    function StringRep(n, ch) {
+      var ret = '';
+      var cch;
+      if (typeof ch == 'string') {
+        cch = ch;
+      } else {
+        cch = String.fromCharCode(ch);
+      }
+      for (var i = 0; i < n; ++i) {
+        ret += cch;
+      }
+      return ret;
+    }
+
+    function Peek(addr) {
+      return 0;
+    }
+
     function Screen(mode) {
       // TODO: Handle color right in CGA, EGA, VGA modes.
+      var rgba = [
+        0x000000, 0x0000AA, 0x00AA00, 0x00AAAA,
+        0xAA0000, 0xAA00AA, 0xAA5500, 0xAAAAAA,
+        0x555555, 0x5555FF, 0x55FF55, 0x55FFFF,
+        0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF,
+      ];
+      var screen1 = [
+        0x000000, 0x00AAAA, 0xAA00AA, 0xAAAAAA,
+      ];
       var modes = {
-        1: [320, 200, 1.2, 8],
-        2: [640, 200, 1.2, 8],
-        7: [320, 200, 1.2, 8],
-        8: [640, 200, 1.2, 8],
-        9: [640, 350, 480 / 350, 14],
-        11: [640, 480, 1, 16],
-        12: [640, 380, 1, 16],
-        13: [320, 200, 1.2, 8],
-        14: [320, 240, 1, 16],
-        15: [400, 300, 1, 16],
-        16: [512, 384, 1, 16],
-        17: [640, 400, 1, 16],
-        18: [640, 480, 1, 16],
-        19: [800, 600, 1, 16],
-        20: [1024, 768, 1, 16],
-        21: [1280, 1024, 1, 16],
+        0: [640, 200, 1.2, 8, rgba],
+        1: [320, 200, 1.2, 8, screen1],
+        2: [640, 200, 1.2, 8, [0x000000, 0xFFFFFF]],
+        7: [320, 200, 1.2, 8, undefined],
+        8: [640, 200, 1.2, 8, undefined],
+        9: [640, 350, 480 / 350, 14, undefined],
+        11: [640, 480, 1, 16, undefined],
+        12: [640, 380, 1, 16, undefined],
+        13: [320, 200, 1.2, 8, undefined],
+        14: [320, 240, 1, 16, undefined],
+        15: [400, 300, 1, 16, undefined],
+        16: [512, 384, 1, 16, undefined],
+        17: [640, 400, 1, 16, undefined],
+        18: [640, 480, 1, 16, undefined],
+        19: [800, 600, 1, 16, undefined],
+        20: [1024, 768, 1, 16, undefined],
+        21: [1280, 1024, 1, 16, undefined],
       };
       var m = modes[mode];
       if (m === undefined) {
@@ -717,6 +768,12 @@
       text_height = Math.floor(m[1] / 8);
       screen_aspect = m[2];
       font_height = m[3];
+      color_map = m[4];
+    }
+
+    function Width(w) {
+      canvas.width = w * 8;
+      text_width = w;
     }
 
     var output_buffer = '';
@@ -728,7 +785,7 @@
           text_y++;
           return;
         }
-        WithColor(0);
+        WithColor(bg_color);
         ctx.fillRect(text_x * 8, text_y * font_height, 8, font_height);
         WithColor();
         ctx.textBaseline = 'top';
@@ -853,7 +910,10 @@
         return;
       }
       if (c === undefined) {
-        c = color;
+        c = fg_color;
+      }
+      if (color_map !== undefined) {
+        c = color_map[c];
       }
       ctx_color = c;
       c = c|0;
@@ -862,8 +922,9 @@
       ctx.fillStyle = '#' + cc.substr(cc.length - 6);
     }
 
-    function Color(c) {
-      color = c;
+    function Color(fg, bg) {
+      fg_color = fg;
+      bg_color = bg;
     }
 
     function Locate(x, y) {
@@ -921,7 +982,9 @@
       }
     }
 
-    function GetVar(name) {
+    function GetVar() {
+      var name = tok;
+      Next();
       if (vars[name] === undefined) {
         if (option_explicit) {
           Throw('Unknown variable ' + name);
@@ -971,10 +1034,19 @@
             EndIf();
           }
         } else {
+          // Classic if <e> then
           If(e);
-          Statement();
-          while (tok == ':') {
+          if (tok.match(/^[0-9]+$/)) {
+            var name = tok;
+            Next();
+            curop += 'ip = labels["' + name + '"];\n';
+            NewOp();
+          } else {
             Statement();
+            while (tok == ':') {
+              Skip(':');
+              Statement();
+            }
           }
           var f = flow.pop();
           if (f[0] != 'if') {
@@ -982,6 +1054,15 @@
           }
           flow.push(f);
           NewOp();
+          if (tok == 'else') {
+            Skip('else');
+            Else();
+            Statement();
+            while (tok == ':') {
+              Skip(':');
+              Statement();
+            }
+          }
           EndIf();
         }
       } else if (tok == 'elseif') {
@@ -1110,6 +1191,87 @@
           Skip(',');
           DimVariable(tname);
         }
+      } else if (tok == 'on') {
+        Skip('on');
+        if (tok == 'error') {
+          Skip('error');
+        } else {
+          Throw('Expected error');
+        }
+        if (tok == 'goto') {
+          Skip('goto');
+          var name = tok;
+          Next();
+          // TODO: Implement.
+        } else {
+          Throw('Expected goto');
+        }
+      } else if (tok == 'resume') {
+        Skip('resume');
+        if (tok == 'next') {
+          Skip('next');
+          // TODO: Implement.
+        } else if (tok == '0') {
+          Skip('0');
+          // TODO: Implement.
+        } else if (tok != '<EOL>' && tok != ':') {
+          var name = tok;
+          Next();
+          // TODO: Implement.
+        } else {
+          // TODO: Implement.
+        }
+      } else if (tok == 'def') {
+        Skip('def');
+        if (tok == 'seg') {
+          Skip('seg');
+          if (tok == '=') {
+            Skip('=');
+            var e = Expression();
+            // TODO: Do something useful with it?
+          }
+        } else {
+          Throw('Expected seg');
+        }
+      } else if (tok == 'poke') {
+        Skip('poke');
+        var addr = Expression();
+        Skip(',');
+        var value = Expression();
+        // TODO: Do something useful with it?
+      } else if (tok == 'key') {
+        Skip('key');
+        if (tok == 'on') {
+          Skip('on');
+        } else if (tok == 'off') {
+          Skip('off');
+        } else {
+          Throw('Expected on/off');
+        }
+        // Implement this?
+      } else if (tok == 'sound') {
+        Skip('sound');
+        var freq = Expression();
+        Skip(',');
+        var duration = Expression();
+        // TODO: Implement this.
+      } else if (tok == 'play') {
+        Skip('play');
+        var notes = Expression();
+        // TODO: Implement this.
+      } else if (tok == 'draw') {
+        Skip('draw');
+        var cmds = Expression();
+        // TODO: Implement this.
+      } else if (tok == 'chain') {
+        Skip('chain');
+        var filename = Expression();
+        if (tok == ',') {
+          Skip(',');
+          var name = tok;
+          Next();
+        }
+        // TODO: Implement this.
       } else if (tok == 'option') {
         Skip('option');
         if (tok == 'explicit') {
@@ -1203,6 +1365,18 @@
         curop += 'ip = ' + f[2] + ';\n';
         NewOp();
         ops[f[2]] += ops.length + '; }\n';
+      } else if (tok == 'paint') {
+        Skip('paint');
+        Skip('(');
+        var x = Expression();
+        Skip(',');
+        var y = Expression();
+        Skip(')');
+        if (tok == ',') {
+          Skip(',');
+          var paint = Expression();
+        }
+        // TODO: Implement.
       } else if (tok == 'circle') {
         Skip('circle');
         Skip('(');
@@ -1247,19 +1421,22 @@
         }
         curop += 'Circle((' +
           [x, y, r, c, start, end, aspect, fill].join('), (') + '));\n';
-      } else if (tok == 'pset') {
-        Skip('pset');
+      } else if (tok == 'pset' || tok == 'preset') {
+        Next();
         Skip('(');
         var x = Expression();
         Skip(',');
         var y = Expression();
         Skip(')');
-        Skip(',');
-        var extra = [Expression()];
-        while (tok == ',') {
+        var extra = [];
+        if (tok == ',') {
           Skip(',');
-          if (tok != ',' && tok != '<EOL>') {
-            extra.push(Expression());
+          extra.push(Expression());
+          while (tok == ',') {
+            Skip(',');
+            if (tok != ',' && tok != '<EOL>') {
+              extra.push(Expression());
+            }
           }
         }
         curop += 'Pset((' +
@@ -1277,22 +1454,66 @@
         Skip(',');
         var y2 = Expression();
         Skip(')');
-        Skip(',');
-        var c = Expression();
+        var c = 0;
         var fill = 0;
         if (tok == ',') {
           Skip(',');
-          if (tok == 'b') {
-            fill = 1;
-          } else if (tok == 'bf') {
-            fill = 2;
-          } else {
-            Throw('Unexpected ' + tok);
+          if (tok != ',') {
+            c = Expression();
           }
-          Next();
+          if (tok == ',') {
+            Skip(',');
+            if (tok == 'b') {
+              fill = 1;
+            } else if (tok == 'bf') {
+              fill = 2;
+            } else {
+              Throw('Unexpected ' + tok);
+            }
+            Next();
+          }
         }
         curop += 'Line((' +
           [x1, y1, x2, y2, c, fill].join('), (') + '));\n';
+      } else if (tok == 'get') {
+        Skip('get');
+        Skip('(');
+        var x1 = Expression();
+        Skip(',');
+        var y1 = Expression();
+        Skip(')');
+        Skip('-');
+        Skip('(');
+        var x2 = Expression();
+        Skip(',');
+        var y2 = Expression();
+        Skip(')');
+        Skip(',');
+        var v = tok;
+        Next();
+        // TODO: Implement it.
+      } else if (tok == 'put') {
+        Skip('put');
+        Skip('(');
+        var x = Expression();
+        Skip(',');
+        var y = Expression();
+        Skip(')');
+        Skip(',');
+        var v = tok;
+        Next();
+        var mode = 'pset';
+        if (tok == ',') {
+          Skip(',');
+          if (tok == 'pset' || tok == 'preset' || tok == 'and' ||
+              tok == 'or' || tok == 'xor') {
+            mode = tok;
+            Next();
+          } else {
+            Throw('Invalid put mode');
+          }
+        }
+        // TODO: Use it.
       } else if (tok == 'screen') {
         Skip('screen');
         var ret = 'Screen(';
@@ -1328,15 +1549,24 @@
           // TODO: Support cursor + start + stop
         }
         curop += 'Locate(' + x + ', ' + y + ');\n';
+      } else if (tok == 'width') {
+        Skip('width');
+        var w = Expression();
+        curop += 'Width(' + w + ');\n';
       } else if (tok == 'color') {
         Skip('color');
         var fg = Expression();
+        var bg = 0;
         if (tok == ',') {
           Skip(',');
-          var bg = Expression();
-          // TODO: Support background color
+          bg = Expression();
         }
-        curop += 'Color(' + fg + ');\n';
+        if (tok == ',') {
+          Skip(',');
+          var cursor = Expression();
+          // TODO: Support cursor
+        }
+        curop += 'Color(' + fg + ',' + bg + ');\n';
       } else if (tok == 'swap') {
         Skip('swap');
         var a = tok;
@@ -1359,13 +1589,11 @@
         ConsumeData();
       } else if (tok == 'read') {
         Skip('read');
-        var v = GetVar(tok);
-        Next();
+        var v = GetVar();
         curop += v[0] + ' = data[data_pos++];\n';
         while (tok == ',') {
           Skip(',');
-          var v = GetVar(tok);
-          Next();
+          var v = GetVar();
           curop += v[0] + ' = data[data_pos++];\n';
         }
       } else if (tok == 'restore') {
@@ -1447,34 +1675,29 @@
         Skip('getmouse');
         curop += 'Yield();';
         NewOp();
-        var v = GetVar(tok);
+        var v = GetVar();
         curop += v[0] + ' = mouse_x;\n';
-        Next();
         Skip(',');
-        var v = GetVar(tok);
+        var v = GetVar();
         curop += v[0] + ' = mouse_y;\n';
-        Next();
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
-            var v = GetVar(tok);
+            var v = GetVar();
             curop += v[0] + ' = mouse_wheel;\n';
-            Next();
           }
         }
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
-            var v = GetVar(tok);
+            var v = GetVar();
             curop += v[0] + ' = mouse_buttons;\n';
-            Next();
           }
         }
         if (tok == ',') {
           Skip(',');
-          var v = GetVar(tok);
+          var v = GetVar();
           curop += v[0] + ' = mouse_clip;\n';
-          Next();
         }
       } else if (tok == '') {
         return;
@@ -1656,9 +1879,9 @@
         Color(0xffffff);
         Print([e.toString(), ';']);
       } else {
-        console.info(e.toString());
         console.error(e.toString());
       }
+      console.info(e.stack);
     }
     InitEvents();
     Render();

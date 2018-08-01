@@ -27,6 +27,17 @@ PRINT x
 4
 `);
 
+basic_test.BASIC_TEST('IfElse', 'SingleThenColon', `
+i = 1
+x = 0
+FOR i = 1 TO 5
+  IF i = 4 THEN x = i : x = 9
+NEXT i
+PRINT x
+`, `
+9
+`);
+
 basic_test.BASIC_TEST('IfElse', 'SingleThenEndIf', `
 i = 1
 x = 0
