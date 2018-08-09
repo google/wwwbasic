@@ -15,21 +15,102 @@
 'use strict';
 
 (function() {
+  var CHARSET =
+    '\u0020\u263a\u263b\u2665\u2666\u2663\u2660\u2022' +
+    '\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c' +
+    '\u25ba\u25c4\u2195\u203c\u00b6\u00a7\u25ac\u21a8' +
+    '\u2191\u2193\u2192\u2190\u221f\u2194\u25b2\u25bc' +
+    '\u0020\u0021\u0022\u0023\u0024\u0025\u0026\u0027' +
+    '\u0028\u0029\u002a\u002b\u002c\u002d\u002e\u002f' +
+    '\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037' +
+    '\u0038\u0039\u003a\u003b\u003c\u003d\u003e\u003f' +
+    '\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047' +
+    '\u0048\u0049\u004a\u004b\u004c\u004d\u004e\u004f' +
+    '\u0050\u0051\u0052\u0053\u0054\u0055\u0056\u0057' +
+    '\u0058\u0059\u005a\u005b\u005c\u005d\u005e\u005f' +
+    '\u0060\u0061\u0062\u0063\u0064\u0065\u0066\u0067' +
+    '\u0068\u0069\u006a\u006b\u006c\u006d\u006e\u006f' +
+    '\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077' +
+    '\u0078\u0079\u007a\u007b\u007c\u007d\u007e\u2302' +
+    '\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7' +
+    '\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5' +
+    '\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9' +
+    '\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192' +
+    '\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba' +
+    '\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
+    '\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556' +
+    '\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510' +
+    '\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f' +
+    '\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567' +
+    '\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b' +
+    '\u256a\u2518\u250c\u2588\u0020\u258c\u2590\u2580' +
+    '\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4' +
+    '\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229' +
+    '\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248' +
+    '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u0020';
+
   function NextChar(ch) {
     return String.fromCharCode(ch.charCodeAt(0) + 1);
   }
 
-  function Interpret(code, real_canvas) {
+  function CreateFont(ctx, height) {
+    var data = new Uint8Array(256 * 8 * height);
+    var pos = 0;
+    for (var i = 0; i < 256; ++i) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 16, 32);
+      ctx.textBaseline = 'top';
+      ctx.font = 'bold 16px monospace';
+      ctx.save();
+      ctx.scale(1, height / 16);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(CHARSET.charAt(i), 0, 0);
+      ctx.restore();
+      var pix = ctx.getImageData(0, 0, 8, height);
+      var pdata = pix.data;
+      for (var j = 0; j < pdata.length; j+=4) {
+        var level = pdata[j] * 0.1140 +
+                    pdata[j + 1] * 0.5870 +
+                    pdata[j + 2] * 0.2989;
+        data[pos++] = level > 128 ? 255 : 0;
+      }
+    }
+    return data;
+  }
+
+  function Interpret(code, canvas) {
+    // Display Info (in browser only).
+    var screen_mode = 0;
     var text_width = 80;
     var text_height = 60;
     var font_height = 16;
     var screen_aspect = 1;
-    var canvas;
-    if (real_canvas) {
-      canvas = document.createElement('canvas');
-      canvas.width = 640;
-      canvas.height = 480;
+    var font_data;
+    var ctx;
+    var display;
+    var display_data;
+    var scale_canvas;
+
+    function SetupDisplay(width, height, aspect, fheight) {
+      if (!canvas) {
+        return;
+      }
+      ctx = canvas.getContext('2d', { alpha: false });
+      display = ctx.createImageData(width, height);
+      display_data = new Uint32Array(display.data.buffer);
+      if (!scale_canvas) {
+        scale_canvas = document.createElement('canvas');
+      }
+      scale_canvas.width = width;
+      scale_canvas.height = height;
+      text_width = Math.floor(width / 8);
+      text_height = Math.floor(height / fheight);
+      screen_aspect = aspect;
+      font_height = fheight;
+      var sctx = scale_canvas.getContext('2d', { alpha: false});
+      font_data = CreateFont(sctx, font_height);
     }
+    SetupDisplay(640, 480, 1.2, 8);
 
     var debugging_mode = typeof debug == 'boolean' && debug;
     // Parsing and Run State.
@@ -39,6 +120,8 @@
     var vars = {};
     var var_count = 0;
     var var_decls = '';
+    var vars_getput = {};
+    var getput_images = {};
     var rstack = [];
     var data = [];
     var data_pos = 0;
@@ -76,15 +159,12 @@
     var fg_color = 0xffffff;
     var bg_color = 0;
     var ctx_color = 0;
+    var ctx_raw_color = 0xff000000;
     var color_map;
     var text_x = 0;
     var text_y = 0;
-    var ctx;
-    if (canvas) {
-      ctx = canvas.getContext('2d', { alpha: false });
-      ctx.fillStyle = '#000000';
-      ctx.strokeStyle = '#000000';
-    }
+    var pen_x = 0;
+    var pen_y = 0;
 
     var toklist = [
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
@@ -559,6 +639,16 @@
       return vdef;
     }
 
+    function ImplicitDimGetPut(name) {
+      if (vars[name] !== undefined) {
+        return vars[name][0];
+      }
+      if (vars_getput[name] === undefined) {
+        vars_getput[name] = var_count++;
+      }
+      return 'a' + vars_getput[name];
+    }
+
     function DimVariable(default_tname) {
       var name = tok;
       Next();
@@ -566,8 +656,14 @@
       if (default_tname === null) {
         default_tname = ImplicitType(name);
       }
-      // name,  dims..
-      var vdef = [var_count++, default_tname];
+      // name, dims.
+      var index;
+      if (vars_getput[name] !== undefined) {
+        index = vars_getput[name];
+      } else {
+        index = var_count++;
+      }
+      var vdef = [index, default_tname];
       var defaults = [];
       if (tok == '(') {
         Skip('(');
@@ -687,7 +783,7 @@
         console.log('BASIC END');
       } else {
         if (output_buffer != '') {
-          Put('\n');
+          PutCh('\n');
         }
       }
     }
@@ -762,57 +858,63 @@
       if (m === undefined) {
         Throw('Invalid mode ' + mode);
       }
-      canvas.width = m[0];
-      canvas.height = m[1];
-      text_width = Math.floor(m[0] / 8);
-      text_height = Math.floor(m[1] / 8);
-      screen_aspect = m[2];
-      font_height = m[3];
+      SetupDisplay(m[0], m[1], m[2], m[3]);
       color_map = m[4];
+      screen_mode = mode;
+      pen_x = display.width / 2;
+      pen_y = display.height / 2;
+      Cls();
     }
 
     function Width(w) {
-      canvas.width = w * 8;
-      text_width = w;
+      if (w == 80 || w == 40) {
+        SetupDisplay(w * 8, display.height, screen_aspect, font_height);
+      }
     }
 
     var output_buffer = '';
 
-    function Put(ch) {
-      if (canvas) {
-        if (ch == '\n') {
-          text_x = 0;
-          text_y++;
-          return;
-        }
-        WithColor(bg_color);
-        ctx.fillRect(text_x * 8, text_y * font_height, 8, font_height);
-        WithColor();
-        ctx.textBaseline = 'top';
-        ctx.font = '14px monospace';
-        ctx.save();
-        ctx.translate(text_x * 8, text_y * font_height);
-        ctx.scale(1, font_height / 16);
-        ctx.fillText(ch, 0, 0);
-        ctx.restore();
-        text_x++;
-        if (text_x > text_width) {
-          text_y++;
-          text_x = 0;
-        }
-      } else {
+    function PutCh(ch) {
+      if (!canvas) {
         if (ch == '\n') {
           console.log(output_buffer);
           output_buffer = '';
         } else {
           output_buffer += ch;
         }
+        return;
+      }
+      if (ch == '\n') {
+        text_x = 0;
+        text_y++;
+        return;
+      }
+      // Only text mode supports background.
+      if (screen_mode > 0) {
+        WithColor(0);
+      } else {
+        WithColor(bg_color);
+      }
+      var bg = ctx_raw_color;
+      WithColor(fg_color);
+      var fg = ctx_raw_color;
+      var chpos = ch.charCodeAt(0) * font_height * 8;
+      for (var y = 0; y < font_height; ++y) {
+        var pos = text_x * 8 + (y + text_y * font_height) * display.width;
+        for (var x = 0; x < 8; ++x) {
+          display_data[pos++] = font_data[chpos++] ? fg : bg;
+        }
+      }
+      text_x++;
+      if (text_x > text_width) {
+        text_y++;
+        text_x = 0;
       }
     }
 
     function Print(items) {
       if (items.length == 0) {
-        Put('\n');
+        PutCh('\n');
         return;
       }
       for (var i = 0; i < items.length; i += 2) {
@@ -823,15 +925,15 @@
           text = items[i].toString();
         }
         for (var j = 0; j < text.length; j++) {
-          Put(text[j]);
+          PutCh(text[j]);
         }
         if (items[i+1] == ',') {
-          Put(' ');
-          Put(' ');
-          Put(' ');
+          PutCh(' ');
+          PutCh(' ');
+          PutCh(' ');
         }
         if (items[i+1] != ';' && items[i+1] != ',') {
-          Put('\n');
+          PutCh('\n');
         }
       }
     }
@@ -913,13 +1015,11 @@
         c = fg_color;
       }
       if (color_map !== undefined) {
-        c = color_map[c];
+        c = color_map[Math.min(c, color_map.length - 1)];
       }
       ctx_color = c;
-      c = c|0;
-      var cc = '00000' + c.toString(16)
-      ctx.strokeStyle = '#' + cc.substr(cc.length - 6);
-      ctx.fillStyle = '#' + cc.substr(cc.length - 6);
+      ctx_raw_color = ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) |
+        (c & 0x00ff00) | 0xff000000;
     }
 
     function Color(fg, bg) {
@@ -932,33 +1032,69 @@
       text_y = y - 1;
     }
 
+    function Box(x1, y1, x2, y2, c) {
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      x2 = x2 | 0;
+      y2 = y2 | 0;
+      c = c | 0;
+      if (x1 > x2) {
+        var t = x2;
+        x2 = x1;
+        x1 = t;
+      }
+      if (y1 > y2) {
+        var t = y2;
+        y2 = y1;
+        y1 = t;
+      }
+      if (x1 >= display.width ||
+          y1 >= display.height ||
+          x2 < 0 || y2 < 0) {
+        return;
+      }
+      if (x1 < 0) x1 = 0;
+      if (x2 > display.width - 1) x2 = display.width - 1;
+      if (y1 < 0) y1 = 0;
+      if (y2 > display.height - 1) y2 = display.height - 1;
+      for (var y = y1; y <= y2; ++y) {
+        var pos = x1 + y * display.width;
+        for (var x = x1; x <= x2; ++x) {
+          display_data[pos++] = c;
+        }
+      }
+    }
+
+    function RawLine(x1, y1, x2, y2, c) {
+      if (x1 == x2 || y1 == y2) {
+        Box(x1, y1, x2, y2, c);
+        return;
+      }
+      for (var t = 0; t <= 1; t += 0.001) {
+        var x = x1 + Math.floor(t * (x2 - x1));
+        var y = y1 + Math.floor(t * (y2 - y1));
+        Box(x, y, x, y, c);
+      }
+    }
+
     function Line(x1, y1, x2, y2, c, fill) {
-      ctx.lineWidth = 2;
       WithColor(c);
       if (fill == 0) {
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-      } else if (fill >= 1) {
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y1);
-        ctx.lineTo(x2, y2);
-        ctx.lineTo(x1, y2);
-        ctx.lineTo(x1, y1);
-        if (fill == 1) {
-          ctx.stroke();
-        } else {
-          ctx.fill();
-        }
+        // Should be line.
+        RawLine(x1, y1, x2, y2, ctx_raw_color);
+      } else if (fill == 1) {
+        Box(x1, y1, x2, y1, ctx_raw_color);
+        Box(x1, y2, x2, y2, ctx_raw_color);
+        Box(x1, y1, x1, y2, ctx_raw_color);
+        Box(x2, y1, x2, y2, ctx_raw_color);
+      } else {
+        Box(x1, y1, x2, y2, ctx_raw_color);
       }
     }
     var last = 0;
 
     function Cls() {
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      Box(0, 0, display.width, display.height, 0xff000000);
       text_x = 0;
       text_y = 0;
     }
@@ -967,18 +1103,172 @@
       if (c !== ctx_color) {
         WithColor(c);
       }
-      ctx.fillRect(x, y, 1, 1);
+      display_data[x + y * display.width] = ctx_raw_color;
+      pen_x = x;
+      pen_y = y;
     }
 
     function Circle(x, y, r, c, start, end, aspect, fill) {
       WithColor(c);
-      ctx.beginPath();
-      // TODO: aspect
-      ctx.arc(x, y, r, start, end);
+      // TODO: Handle aspect.
       if (fill) {
-        ctx.fill();
+        for (var i = -r; i <= r; ++i) {
+          var dx = Math.sqrt(r * r - i * i);
+          Box(x - dx, y + i, x + dx, y + i, ctx_raw_color);
+        }
       } else {
-        ctx.stroke();
+        for (var i = -r; i <= r; ++i) {
+          var dx = Math.sqrt(r * r - i * i);
+          Box(x - dx, y + i, x - dx, y + i, ctx_raw_color);
+          Box(x + dx, y + i, x + dx, y + i, ctx_raw_color);
+        }
+      }
+    }
+
+    function GetImage(x1, y1, x2, y2, buffer) {
+      var img = ctx.getImageData(x1, y1, x2 + 1 - x1, y2 + 1 - y1);
+      getput_images[buffer] = img;
+    }
+
+    function PutImage(x, y, buffer, mode) {
+      var img = getput_images[buffer];
+      if (mode == 'preset') {
+        var img2 = new ImageData(
+          new Uint8ClampedArray(img.data.length), img.width, img.height);
+        var data = new Uint32Array(img.data.buffer);
+        var data2 = new Uint32Array(img2.data.buffer);
+        for (var i = 0; i < data.length; ++i) {
+          data2[i] = 0xaaaaaa - data[i];
+        }
+        ctx.putImageData(img2, x, y);
+        return;
+      }
+      if (img) {
+        ctx.putImageData(img, x, y);
+      }
+    }
+
+    var draw_state = {
+      noplot: false,
+      nomove: false,
+      angle: 0,
+      turn_angle: 0,
+      color: undefined,
+      scale: 1,
+    };
+
+    function StepUnscaled(dx, dy) {
+      if (!draw_state.noplot) {
+        Line(pen_x, pen_y, pen_x + dx, pen_y + dy, draw_state.color, 0);
+      }
+      if (!draw_state.nomove) {
+        pen_x += dx;
+        pen_y += dy;
+      }
+      draw_state.noplot = false;
+      draw_state.nomove = false;
+    }
+
+    function Step(dx, dy) {
+      StepUnscaled(dx * draw_state.scale, dy * draw_state.scale);
+    }
+
+    function Draw(cmds) {
+      cmds = cmds.toLowerCase();
+      var m;
+      while (cmds.length) {
+        if (m = cmds.match(/^(u|d|l|r|e|f|g|h|a|ta|c|s)([0-9]+)?/)) {
+          var op = m[1];
+          var n = m[2] == '' ? 1 : parseInt(m[2]);
+          if (op == 'c') {
+            draw_state.color = n;
+          } else if (op == 'a') {
+            draw_state.angle = n;
+            // TODO: Implement.
+          } else if (op == 'ta') {
+            draw_state.turn_angle = n;
+            // TODO: Implement.
+          } else if (op == 's') {
+            draw_state.scale = n / 4;
+          } else if (op == 'u') {
+            Step(0, -n);
+          } else if (op == 'd') {
+            Step(0, n);
+          } else if (op == 'l') {
+            Step(-n, 0);
+          } else if (op == 'r') {
+            Step(n, 0);
+          } else if (op == 'e') {
+            Step(n, -n);
+          } else if (op == 'f') {
+            Step(n, n);
+          } else if (op == 'g') {
+            Step(-n, n);
+          } else if (op == 'h') {
+            Step(-n, -n);
+          }
+        } else if (m = cmds.match(/^(m)([+-]?)([0-9]+)[,]([+-]?[0-9]+)/)) {
+          var op = m[1];
+          var sx = m[2];
+          var x = parseInt(m[3]);
+          var y = parseInt(m[4]);
+          if (sx) {
+            x = parseInt(sx + '1') * x;
+            Step(x, y);
+          } else {
+            StepUnscaled(x - pen_x, y - pen_y);
+          }
+        } else if (m = cmds.match(/^(p)([0-9]+),([0-9]+1)/)) {
+          var op = m[1];
+          var x = parseInt(m[2]);
+          var y = parseInt(m[3]);
+          // TODO: Implement.
+        } else if (m = cmds.match(/^(b|n)/)) {
+          var op = m[1];
+          if (op == 'b') {
+            draw_state.noplot = true;
+          } else if (op == 'n') {
+            draw_state.nomove = true;
+          }
+        } else {
+          Throw('Bad drop op: ' + cmds);
+        }
+        cmds = cmds.substr(m[0].length);
+      }
+    }
+
+    function Paint(x, y, color, border) {
+      color = color_map[color];
+      border = color_map[border];
+      if (color === undefined) {
+        color = color_map[color_map.length - 1];
+      }
+      if (border === undefined) {
+        border = color;
+      }
+      color = ((color & 0xff0000) >> 16) | ((color & 0xff) << 16) |
+        (color & 0x00ff00);
+      border = ((border & 0xff0000) >> 16) | ((border & 0xff) << 16) |
+        (border & 0x00ff00);
+      var data = display_data;
+      var pending = [];
+      pending.push([Math.floor(x), Math.floor(y)]);
+      while (pending.length) {
+        var p = pending.pop();
+        if (p[0] < 0 || p[0] >= display.width ||
+            p[1] < 0 || p[1] >= display.height) {
+          continue;
+        }
+        var pos = p[0] + p[1] * display.width;
+        // TODO: Fix
+        if ((data[pos] & 0xffffff) == border || (data[pos] & 0xffffff) != 0) {
+          continue;
+        }
+        data[pos] = color;
+        pending.push([p[0] - 1, p[1]]);
+        pending.push([p[0] + 1, p[1]]);
+        pending.push([p[0], p[1] - 1]);
+        pending.push([p[0], p[1] + 1]);
       }
     }
 
@@ -1262,7 +1552,7 @@
       } else if (tok == 'draw') {
         Skip('draw');
         var cmds = Expression();
-        // TODO: Implement this.
+        curop += 'Draw(' + cmds + ');\n';
       } else if (tok == 'chain') {
         Skip('chain');
         var filename = Expression();
@@ -1372,11 +1662,18 @@
         Skip(',');
         var y = Expression();
         Skip(')');
+        var paint;
         if (tok == ',') {
           Skip(',');
-          var paint = Expression();
+          paint = Expression();
         }
-        // TODO: Implement.
+        var border;
+        if (tok == ',') {
+          Skip(',');
+          border = Expression();
+        }
+        curop += 'Paint((' + x + '), (' + y + '), (' +
+          paint + '), (' + border + '));\n';
       } else if (tok == 'circle') {
         Skip('circle');
         Skip('(');
@@ -1489,9 +1786,11 @@
         var y2 = Expression();
         Skip(')');
         Skip(',');
-        var v = tok;
+        var name = tok;
         Next();
-        // TODO: Implement it.
+        var v = ImplicitDimGetPut(name);
+        curop += 'GetImage(' + x1 + ', ' + y1 + ', ' +
+          x2 + ', ' +  y2 + ', "' + name + '");\n';
       } else if (tok == 'put') {
         Skip('put');
         Skip('(');
@@ -1500,8 +1799,9 @@
         var y = Expression();
         Skip(')');
         Skip(',');
-        var v = tok;
+        var name = tok;
         Next();
+        var v = ImplicitDimGetPut(name);
         var mode = 'pset';
         if (tok == ',') {
           Skip(',');
@@ -1513,7 +1813,8 @@
             Throw('Invalid put mode');
           }
         }
-        // TODO: Use it.
+        curop += 'PutImage(' + x + ', ' + y + ', ' +
+          '"' + name + '", "' + mode + '");\n';
       } else if (tok == 'screen') {
         Skip('screen');
         var ret = 'Screen(';
@@ -1787,22 +2088,22 @@
     var viewport_w, viewport_h;
 
     function Resize() {
-      real_canvas.width  = window.innerWidth;
-      real_canvas.height = window.innerHeight;
-      var raspect = real_canvas.width / real_canvas.height;
-      var aspect = canvas.width / canvas.height;
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      var raspect = canvas.width / canvas.height;
+      var aspect = display.width / display.height;
       if (raspect > aspect) {
         viewport_w = Math.floor(
-          canvas.width * real_canvas.height / canvas.height);
-        viewport_h = real_canvas.height;
-        viewport_x = Math.floor((real_canvas.width - viewport_w) / 2);
+          display.width * canvas.height / display.height);
+        viewport_h = canvas.height;
+        viewport_x = Math.floor((canvas.width - viewport_w) / 2);
         viewport_y = 0;
       } else {
-        viewport_w = real_canvas.width;
+        viewport_w = canvas.width;
         viewport_h = Math.floor(
-          canvas.height * real_canvas.width / canvas.width);
+          display.height * canvas.width / display.width);
         viewport_x = 0;
-        viewport_y = Math.floor((real_canvas.height - viewport_h) / 2);
+        viewport_y = Math.floor((canvas.height - viewport_h) / 2);
       }
     }
 
@@ -1810,12 +2111,17 @@
       if (!canvas) {
         return;
       }
-      var ctx = real_canvas.getContext('2d');
-      ctx.fillStyle = '#000';
-      ctx.fillRect(0, 0, real_canvas.width, real_canvas.height);
-      ctx.drawImage(
-        canvas, 0, 0, canvas.width, canvas.height,
-        viewport_x, viewport_y, viewport_w, viewport_h);
+      var scale_ctx = scale_canvas.getContext('2d');
+      scale_ctx.fillStyle = '#000';
+      scale_ctx.fillRect(0, 0, scale_canvas.width, scale_canvas.height);
+      scale_ctx.putImageData(display, 0, 0);
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+//      ctx.imageSmoothingQuality = 'low';
+//      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(scale_canvas, viewport_x, viewport_y,
+        viewport_w, viewport_h);
       requestAnimationFrame(Render);
     }
 
@@ -1830,19 +2136,19 @@
         if (k == 'Escape') { k = String.fromCharCode(27); }
         keys.push(k);
       }, false);
-      real_canvas.addEventListener('mousemove', function(e) {
+      canvas.addEventListener('mousemove', function(e) {
         // TODO: Generalize for non-fullscreen.
         //var rect = canvas.getBoundingClientRect();
         var rect = {left: 0, top: 0};
         mouse_x = Math.floor(
-          (e.clientX - rect.left - viewport_x) * canvas.width / viewport_w);
+          (e.clientX - rect.left - viewport_x) * display.width / viewport_w);
         mouse_y = Math.floor(
-          (e.clientY - rect.top - viewport_y) * canvas.height / viewport_h);
+          (e.clientY - rect.top - viewport_y) * display.height / viewport_h);
       }, false);
-      real_canvas.addEventListener('mousedown', function(e) {
+      canvas.addEventListener('mousedown', function(e) {
         mouse_buttons = 1;
       }, false);
-      real_canvas.addEventListener('mouseup', function(e) {
+      canvas.addEventListener('mouseup', function(e) {
         mouse_buttons = 0;
       }, false);
       // TODO: Implement Mouse Wheel!
@@ -1852,6 +2158,7 @@
     function Run() {
       for (;;) {
         for (var i = 0; i < 100000; ++i) {
+        //for (var i = 0; i < 1; ++i) {
           ops[ip++]();
           if (yielding) {
             yielding = 0;
