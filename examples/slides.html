@@ -19,7 +19,7 @@ limitations under the License.
 
 Slide:
   CLS
-  COLOR &hffff00
+  COLOR 14
 Row:
   READ a$
   IF a$="---" THEN GOTO Wait
@@ -27,7 +27,7 @@ Row:
     RESTORE : GOTO Slide
   END IF
   PRINT a$
-  COLOR &hffffff
+  COLOR 15
   GOTO Row
 Wait:
   IF INKEY$="" THEN GOTO Wait

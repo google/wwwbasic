@@ -15,6 +15,9 @@
 'use strict';
 
 (function() {
+  var BLACK = 0xff000000;
+  var WHITE = 0xffffffff;
+
   var CHARSET =
     '\u0020\u263a\u263b\u2665\u2666\u2663\u2660\u2022' +
     '\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c' +
@@ -81,6 +84,7 @@
   function Interpret(code, canvas) {
     // Display Info (in browser only).
     var screen_mode = 0;
+    var screen_bpp = 4;
     var text_width = 80;
     var text_height = 60;
     var font_height = 16;
@@ -110,7 +114,8 @@
       var sctx = scale_canvas.getContext('2d', { alpha: false});
       font_data = CreateFont(sctx, font_height);
     }
-    SetupDisplay(640, 480, 1.2, 8);
+
+    Screen(0);
 
     var debugging_mode = typeof debug == 'boolean' && debug;
     // Parsing and Run State.
@@ -121,7 +126,6 @@
     var var_count = 0;
     var var_decls = '';
     var vars_getput = {};
-    var getput_images = {};
     var rstack = [];
     var data = [];
     var data_pos = 0;
@@ -156,15 +160,15 @@
     var delay = 0;
 
     // Drawing and Console State
-    var fg_color = 0xffffff;
-    var bg_color = 0;
-    var ctx_color = 0;
-    var ctx_raw_color = 0xff000000;
     var color_map;
+    var reverse_color_map;
+    var fg_color = WHITE;
+    var bg_color = BLACK;
     var text_x = 0;
     var text_y = 0;
     var pen_x = 0;
     var pen_y = 0;
+    var pen_color = WHITE;
 
     var toklist = [
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
@@ -824,35 +828,41 @@
       return 0;
     }
 
+    function RGB(r, g, b) {
+      return BLACK | r | (g << 8) | (b << 16);
+    }
+
     function Screen(mode) {
       // TODO: Handle color right in CGA, EGA, VGA modes.
+      var L = 0x55, M = 0xAA, H = 0xFF;
+      var monochrome = [BLACK, WHITE];
       var rgba = [
-        0x000000, 0x0000AA, 0x00AA00, 0x00AAAA,
-        0xAA0000, 0xAA00AA, 0xAA5500, 0xAAAAAA,
-        0x555555, 0x5555FF, 0x55FF55, 0x55FFFF,
-        0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF,
+        RGB(0, 0, 0), RGB(0, 0, M), RGB(0, M, 0), RGB(0, M, M),
+        RGB(M, 0, 0), RGB(M, 0, M), RGB(M, L, 0), RGB(M, M, M),
+        RGB(L, L, L), RGB(L, L, H), RGB(L, H, L), RGB(L, H, H),
+        RGB(H, L, L), RGB(H, L, H), RGB(H, H, L), RGB(H, H, H),
       ];
       var screen1 = [
-        0x000000, 0x00AAAA, 0xAA00AA, 0xAAAAAA,
+        BLACK, RGB(0, M, M), RGB(M, 0, M), RGB(M, M, M),
       ];
       var modes = {
-        0: [640, 200, 1.2, 8, rgba],
-        1: [320, 200, 1.2, 8, screen1],
-        2: [640, 200, 1.2, 8, [0x000000, 0xFFFFFF]],
-        7: [320, 200, 1.2, 8, undefined],
-        8: [640, 200, 1.2, 8, undefined],
-        9: [640, 350, 480 / 350, 14, undefined],
-        11: [640, 480, 1, 16, undefined],
-        12: [640, 380, 1, 16, undefined],
-        13: [320, 200, 1.2, 8, undefined],
-        14: [320, 240, 1, 16, undefined],
-        15: [400, 300, 1, 16, undefined],
-        16: [512, 384, 1, 16, undefined],
-        17: [640, 400, 1, 16, undefined],
-        18: [640, 480, 1, 16, undefined],
-        19: [800, 600, 1, 16, undefined],
-        20: [1024, 768, 1, 16, undefined],
-        21: [1280, 1024, 1, 16, undefined],
+        0: [640, 200, 2.4, 8, rgba, 4],
+        1: [320, 200, 1.2, 8, screen1, 2],
+        2: [640, 200, 2.4, 8, monochrome, 1],
+        7: [320, 200, 1.2, 8, rgba, 4],
+        8: [640, 200, 2.4, 8, rgba, 4],
+        9: [640, 350, 480 / 350, 14, rgba, 4],
+        11: [640, 480, 1, 16, monochrome, 2],
+        12: [640, 480, 1, 16, rgba, 4],
+        13: [320, 200, 1.2, 8, undefined, 24],
+        14: [320, 240, 1, 16, undefined, 24],
+        15: [400, 300, 1, 16, undefined, 24],
+        16: [512, 384, 1, 16, undefined, 24],
+        17: [640, 400, 1.2, 16, undefined, 24],
+        18: [640, 480, 1, 16, undefined, 24],
+        19: [800, 600, 1, 16, undefined, 24],
+        20: [1024, 768, 1, 16, undefined, 24],
+        21: [1280, 1024, 1, 16, undefined, 24],
       };
       var m = modes[mode];
       if (m === undefined) {
@@ -860,6 +870,20 @@
       }
       SetupDisplay(m[0], m[1], m[2], m[3]);
       color_map = m[4];
+      screen_bpp = m[5];
+      reverse_color_map = {};
+      if (color_map !== undefined) {
+        for (var i = 0; i < color_map.length; ++i) {
+          reverse_color_map[color_map[i]] = i;
+        }
+        fg_color = color_map[color_map.length - 1];
+        bg_color = color_map[0];
+        pen_color = fg_color;
+      } else {
+        fg_color = WHITE;
+        bg_color = BLACK;
+        pen_color = WHITE;
+      }
       screen_mode = mode;
       pen_x = display.width / 2;
       pen_y = display.height / 2;
@@ -889,15 +913,8 @@
         text_y++;
         return;
       }
-      // Only text mode supports background.
-      if (screen_mode > 0) {
-        WithColor(0);
-      } else {
-        WithColor(bg_color);
-      }
-      var bg = ctx_raw_color;
-      WithColor(fg_color);
-      var fg = ctx_raw_color;
+      var fg = fg_color;
+      var bg = bg_color;
       var chpos = ch.charCodeAt(0) * font_height * 8;
       for (var y = 0; y < font_height; ++y) {
         var pos = text_x * 8 + (y + text_y * font_height) * display.width;
@@ -1007,24 +1024,37 @@
       Print(items);
     }
 
-    function WithColor(c) {
-      if (c === ctx_color) {
-        return;
-      }
+    function ColorFlip(c) {
+      return BLACK |
+        ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) | (c & 0x00ff00);
+    }
+
+    function FixupColor(c) {
+      c = c | 0;
       if (c === undefined) {
-        c = fg_color;
+        return pen_color;
       }
       if (color_map !== undefined) {
-        c = color_map[Math.min(c, color_map.length - 1)];
+        return color_map[c] || BLACK;
+      } else {
+        return ColorFlip(c);
       }
-      ctx_color = c;
-      ctx_raw_color = ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) |
-        (c & 0x00ff00) | 0xff000000;
+    }
+
+    function WithColor(c) {
+      if (c === pen_color) {
+        return;
+      }
+      pen_color = FixupColor(c);
     }
 
     function Color(fg, bg) {
-      fg_color = fg;
-      bg_color = bg;
+      fg_color = FixupColor(fg);
+      if (screen_mode > 0) {
+        bg_color = 0;
+      } else {
+        bg_color = FixupColor(bg);
+      }
     }
 
     function Locate(x, y) {
@@ -1081,29 +1111,29 @@
       WithColor(c);
       if (fill == 0) {
         // Should be line.
-        RawLine(x1, y1, x2, y2, ctx_raw_color);
+        RawLine(x1, y1, x2, y2, pen_color);
       } else if (fill == 1) {
-        Box(x1, y1, x2, y1, ctx_raw_color);
-        Box(x1, y2, x2, y2, ctx_raw_color);
-        Box(x1, y1, x1, y2, ctx_raw_color);
-        Box(x2, y1, x2, y2, ctx_raw_color);
+        Box(x1, y1, x2, y1, pen_color);
+        Box(x1, y2, x2, y2, pen_color);
+        Box(x1, y1, x1, y2, pen_color);
+        Box(x2, y1, x2, y2, pen_color);
       } else {
-        Box(x1, y1, x2, y2, ctx_raw_color);
+        Box(x1, y1, x2, y2, pen_color);
       }
     }
     var last = 0;
 
     function Cls() {
-      Box(0, 0, display.width, display.height, 0xff000000);
+      Box(0, 0, display.width, display.height, BLACK);
       text_x = 0;
       text_y = 0;
     }
 
     function Pset(x, y, c) {
-      if (c !== ctx_color) {
+      if (c !== pen_color) {
         WithColor(c);
       }
-      display_data[x + y * display.width] = ctx_raw_color;
+      display_data[x + y * display.width] = pen_color;
       pen_x = x;
       pen_y = y;
     }
@@ -1114,38 +1144,44 @@
       if (fill) {
         for (var i = -r; i <= r; ++i) {
           var dx = Math.sqrt(r * r - i * i);
-          Box(x - dx, y + i, x + dx, y + i, ctx_raw_color);
+          Box(x - dx, y + i, x + dx, y + i, pen_color);
         }
       } else {
         for (var i = -r; i <= r; ++i) {
           var dx = Math.sqrt(r * r - i * i);
-          Box(x - dx, y + i, x - dx, y + i, ctx_raw_color);
-          Box(x + dx, y + i, x + dx, y + i, ctx_raw_color);
+          Box(x - dx, y + i, x - dx, y + i, pen_color);
+          Box(x + dx, y + i, x + dx, y + i, pen_color);
         }
       }
     }
 
     function GetImage(x1, y1, x2, y2, buffer) {
       var img = ctx.getImageData(x1, y1, x2 + 1 - x1, y2 + 1 - y1);
-      getput_images[buffer] = img;
+      var src = new Uint32Array(img.data.buffer);
+      var d16 = new Uint16Array(buffer.buffer);
+      d16[0] = img.width;
+      d16[1] = img.height;
+      var d = new Uint8Array(buffer.buffer);
+      if (screen_bpp > 8) {
+        var src8 = new Uint8Array(img.data.buffer);
+        for (var i = 0; i < src.length; i++) {
+          d[i + 4] = src8[i];
+        }
+      } else {
+        var pos = 4;
+        var shift = 0;
+        var v = 0;
+        for (var i = 0; i < src.length; i++) {
+          v |= ((reverse_color_map[src[i]] | 0) << shift);
+          shift += screen_bpp;
+          if (shift == 8) {
+            d[pos++] = v;
+          }
+        }
+      }
     }
 
     function PutImage(x, y, buffer, mode) {
-      var img = getput_images[buffer];
-      if (mode == 'preset') {
-        var img2 = new ImageData(
-          new Uint8ClampedArray(img.data.length), img.width, img.height);
-        var data = new Uint32Array(img.data.buffer);
-        var data2 = new Uint32Array(img2.data.buffer);
-        for (var i = 0; i < data.length; ++i) {
-          data2[i] = 0xaaaaaa - data[i];
-        }
-        ctx.putImageData(img2, x, y);
-        return;
-      }
-      if (img) {
-        ctx.putImageData(img, x, y);
-      }
     }
 
     var draw_state = {
@@ -1238,18 +1274,10 @@
     }
 
     function Paint(x, y, color, border) {
-      color = color_map[color];
-      border = color_map[border];
-      if (color === undefined) {
-        color = color_map[color_map.length - 1];
-      }
-      if (border === undefined) {
-        border = color;
-      }
-      color = ((color & 0xff0000) >> 16) | ((color & 0xff) << 16) |
-        (color & 0x00ff00);
-      border = ((border & 0xff0000) >> 16) | ((border & 0xff) << 16) |
-        (border & 0x00ff00);
+      border = FixupColor(border) & 0xffffff;
+      WithColor(color);
+      color = pen_color;
+      var fcolor = color & 0xffffff;
       var data = display_data;
       var pending = [];
       pending.push([Math.floor(x), Math.floor(y)]);
@@ -1260,8 +1288,8 @@
           continue;
         }
         var pos = p[0] + p[1] * display.width;
-        // TODO: Fix
-        if ((data[pos] & 0xffffff) == border || (data[pos] & 0xffffff) != 0) {
+        if ((data[pos] & 0xffffff) == border ||
+            (data[pos] & 0xffffff) == fcolor) {
           continue;
         }
         data[pos] = color;
@@ -1790,7 +1818,7 @@
         Next();
         var v = ImplicitDimGetPut(name);
         curop += 'GetImage(' + x1 + ', ' + y1 + ', ' +
-          x2 + ', ' +  y2 + ', "' + name + '");\n';
+          x2 + ', ' +  y2 + ', ' + v + ');\n';
       } else if (tok == 'put') {
         Skip('put');
         Skip('(');
@@ -1814,7 +1842,7 @@
           }
         }
         curop += 'PutImage(' + x + ', ' + y + ', ' +
-          '"' + name + '", "' + mode + '");\n';
+          v + ', "' + mode + '");\n';
       } else if (tok == 'screen') {
         Skip('screen');
         var ret = 'Screen(';
@@ -2091,17 +2119,17 @@
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
       var raspect = canvas.width / canvas.height;
-      var aspect = display.width / display.height;
+      var aspect = display.width / (display.height * screen_aspect);
       if (raspect > aspect) {
         viewport_w = Math.floor(
-          display.width * canvas.height / display.height);
+          display.width * canvas.height / (display.height * screen_aspect));
         viewport_h = canvas.height;
         viewport_x = Math.floor((canvas.width - viewport_w) / 2);
         viewport_y = 0;
       } else {
         viewport_w = canvas.width;
         viewport_h = Math.floor(
-          display.height * canvas.width / display.width);
+          (display.height * screen_aspect) * canvas.width / display.width);
         viewport_x = 0;
         viewport_y = Math.floor((canvas.height - viewport_h) / 2);
       }
@@ -2156,9 +2184,14 @@
     }
 
     function Run() {
+      var speed = 100000;
       for (;;) {
-        for (var i = 0; i < 100000; ++i) {
-        //for (var i = 0; i < 1; ++i) {
+        if (screen_mode > 0 && screen_mode <= 2) {
+          speed = 1;
+        } else {
+          speed = 100000;
+        }
+        for (var i = 0; i < speed; ++i) {
           ops[ip++]();
           if (yielding) {
             yielding = 0;
@@ -2183,7 +2216,7 @@
     } catch (e) {
       if (canvas) {
         Locate(1, 1);
-        Color(0xffffff);
+        Color(WHITE);
         Print([e.toString(), ';']);
       } else {
         console.error(e.toString());
