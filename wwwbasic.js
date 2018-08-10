@@ -832,6 +832,9 @@
     }
 
     function Screen(mode) {
+      if (!canvas) {
+        return;
+      }
       // TODO: Handle color right in CGA, EGA, VGA modes.
       var L = 0x55, M = 0xAA, H = 0xFF;
       var monochrome = [BLACK, WHITE];
