@@ -168,7 +168,6 @@
     var text_y = 0;
     var pen_x = 0;
     var pen_y = 0;
-    var pen_color = WHITE;
 
     var toklist = [
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
@@ -878,11 +877,9 @@
         }
         fg_color = color_map[color_map.length - 1];
         bg_color = color_map[0];
-        pen_color = fg_color;
       } else {
         fg_color = WHITE;
         bg_color = BLACK;
-        pen_color = WHITE;
       }
       screen_mode = mode;
       pen_x = display.width / 2;
@@ -1030,10 +1027,14 @@
     }
 
     function FixupColor(c) {
-      c = c | 0;
       if (c === undefined) {
-        return pen_color;
+        if (color_map) {
+          return color_map[color_map.length - 1];
+        } else {
+          return WHITE;
+        }
       }
+      c = c | 0;
       if (color_map !== undefined) {
         return color_map[c] || BLACK;
       } else {
@@ -1041,15 +1042,12 @@
       }
     }
 
-    function WithColor(c) {
-      if (c === pen_color) {
-        return;
-      }
-      pen_color = FixupColor(c);
-    }
-
     function Color(fg, bg) {
-      fg_color = FixupColor(fg);
+      if (screen_mode == 0 || screen_mode > 2) {
+        fg_color = FixupColor(fg);
+      } else {
+        fg_color = FixupColor(undefined);
+      }
       if (screen_mode > 0) {
         bg_color = 0;
       } else {
@@ -1096,19 +1094,41 @@
     }
 
     function RawLine(x1, y1, x2, y2, c) {
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      x2 = x2 | 0;
+      y2 = y2 | 0;
       if (x1 == x2 || y1 == y2) {
         Box(x1, y1, x2, y2, c);
         return;
       }
-      for (var t = 0; t <= 1; t += 0.001) {
-        var x = x1 + Math.floor(t * (x2 - x1));
-        var y = y1 + Math.floor(t * (y2 - y1));
-        Box(x, y, x, y, c);
+      if (Math.abs(x1 - x2) > Math.abs(y1 - y2)) {
+        if (x1 > x2) {
+          var tmp;
+          tmp = x1; x1 = x2; x2 = tmp;
+          tmp = y1; y1 = y2; y2 = tmp;
+        }
+        for (var x = x1; x <= x2; ++x) {
+          var t = (x - x1) / (x2 - x1);
+          var y = y1 + Math.floor(t * (y2 - y1));
+          Box(x, y, x, y, c);
+        }
+      } else {
+        if (y1 > y2) {
+          var tmp;
+          tmp = x1; x1 = x2; x2 = tmp;
+          tmp = y1; y1 = y2; y2 = tmp;
+        }
+        for (var y = y1; y <= y2; ++y) {
+          var t = (y - y1) / (y2 - y1);
+          var x = x1 + Math.floor(t * (x2 - x1));
+          Box(x, y, x, y, c);
+        }
       }
     }
 
     function Line(x1, y1, x2, y2, c, fill) {
-      WithColor(c);
+      var pen_color = FixupColor(c);
       if (fill == 0) {
         // Should be line.
         RawLine(x1, y1, x2, y2, pen_color);
@@ -1130,16 +1150,14 @@
     }
 
     function Pset(x, y, c) {
-      if (c !== pen_color) {
-        WithColor(c);
-      }
+      var pen_color = FixupColor(c);
       display_data[x + y * display.width] = pen_color;
       pen_x = x;
       pen_y = y;
     }
 
     function Circle(x, y, r, c, start, end, aspect, fill) {
-      WithColor(c);
+      var pen_color = FixupColor(c);
       // TODO: Handle aspect.
       if (fill) {
         for (var i = -r; i <= r; ++i) {
@@ -1156,32 +1174,119 @@
     }
 
     function GetImage(x1, y1, x2, y2, buffer) {
-      var img = ctx.getImageData(x1, y1, x2 + 1 - x1, y2 + 1 - y1);
-      var src = new Uint32Array(img.data.buffer);
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      x2 = x2 | 0;
+      y2 = y2 | 0;
       var d16 = new Uint16Array(buffer.buffer);
-      d16[0] = img.width;
-      d16[1] = img.height;
+      if (screen_bpp <= 2) {
+        d16[0] = (x2 - x1 + 1) * screen_bpp;
+      } else {
+        d16[0] = (x2 - x1 + 1);
+      }
+      d16[1] = y2 - y1 + 1;
       var d = new Uint8Array(buffer.buffer);
+      var src = display_data;
       if (screen_bpp > 8) {
-        var src8 = new Uint8Array(img.data.buffer);
-        for (var i = 0; i < src.length; i++) {
-          d[i + 4] = src8[i];
+        var dstpos = 4;
+        for (var y = y1; y <= y2; ++y) {
+          var srcpos = x1 + y * display.width;
+          for (var x = x1; x <= x2; ++x) {
+            var v = src[srcpos++];
+            d[dstpos++] = v;
+            d[dstpos++] = (v >> 8);
+            d[dstpos++] = (v >> 16);
+          }
         }
       } else {
-        var pos = 4;
-        var shift = 0;
+        var dstpos = 4;
+        var shift = 8;
         var v = 0;
-        for (var i = 0; i < src.length; i++) {
-          v |= ((reverse_color_map[src[i]] | 0) << shift);
-          shift += screen_bpp;
-          if (shift == 8) {
-            d[pos++] = v;
+        for (var y = y1; y <= y2; ++y) {
+          var srcpos = x1 + y * display.width;
+          for (var x = x1; x <= x2; ++x) {
+            shift -= screen_bpp;
+            var cc = reverse_color_map[src[srcpos++] | BLACK] | 0;
+            v |= (cc << shift);
+            if (shift == 0) {
+              d[dstpos++] = v;
+              v = 0;
+              shift = 8;
+            }
+          }
+          if (shift != 8) {
+            d[dstpos++] = v;
+            v = 0;
+            shift = 8;
           }
         }
       }
     }
 
-    function PutImage(x, y, buffer, mode) {
+    function PutImage(x1, y1, buffer, mode) {
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      var s16 = new Uint16Array(buffer.buffer);
+      var x2;
+      if (screen_bpp <= 2) {
+        x2 = x1 + (s16[0] / screen_bpp) - 1;
+      } else {
+        x2 = x1 + s16[0] - 1;
+      }
+      var y2 = y1 + s16[1] - 1;
+      var s = new Uint8Array(buffer.buffer);
+      var dst = display_data;
+      if (screen_bpp > 8) {
+        var srcpos = 4;
+        for (var y = y1; y <= y2; ++y) {
+          var dstpos = x1 + y * display.width;
+          for (var x = x1; x <= x2; ++x) {
+            var v = s[srcpos] | (s[srcpos + 1] << 8) | (s[srcpos + 2] << 16);
+            srcpos += 3;
+            if (mode == 'xor') {
+              dst[dstpos++] = (dst[dstpos] ^ v) | BLACK;
+            } else if (mode == 'preset') {
+              dst[dstpos++] = (~v) | BLACK;
+            } else if (mode == 'and') {
+              dst[dstpos++] = (dst[dstpos] & v) | BLACK;
+            } else if (mode == 'or') {
+              dst[dstpos++] = (dst[dstpos] | v) | BLACK;
+            } else {
+              dst[dstpos++] = v | BLACK;
+            }
+          }
+        }
+      } else {
+        var srcpos = 4;
+        var mask = (1 << screen_bpp) - 1;
+        for (var y = y1; y <= y2; ++y) {
+          var dstpos = x1 + y * display.width;
+          var v = 0;
+          var shift = 8;
+          for (var x = x1; x <= x2; ++x) {
+            if (shift == 8) {
+              v = s[srcpos++];
+            }
+            shift -= screen_bpp;
+            var cc = (v >> shift) & mask;
+            var old = reverse_color_map[dst[dstpos] | BLACK] | 0;
+            if (mode == 'xor') {
+              cc ^= old;
+            } else if (mode == 'preset') {
+              cc = cc ^ mask;
+            } else if (mode == 'and') {
+              cc &= old;
+            } else if (mode == 'or') {
+              cc |= old;
+            }
+            var px = color_map[cc] | 0;
+            dst[dstpos++] = px;
+            if (shift == 0) {
+              shift = 8;
+            }
+          }
+        }
+      }
     }
 
     var draw_state = {
@@ -1273,11 +1378,14 @@
       }
     }
 
-    function Paint(x, y, color, border) {
-      border = FixupColor(border) & 0xffffff;
-      WithColor(color);
-      color = pen_color;
-      var fcolor = color & 0xffffff;
+    function Paint(x, y, paint, border) {
+      paint = FixupColor(paint);
+      if (border === undefined) {
+        border = paint;
+      } else {
+        border = FixupColor(border) & 0xffffff;
+      }
+      var fpaint = paint & 0xffffff;
       var data = display_data;
       var pending = [];
       pending.push([Math.floor(x), Math.floor(y)]);
@@ -1289,10 +1397,10 @@
         }
         var pos = p[0] + p[1] * display.width;
         if ((data[pos] & 0xffffff) == border ||
-            (data[pos] & 0xffffff) == fcolor) {
+            (data[pos] & 0xffffff) == fpaint) {
           continue;
         }
-        data[pos] = color;
+        data[pos] = paint;
         pending.push([p[0] - 1, p[1]]);
         pending.push([p[0] + 1, p[1]]);
         pending.push([p[0], p[1] - 1]);
@@ -1779,7 +1887,7 @@
         Skip(',');
         var y2 = Expression();
         Skip(')');
-        var c = 0;
+        var c = 'undefined';
         var fill = 0;
         if (tok == ',') {
           Skip(',');
@@ -1830,7 +1938,7 @@
         var name = tok;
         Next();
         var v = ImplicitDimGetPut(name);
-        var mode = 'pset';
+        var mode = 'xor';
         if (tok == ',') {
           Skip(',');
           if (tok == 'pset' || tok == 'preset' || tok == 'and' ||
