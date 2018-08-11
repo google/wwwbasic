@@ -1584,6 +1584,37 @@
         Skip('return');
         curop += 'ip = rstack.pop();\n';
         NewOp();
+      } else if (tok == 'declare') {
+        Skip('declare');
+        if (tok == 'sub') {
+          Skip('sub');
+          var name = tok;
+          Next();
+          Skip('(');
+          if (tok != ')') {
+            DimVariable(tname);
+            while (tok == ',') {
+              Skip(',');
+              DimVariable(tname);
+            }
+          }
+          Skip(')');
+        } else if (tok == 'function') {
+          Skip('function');
+          var name = tok;
+          Next();
+          Skip('(');
+          if (tok != ')') {
+            DimVariable(tname);
+            while (tok == ',') {
+              Skip(',');
+              DimVariable(tname);
+            }
+          }
+          Skip(')');
+        } else {
+          Throw('Unexpected declaration');
+        }
       } else if (tok == 'const') {
         Skip('const');
         for (;;) {
