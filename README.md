@@ -48,19 +48,19 @@ It can be run with: `./run-tests.sh`.
 ## Examples
 
 * [Circles](https://google.github.io/wwwbasic/examples/circles.html)
-  ( [source](examples/circles.html) )
+  ([source](examples/circles.html))
 * [DONKEY.BAS](https://google.github.io/wwwbasic/examples/donkey.html)
-  ( [source](examples/donkey.html) )
+  ([source](examples/donkey.html))
 * [GET & PUT](https://google.github.io/wwwbasic/examples/getput.html)
-  ( [source](examples/getput.html) )
+  ([source](examples/getput.html))
 * [Hello World](https://google.github.io/wwwbasic/examples/hello_world.html)
-  ( [source](examples/hello_world.html) )
+  ([source](examples/hello_world.html))
 * [Lines](https://google.github.io/wwwbasic/examples/lines.html)
-  ( [source](examples/lines.html) )
+  ([source](examples/lines.html))
 * [Primes](https://google.github.io/wwwbasic/examples/primes.html)
-  ( [source](examples/primes.html) )
+  ([source](examples/primes.html))
 * [Slides](https://google.github.io/wwwbasic/examples/slides.html)
-  ( [source](examples/slides.html) )
+  ([source](examples/slides.html))
 
 ## Source Code Headers
 
