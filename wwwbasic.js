@@ -122,7 +122,11 @@
     var labels = {};
     var data_labels = {};
     var flow = [];
-    var vars = {};
+    var types = {};
+    var subroutines = {};
+    var functions = {};
+    var global_vars = {};
+    var vars = global_vars;
     var allocated = 0;
     var str_count = 0;
     var array_count = 0;
@@ -603,11 +607,22 @@
       } else if (tok == 'integer') {
         Skip('integer');
         return 'Int32Array';
+      } else if (tok == 'long') {
+        Skip('long');
+        return 'Int32Array';
       } else if (tok == 'string') {
         Skip('string');
         return 'Array';
+      } else if (tok == 'any') {
+        Skip('any');
+        return 'Array';
+      } else if (types[tok] !== undefined) {
+        var t = types[tok];
+        Next();
+        // TODO: Implement.
+        return 'Array';
       }
-      Throw('Unexpected type "' + tok + '"');
+      Throw('Undefined type "' + tok + '"');
     }
 
     var TYPE_ARRAY_MAP = {
@@ -695,24 +710,23 @@
       var defaults = [];
       if (tok == '(') {
         Skip('(');
-        var e = Expression();
-        var d = 'dim' + const_count++;
-        var_decls += 'const ' + d + ' = (' + e + ');\n';
-        if (tok == 'to') {
-          Skip('to');
-          var e1 = Expression();
-          var d1 = 'dim' + const_count++;
-          var_decls += 'const ' + d1 + ' = (' + e1 + ');\n';
-          dimensions.push([d, d1]);
-        } else {
-          dimensions.push([option_base, d]);
-        }
-        while (tok == ',') {
-          Skip(',');
+        while (tok != ')') {
           var e = Expression();
           var d = 'dim' + const_count++;
           var_decls += 'const ' + d + ' = (' + e + ');\n';
-          dimensions.push([option_base, d]);
+          if (tok == 'to') {
+            Skip('to');
+            var e1 = Expression();
+            var d1 = 'dim' + const_count++;
+            var_decls += 'const ' + d1 + ' = (' + e1 + ');\n';
+            dimensions.push([d, d1]);
+          } else {
+            dimensions.push([option_base, d]);
+          }
+          if (tok != ',') {
+            break;
+          }
+          Skip(',');
         }
         Skip(')');
         if (tok == '=') {
@@ -782,32 +796,38 @@
         }
       }
       var vname = v.code;
-      if (tok == '(') {
-        Skip('(');
-        var dims = [];
-        var e = Expression();
-        dims.push(e);
-        while (tok == ',') {
-          Skip(',');
+      while (tok == '(' || tok == '.') {
+        if (tok == '(') {
+          Skip('(');
+          var dims = [];
           var e = Expression();
           dims.push(e);
+          while (tok == ',') {
+            Skip(',');
+            var e = Expression();
+            dims.push(e);
+          }
+          Skip(')');
+          vname += '[';
+          for (var i = 0; i < dims.length; ++i) {
+            if (i >= v.dimensions.length) {
+              Throw('Bad array name: ' + name);
+            }
+            vname += '(((' + dims[i] + ')|0)-' + v.dimensions[i][0] + ')';
+            for (var j = 0; j < i; ++j) {
+              vname += '*(' + v.dimensions[j][1] + '-' +
+                v.dimensions[j][0] + ' + 1)';
+            }
+            if (i != dims.length - 1) {
+              vname += '+';
+            }
+          }
+          vname += ']';
+        } else if (tok == '.') {
+          Skip('.');
+          Next();
+          // TODO
         }
-        Skip(')');
-        vname += '[';
-        for (var i = 0; i < dims.length; ++i) {
-          if (i >= v.dimensions.length) {
-            Throw('Bad array name: ' + name);
-          }
-          vname += '(((' + dims[i] + ')|0)-' + v.dimensions[i][0] + ')';
-          for (var j = 0; j < i; ++j) {
-            vname += '*(' + v.dimensions[j][1] + '-' +
-              v.dimensions[j][0] + ' + 1)';
-          }
-          if (i != dims.length - 1) {
-            vname += '+';
-          }
-        }
-        vname += ']';
       }
       return vname;
     }
@@ -1623,6 +1643,8 @@
           Skip('sub');
           var name = tok;
           Next();
+          subroutines[name] = {};
+          vars = {};
           Skip('(');
           if (tok != ')') {
             DimVariable(tname);
@@ -1632,10 +1654,13 @@
             }
           }
           Skip(')');
+          vars = global_vars;
         } else if (tok == 'function') {
           Skip('function');
           var name = tok;
           Next();
+          functions[name] = {};
+          vars = {};
           Skip('(');
           if (tok != ')') {
             DimVariable(tname);
@@ -1645,9 +1670,30 @@
             }
           }
           Skip(')');
+          vars = global_vars;
         } else {
           Throw('Unexpected declaration');
         }
+      } else if (tok == 'type') {
+        vars = {};
+        Skip('type');
+        var type_name = tok;
+        Next();
+        types[type_name] = {};
+        Skip('<EOL>');
+        while (tok != 'end') {
+          while (tok != '<EOL>') {
+            DimVariable(null);
+            while (tok == ',') {
+              Skip(',');
+              DimVariable(null);
+            }
+          }
+          Skip('<EOL>');
+        }
+        Skip('end');
+        Skip('type');
+        vars = global_vars;
       } else if (tok == 'const') {
         Skip('const');
         for (;;) {
@@ -1728,6 +1774,25 @@
         } else {
           Throw('Expected seg');
         }
+      } else if (tok == 'open') {
+        Skip('open');
+        var filename = Expression();
+        Skip('for');
+        if (tok == 'input') {
+          Skip('input');
+        } else if (tok == 'output') {
+          Skip('output');
+        } else {
+          Throw('Expected input/output');
+        }
+        Skip('as');
+        Next();
+        // TODO: Implement.
+      } else if (tok == 'close') {
+        Skip('close');
+        // #n
+        Next();
+        // TODO: Implement.
       } else if (tok == 'poke') {
         Skip('poke');
         var addr = Expression();
@@ -2110,9 +2175,25 @@
         } else {
           curop += 'data_pos = 0;\n';
         }
+      } else if (tok == 'input') {
+        Skip('input');
+        if (tok[0] == '#') {
+          // TODO: Implement.
+          Next();
+          Skip(',');
+        }
+        while (tok != '<EOL>' && tok != ':') {
+          var name = tok;
+          Next();
+          var v = IndexVariable(name);
+          if (tok != ',') {
+            break;
+          }
+          Skip(',');
+        }
       } else if (tok == 'print') {
         Skip('print');
-        if (tok == '<EOL>') {
+        if (tok == '<EOL>' || tok == ':') {
           curop += 'Print([]);\n';
           return;
         }
@@ -2207,6 +2288,16 @@
         }
       } else if (tok == '') {
         return;
+      } else if (subroutines[tok] !== undefined) {
+        var sub = subroutines[tok];
+        Next();
+        while (tok != '<EOL>' && tok != ':') {
+          var e = Expression();
+          if (tok != ',') {
+            break;
+          }
+          Skip(',');
+        }
       } else {
         var name = tok;
         Next();
