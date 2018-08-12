@@ -18,6 +18,7 @@
   var BLACK = 0xff000000;
   var WHITE = 0xffffffff;
 
+
   var CHARSET =
     '\u0020\u263a\u263b\u2665\u2666\u2663\u2660\u2022' +
     '\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c' +
@@ -52,11 +53,2086 @@
     '\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248' +
     '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u0020';
 
+  var FONT8 =
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '  XXX   ' +
+    ' X   X  ' +
+    'X X X X ' +
+    'X     X ' +
+    'X XXX X ' +
+    ' X   X  ' +
+    '  XXX   ' +
+    '        ' +
+
+    '  XXX   ' +
+    ' XXXXX  ' +
+    'XX X XX ' +
+    'XXXXXXX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '  XXX   ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '   XX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    '        ' +
+    '   XX   ' +
+    '        ' +
+
+    ' XX XX  ' +
+    ' XX XX  ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    ' XX XX  ' +
+    ' XX XX  ' +
+    'XXXXXXX ' +
+    ' XX XX  ' +
+    'XXXXXXX ' +
+    ' XX XX  ' +
+    ' XX XX  ' +
+    '        ' +
+
+    ' XX XX  ' +
+    'XXXXXXX ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '     XX ' +
+    'XXXXXXX ' +
+    ' XX XX  ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    '   XX   ' +
+    '   XX   ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '   XX   ' +
+    '  XX    ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    '  XX    ' +
+    '   XX   ' +
+
+    'XX      ' +
+    ' XX     ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XX    ' +
+    ' XX     ' +
+    'XX      ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '  XX    ' +
+    '  XX    ' +
+    ' XXXXX  ' +
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '   XX   ' +
+    '   XX   ' +
+    '  XX    ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '   XX   ' +
+    '   XX   ' +
+
+    '        ' +
+    '     XX ' +
+    '    XX  ' +
+    '   XX   ' +
+    '  XX    ' +
+    ' XX     ' +
+    'XX      ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX  XXX ' +
+    'XX XXXX ' +
+    'XXXX XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '   XX   ' +
+    '  XXX   ' +
+    ' XXXX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    '     XX ' +
+    '   XXX  ' +
+    ' XXX    ' +
+    'XX      ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    '     XX ' +
+    '  XXXX  ' +
+    '     XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XX  XX  ' +
+    'XX  XX  ' +
+    'XX  XX  ' +
+    'XXXXXXX ' +
+    '    XX  ' +
+    '    XX  ' +
+    '    XX  ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '     XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX      ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    '     XX ' +
+    '    XX  ' +
+    '   XX   ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '     XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '   XX   ' +
+    '   XX   ' +
+    '        ' +
+    '   XX   ' +
+    '   XX   ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '   XX   ' +
+    '   XX   ' +
+    '        ' +
+    '   XX   ' +
+    '   XX   ' +
+    '  XX    ' +
+    '        ' +
+
+    '        ' +
+    '    XXX ' +
+    '  XXX   ' +
+    'XXX     ' +
+    '  XXX   ' +
+    '    XXX ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    'XXXXXXX ' +
+    '        ' +
+    'XXXXXXX ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    'XXX     ' +
+    '  XXX   ' +
+    '    XXX ' +
+    '  XXX   ' +
+    'XXX     ' +
+    '        ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    '  XXX   ' +
+    ' XX XX  ' +
+    'XX   XX ' +
+    'XXXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXXXX  ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXXXX  ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXX   ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXX   ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX      ' +
+    'XX XXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    '     XX ' +
+    '     XX ' +
+    '     XX ' +
+    '     XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX  XX  ' +
+    'XX XX   ' +
+    'XXXX    ' +
+    'XX XX   ' +
+    'XX  XX  ' +
+    'XX   XX ' +
+    '        ' +
+
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XXX XXX ' +
+    'XXXXXXX ' +
+    'XX X XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XXX  XX ' +
+    'XXXX XX ' +
+    'XXXXXXX ' +
+    'XX XXXX ' +
+    'XX  XXX ' +
+    'XX   XX ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXXXX  ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXX XX ' +
+    'XX XXX  ' +
+    ' XXX XX ' +
+    '        ' +
+
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '     XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XX XX  ' +
+    '  XXX   ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX X XX ' +
+    'XX X XX ' +
+    ' XX XX  ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XX XX  ' +
+    '  XXX   ' +
+    ' XX XX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XX XX  ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '  XXX   ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    '     XX ' +
+    '    XX  ' +
+    '  XXX   ' +
+    ' XX     ' +
+    'XX      ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    'XX      ' +
+    ' XX     ' +
+    '  XX    ' +
+    '   XX   ' +
+    '    XX  ' +
+    '     XX ' +
+    '        ' +
+
+    ' XXXXX  ' +
+    '    XX  ' +
+    '    XX  ' +
+    '    XX  ' +
+    '    XX  ' +
+    '    XX  ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '   XX   ' +
+    '  XXXX  ' +
+    ' XX  XX ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXXX ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XXXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '     XX ' +
+    '     XX ' +
+    '     XX ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    ' XXXX   ' +
+    'XX  XX  ' +
+    'XXXXXX  ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '  XXXX  ' +
+    ' XX  XX ' +
+    '  XX    ' +
+    'XXXXXXX ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '     XX ' +
+    ' XXXXX  ' +
+
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+    ' XXXX   ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XXXX  ' +
+    '        ' +
+
+    '   XX   ' +
+    '   XX   ' +
+    '        ' +
+    ' XXXXX  ' +
+    '   XX   ' +
+    '    XX  ' +
+    '    XX  ' +
+    '  XXX   ' +
+
+    'XX      ' +
+    'XX      ' +
+    'XX  XX  ' +
+    'XX XX   ' +
+    'XXXX    ' +
+    'XX  XX  ' +
+    'XX   XX ' +
+    '        ' +
+
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    ' XX     ' +
+    '  XXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXX  ' +
+    'XX X XX ' +
+    'XX X XX ' +
+    'XX X XX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XXXXXX  ' +
+    'XX      ' +
+    'XX      ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX  XX  ' +
+    ' XXXXX  ' +
+    '   XX   ' +
+    '    XXX ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX XXX  ' +
+    'XXXX XX ' +
+    'XX      ' +
+    'XX      ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '     XX ' +
+    'XXXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '  XX    ' +
+    '  XX    ' +
+    'XXXXXXX ' +
+    '  XX    ' +
+    '  XX XX ' +
+    '   XXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XX XX  ' +
+    '  XXX   ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX X XX ' +
+    'XX X XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    ' XX XX  ' +
+    '  XXX   ' +
+    ' XX XX  ' +
+    'XX   XX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '     XX ' +
+    ' XXXXX  ' +
+
+    '        ' +
+    '        ' +
+    'XXXXXXX ' +
+    '    XX  ' +
+    '  XXX   ' +
+    ' XX     ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    'XX   XX ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    ' XXXX   ' +
+    'XX  XX  ' +
+    'XXXXXX  ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    ' XXXX   ' +
+    'XX  XX  ' +
+    'XXXXXX  ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    ' XXXX   ' +
+    'XX  XX  ' +
+    'XXXXXX  ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    ' XXXX   ' +
+    'XX  XX  ' +
+    'XXXXXX  ' +
+    'XX      ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+    ' XXXX   ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XXXX  ' +
+    '        ' +
+
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+    ' XXXX   ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XXXX  ' +
+    '        ' +
+
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+    ' XXXX   ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XXXX  ' +
+    '        ' +
+
+    '  XXX   ' +
+    ' XX XX  ' +
+    'XX   XX ' +
+    'XXXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    '  XXX   ' +
+    ' XX XX  ' +
+    'XX   XX ' +
+    'XXXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXX   ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXX   ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    'XXXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXX   ' +
+    'XX      ' +
+    'XX      ' +
+    'XXXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '     XX ' +
+    ' XXXXX  ' +
+
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    'XX      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '  XX    ' +
+    '  XX    ' +
+    '        ' +
+    ' XXXX   ' +
+    '  XX    ' +
+    '  XX    ' +
+    '  XXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXX  ' +
+    'XX   XX ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '   XX   ' +
+    '        ' +
+    '   XX   ' +
+    ' XXX    ' +
+    'XX      ' +
+    'XX   XX ' +
+    ' XXXXX  ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXXX ' +
+    'XX      ' +
+    'XX      ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXXX ' +
+    '     XX ' +
+    '     XX ' +
+    '        ' +
+    '        ' +
+
+    'X       ' +
+    'X  X    ' +
+    '  X     ' +
+    ' X XX   ' +
+    '     X  ' +
+    '    X   ' +
+    '   XXXX ' +
+    '        ' +
+
+    'X       ' +
+    'X  X    ' +
+    '  X     ' +
+    ' X XX   ' +
+    '     X  ' +
+    '    X   ' +
+    '   XXXX ' +
+    '        ' +
+
+    '   XX   ' +
+    '        ' +
+    '   XX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    '   XX   ' +
+    '        ' +
+
+    '        ' +
+    '  XX XX ' +
+    ' XX XX  ' +
+    'XX XX   ' +
+    ' XX XX  ' +
+    '  XX XX ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    'XX XX   ' +
+    ' XX XX  ' +
+    '  XX XX ' +
+    ' XX XX  ' +
+    'XX XX   ' +
+    '        ' +
+    '        ' +
+
+    'X   X   ' +
+    '  X   X ' +
+    'X   X   ' +
+    '  X   X ' +
+    'X   X   ' +
+    '  X   X ' +
+    'X   X   ' +
+    '  X   X ' +
+
+    ' X X X X' +
+    'X X X X ' +
+    ' X X X X' +
+    'X X X X ' +
+    ' X X X X' +
+    'X X X X ' +
+    ' X X X X' +
+    'X X X X ' +
+
+    ' XXX XXX' +
+    'XX XXX X' +
+    ' XXX XXX' +
+    'XX XXX X' +
+    ' XXX XXX' +
+    'XX XXX X' +
+    ' XXX XXX' +
+    'XX XXX X' +
+
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    'XXXX    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '   X    ' +
+    '   X    ' +
+    'XXXX    ' +
+    '   X    ' +
+    'XXXX    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    'XXX X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXX   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '        ' +
+    '        ' +
+    'XXXX    ' +
+    '   X    ' +
+    'XXXX    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    'XXX X   ' +
+    '    X   ' +
+    'XXX X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '        ' +
+    '        ' +
+    'XXXXX   ' +
+    '    X   ' +
+    'XXX X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    'XXX X   ' +
+    '    X   ' +
+    'XXXXX   ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    'XXXXX   ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '   X    ' +
+    '   X    ' +
+    'XXXX    ' +
+    '   X    ' +
+    'XXXX    ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXX    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   XXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    'XXXXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   XXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    'XXXXXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   XXXXX' +
+    '   X    ' +
+    '   XXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X XXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X XXXX' +
+    '  X     ' +
+    '  XXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '  XXXXXX' +
+    '  X     ' +
+    '  X XXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    'XXX XXXX' +
+    '        ' +
+    'XXXXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    'XXXXXXXX' +
+    '        ' +
+    'XXX XXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X XXXX' +
+    '  X     ' +
+    '  X XXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '        ' +
+    '        ' +
+    'XXXXXXXX' +
+    '        ' +
+    'XXXXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    'XXX XXXX' +
+    '        ' +
+    'XXX XXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '   X    ' +
+    '   X    ' +
+    'XXXXXXXX' +
+    '        ' +
+    'XXXXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    'XXXXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    'XXXXXXXX' +
+    '        ' +
+    'XXXXXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  XXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   XXXXX' +
+    '   X    ' +
+    '   XXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '   XXXXX' +
+    '   X    ' +
+    '   XXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '  XXXXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    'XXXXXXXX' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+    '  X X   ' +
+
+    '   X    ' +
+    '   X    ' +
+    'XXXXXXXX' +
+    '        ' +
+    'XXXXXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    'XXXX    ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '   XXXXX' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+    '   X    ' +
+
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+
+    'XXXX    ' +
+    'XXXX    ' +
+    'XXXX    ' +
+    'XXXX    ' +
+    'XXXX    ' +
+    'XXXX    ' +
+    'XXXX    ' +
+    'XXXX    ' +
+
+    '    XXXX' +
+    '    XXXX' +
+    '    XXXX' +
+    '    XXXX' +
+    '    XXXX' +
+    '    XXXX' +
+    '    XXXX' +
+    '    XXXX' +
+
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    'XXXXXXXX' +
+    '        ' +
+    '        ' +
+    '        ' +
+    '        ' +
+
+    '        ' +
+    ' XX   X ' +
+    'X  X X  ' +
+    'X   X   ' +
+    'X  X X  ' +
+    ' XX   X ' +
+    '        ' +
+    '        ' +
+
+    '  XXX   ' +
+    ' X   X  ' +
+    ' X  X   ' +
+    ' XXXXX  ' +
+    ' X    X ' +
+    ' X    X ' +
+    'X XXXX  ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    ' X      ' +
+    ' X      ' +
+    ' X      ' +
+    ' X      ' +
+    ' X      ' +
+    ' X      ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    '  X  X  ' +
+    '  X  X  ' +
+    '  X  X  ' +
+    '        ' +
+
+    ' XXXXXX ' +
+    ' X      ' +
+    '  X     ' +
+    '   X    ' +
+    '  X     ' +
+    ' X      ' +
+    ' XXXXXX ' +
+    '        ' +
+
+    '        ' +
+    '        ' +
+    '        ' +
+    ' XXXXXX ' +
+    'X    X  ' +
+    'X    X  ' +
+    ' XXXX   ' +
+    '        ' +
+
+    '';
+
+  var START = '';
+
   function NextChar(ch) {
     return String.fromCharCode(ch.charCodeAt(0) + 1);
   }
 
-  function CreateFont(ctx, height) {
+  function RenderFont(ctx, height) {
     var data = new Uint8Array(256 * 8 * height);
     var pos = 0;
     for (var i = 0; i < 256; ++i) {
@@ -79,6 +2155,31 @@
       }
     }
     return data;
+  }
+
+  function LoadFont(s, dup) {
+    var data = new Uint8Array(s.length * dup);
+    var pos = 0;
+    for (var i = 0; i < 256; ++i) {
+      for(var y = 0; y < 8; ++y) {
+        for (var d = 0; d < dup; ++d) {
+          for(var x = 0; x < 8; ++x) {
+            data[pos++] = s[x + y * 8 + i * 64] != ' ' ? 255 : 0;
+          }
+        }
+      }
+    }
+    return data;
+  }
+
+  function CreateFont(ctx, height) {
+    if (height == 8) {
+      return LoadFont(FONT8, 1);
+    } else if (height == 16) {
+      return LoadFont(FONT8, 2);
+    } else {
+      return RenderFont(ctx, height);
+    }
   }
 
   function Interpret(code, canvas) {
@@ -840,7 +2941,7 @@
         console.log('BASIC END');
       } else {
         if (output_buffer != '') {
-          PutCh('\n');
+          PutCh(null);
         }
       }
     }
@@ -954,7 +3055,7 @@
 
     function PutCh(ch) {
       if (!canvas) {
-        if (ch == '\n') {
+        if (ch == null) {
           console.log(output_buffer);
           output_buffer = '';
         } else {
@@ -962,7 +3063,7 @@
         }
         return;
       }
-      if (ch == '\n') {
+      if (ch == null) {
         text_x = 0;
         text_y++;
         return;
@@ -985,7 +3086,7 @@
 
     function Print(items) {
       if (items.length == 0) {
-        PutCh('\n');
+        PutCh(null);
         return;
       }
       for (var i = 0; i < items.length; i += 2) {
@@ -1004,7 +3105,7 @@
           PutCh(' ');
         }
         if (items[i+1] != ';' && items[i+1] != ',') {
-          PutCh('\n');
+          PutCh(null);
         }
       }
     }
