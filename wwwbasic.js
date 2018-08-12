@@ -454,6 +454,7 @@
             case 'cos': return 'Math.cos(' + e + ')';
             case 'sin': return 'Math.sin(' + e + ')';
             case 'tan': return 'Math.tan(' + e + ')';
+            case 'atn': return 'Math.atan(' + e + ')';
             case 'exp': return 'Math.exp(' + e + ')';
             case 'str$': return '(' + e + ').toString()';
             case 'peek': return 'Peek(' + e + ').toString()';
@@ -1561,7 +1562,14 @@
         flow.push(['do', ops.length]);
       } else if (tok == 'loop') {
         Skip('loop');
-        Skip('while');
+        if (tok == 'while') {
+          Skip('while');
+        } else if (tok == 'until') {
+          Skip('until');
+          // TODO
+        } else {
+          Throw('Expected while/until');
+        }
         var e = Expression();
         var f = flow.pop();
         if (f[0] != 'do') {
@@ -1771,6 +1779,23 @@
             var e = Expression();
             // TODO: Do something useful with it?
           }
+        } else if (tok.substr(0, 2) == 'fn') {
+          functions[tok] = {};
+          Next();
+          vars = {};
+          Skip('(');
+          if (tok != ')') {
+            DimVariable(tname);
+            while (tok == ',') {
+              Skip(',');
+              DimVariable(tname);
+            }
+          }
+          Skip(')');
+          Skip('=');
+          var e = Expression();
+          // TODO: Implement.
+          vars = global_vars;
         } else {
           Throw('Expected seg');
         }
