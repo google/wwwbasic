@@ -18,2116 +18,6 @@
   var BLACK = 0xff000000;
   var WHITE = 0xffffffff;
 
-
-  var CHARSET =
-    '\u0020\u263a\u263b\u2665\u2666\u2663\u2660\u2022' +
-    '\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c' +
-    '\u25ba\u25c4\u2195\u203c\u00b6\u00a7\u25ac\u21a8' +
-    '\u2191\u2193\u2192\u2190\u221f\u2194\u25b2\u25bc' +
-    '\u0020\u0021\u0022\u0023\u0024\u0025\u0026\u0027' +
-    '\u0028\u0029\u002a\u002b\u002c\u002d\u002e\u002f' +
-    '\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037' +
-    '\u0038\u0039\u003a\u003b\u003c\u003d\u003e\u003f' +
-    '\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047' +
-    '\u0048\u0049\u004a\u004b\u004c\u004d\u004e\u004f' +
-    '\u0050\u0051\u0052\u0053\u0054\u0055\u0056\u0057' +
-    '\u0058\u0059\u005a\u005b\u005c\u005d\u005e\u005f' +
-    '\u0060\u0061\u0062\u0063\u0064\u0065\u0066\u0067' +
-    '\u0068\u0069\u006a\u006b\u006c\u006d\u006e\u006f' +
-    '\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077' +
-    '\u0078\u0079\u007a\u007b\u007c\u007d\u007e\u2302' +
-    '\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7' +
-    '\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5' +
-    '\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9' +
-    '\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192' +
-    '\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba' +
-    '\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
-    '\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556' +
-    '\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510' +
-    '\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f' +
-    '\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567' +
-    '\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b' +
-    '\u256a\u2518\u250c\u2588\u0020\u258c\u2590\u2580' +
-    '\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4' +
-    '\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229' +
-    '\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248' +
-    '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u0020';
-
-  var FONT8 =
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '  XXX   ' +
-    ' X   X  ' +
-    'X X X X ' +
-    'X     X ' +
-    'X XXX X ' +
-    ' X   X  ' +
-    '  XXX   ' +
-    '        ' +
-
-    '  XXX   ' +
-    ' XXXXX  ' +
-    'XX X XX ' +
-    'XXXXXXX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '  XXX   ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '   XX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    '        ' +
-    '   XX   ' +
-    '        ' +
-
-    ' XX XX  ' +
-    ' XX XX  ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    ' XX XX  ' +
-    ' XX XX  ' +
-    'XXXXXXX ' +
-    ' XX XX  ' +
-    'XXXXXXX ' +
-    ' XX XX  ' +
-    ' XX XX  ' +
-    '        ' +
-
-    ' XX XX  ' +
-    'XXXXXXX ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '     XX ' +
-    'XXXXXXX ' +
-    ' XX XX  ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    '   XX   ' +
-    '   XX   ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '   XX   ' +
-    '  XX    ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    '  XX    ' +
-    '   XX   ' +
-
-    'XX      ' +
-    ' XX     ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XX    ' +
-    ' XX     ' +
-    'XX      ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '  XX    ' +
-    '  XX    ' +
-    ' XXXXX  ' +
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '   XX   ' +
-    '   XX   ' +
-    '  XX    ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '   XX   ' +
-    '   XX   ' +
-
-    '        ' +
-    '     XX ' +
-    '    XX  ' +
-    '   XX   ' +
-    '  XX    ' +
-    ' XX     ' +
-    'XX      ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX  XXX ' +
-    'XX XXXX ' +
-    'XXXX XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '   XX   ' +
-    '  XXX   ' +
-    ' XXXX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    '     XX ' +
-    '   XXX  ' +
-    ' XXX    ' +
-    'XX      ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    '     XX ' +
-    '  XXXX  ' +
-    '     XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XX  XX  ' +
-    'XX  XX  ' +
-    'XX  XX  ' +
-    'XXXXXXX ' +
-    '    XX  ' +
-    '    XX  ' +
-    '    XX  ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '     XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX      ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    '     XX ' +
-    '    XX  ' +
-    '   XX   ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '     XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '   XX   ' +
-    '   XX   ' +
-    '        ' +
-    '   XX   ' +
-    '   XX   ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '   XX   ' +
-    '   XX   ' +
-    '        ' +
-    '   XX   ' +
-    '   XX   ' +
-    '  XX    ' +
-    '        ' +
-
-    '        ' +
-    '    XXX ' +
-    '  XXX   ' +
-    'XXX     ' +
-    '  XXX   ' +
-    '    XXX ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    'XXXXXXX ' +
-    '        ' +
-    'XXXXXXX ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    'XXX     ' +
-    '  XXX   ' +
-    '    XXX ' +
-    '  XXX   ' +
-    'XXX     ' +
-    '        ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    '  XXX   ' +
-    ' XX XX  ' +
-    'XX   XX ' +
-    'XXXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXXXX  ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXXXX  ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXX   ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXX   ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX      ' +
-    'XX XXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    '     XX ' +
-    '     XX ' +
-    '     XX ' +
-    '     XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX  XX  ' +
-    'XX XX   ' +
-    'XXXX    ' +
-    'XX XX   ' +
-    'XX  XX  ' +
-    'XX   XX ' +
-    '        ' +
-
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XXX XXX ' +
-    'XXXXXXX ' +
-    'XX X XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XXX  XX ' +
-    'XXXX XX ' +
-    'XXXXXXX ' +
-    'XX XXXX ' +
-    'XX  XXX ' +
-    'XX   XX ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXXXX  ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXX XX ' +
-    'XX XXX  ' +
-    ' XXX XX ' +
-    '        ' +
-
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '     XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XX XX  ' +
-    '  XXX   ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX X XX ' +
-    'XX X XX ' +
-    ' XX XX  ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XX XX  ' +
-    '  XXX   ' +
-    ' XX XX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XX XX  ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '  XXX   ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    '     XX ' +
-    '    XX  ' +
-    '  XXX   ' +
-    ' XX     ' +
-    'XX      ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    'XX      ' +
-    ' XX     ' +
-    '  XX    ' +
-    '   XX   ' +
-    '    XX  ' +
-    '     XX ' +
-    '        ' +
-
-    ' XXXXX  ' +
-    '    XX  ' +
-    '    XX  ' +
-    '    XX  ' +
-    '    XX  ' +
-    '    XX  ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '   XX   ' +
-    '  XXXX  ' +
-    ' XX  XX ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXXX ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XXXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '     XX ' +
-    '     XX ' +
-    '     XX ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    ' XXXX   ' +
-    'XX  XX  ' +
-    'XXXXXX  ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '  XXXX  ' +
-    ' XX  XX ' +
-    '  XX    ' +
-    'XXXXXXX ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '     XX ' +
-    ' XXXXX  ' +
-
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-    ' XXXX   ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XXXX  ' +
-    '        ' +
-
-    '   XX   ' +
-    '   XX   ' +
-    '        ' +
-    ' XXXXX  ' +
-    '   XX   ' +
-    '    XX  ' +
-    '    XX  ' +
-    '  XXX   ' +
-
-    'XX      ' +
-    'XX      ' +
-    'XX  XX  ' +
-    'XX XX   ' +
-    'XXXX    ' +
-    'XX  XX  ' +
-    'XX   XX ' +
-    '        ' +
-
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    ' XX     ' +
-    '  XXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXX  ' +
-    'XX X XX ' +
-    'XX X XX ' +
-    'XX X XX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XXXXXX  ' +
-    'XX      ' +
-    'XX      ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX  XX  ' +
-    ' XXXXX  ' +
-    '   XX   ' +
-    '    XXX ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX XXX  ' +
-    'XXXX XX ' +
-    'XX      ' +
-    'XX      ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '     XX ' +
-    'XXXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '  XX    ' +
-    '  XX    ' +
-    'XXXXXXX ' +
-    '  XX    ' +
-    '  XX XX ' +
-    '   XXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XX XX  ' +
-    '  XXX   ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX X XX ' +
-    'XX X XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    ' XX XX  ' +
-    '  XXX   ' +
-    ' XX XX  ' +
-    'XX   XX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '     XX ' +
-    ' XXXXX  ' +
-
-    '        ' +
-    '        ' +
-    'XXXXXXX ' +
-    '    XX  ' +
-    '  XXX   ' +
-    ' XX     ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    'XX   XX ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    ' XXXX   ' +
-    'XX  XX  ' +
-    'XXXXXX  ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    ' XXXX   ' +
-    'XX  XX  ' +
-    'XXXXXX  ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    ' XXXX   ' +
-    'XX  XX  ' +
-    'XXXXXX  ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    ' XXXX   ' +
-    'XX  XX  ' +
-    'XXXXXX  ' +
-    'XX      ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-    ' XXXX   ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XXXX  ' +
-    '        ' +
-
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-    ' XXXX   ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XXXX  ' +
-    '        ' +
-
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-    ' XXXX   ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XXXX  ' +
-    '        ' +
-
-    '  XXX   ' +
-    ' XX XX  ' +
-    'XX   XX ' +
-    'XXXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    '  XXX   ' +
-    ' XX XX  ' +
-    'XX   XX ' +
-    'XXXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXX   ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXX   ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    'XXXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXX   ' +
-    'XX      ' +
-    'XX      ' +
-    'XXXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '     XX ' +
-    ' XXXXX  ' +
-
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    'XX      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '  XX    ' +
-    '  XX    ' +
-    '        ' +
-    ' XXXX   ' +
-    '  XX    ' +
-    '  XX    ' +
-    '  XXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXX  ' +
-    'XX   XX ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '   XX   ' +
-    '        ' +
-    '   XX   ' +
-    ' XXX    ' +
-    'XX      ' +
-    'XX   XX ' +
-    ' XXXXX  ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXXX ' +
-    'XX      ' +
-    'XX      ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXXX ' +
-    '     XX ' +
-    '     XX ' +
-    '        ' +
-    '        ' +
-
-    'X       ' +
-    'X  X    ' +
-    '  X     ' +
-    ' X XX   ' +
-    '     X  ' +
-    '    X   ' +
-    '   XXXX ' +
-    '        ' +
-
-    'X       ' +
-    'X  X    ' +
-    '  X     ' +
-    ' X XX   ' +
-    '     X  ' +
-    '    X   ' +
-    '   XXXX ' +
-    '        ' +
-
-    '   XX   ' +
-    '        ' +
-    '   XX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    '   XX   ' +
-    '        ' +
-
-    '        ' +
-    '  XX XX ' +
-    ' XX XX  ' +
-    'XX XX   ' +
-    ' XX XX  ' +
-    '  XX XX ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    'XX XX   ' +
-    ' XX XX  ' +
-    '  XX XX ' +
-    ' XX XX  ' +
-    'XX XX   ' +
-    '        ' +
-    '        ' +
-
-    'X   X   ' +
-    '  X   X ' +
-    'X   X   ' +
-    '  X   X ' +
-    'X   X   ' +
-    '  X   X ' +
-    'X   X   ' +
-    '  X   X ' +
-
-    ' X X X X' +
-    'X X X X ' +
-    ' X X X X' +
-    'X X X X ' +
-    ' X X X X' +
-    'X X X X ' +
-    ' X X X X' +
-    'X X X X ' +
-
-    ' XXX XXX' +
-    'XX XXX X' +
-    ' XXX XXX' +
-    'XX XXX X' +
-    ' XXX XXX' +
-    'XX XXX X' +
-    ' XXX XXX' +
-    'XX XXX X' +
-
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    'XXXX    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '   X    ' +
-    '   X    ' +
-    'XXXX    ' +
-    '   X    ' +
-    'XXXX    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    'XXX X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXX   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '        ' +
-    '        ' +
-    'XXXX    ' +
-    '   X    ' +
-    'XXXX    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    'XXX X   ' +
-    '    X   ' +
-    'XXX X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '        ' +
-    '        ' +
-    'XXXXX   ' +
-    '    X   ' +
-    'XXX X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    'XXX X   ' +
-    '    X   ' +
-    'XXXXX   ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    'XXXXX   ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '   X    ' +
-    '   X    ' +
-    'XXXX    ' +
-    '   X    ' +
-    'XXXX    ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXX    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   XXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    'XXXXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   XXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    'XXXXXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   XXXXX' +
-    '   X    ' +
-    '   XXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X XXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X XXXX' +
-    '  X     ' +
-    '  XXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '  XXXXXX' +
-    '  X     ' +
-    '  X XXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    'XXX XXXX' +
-    '        ' +
-    'XXXXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    'XXXXXXXX' +
-    '        ' +
-    'XXX XXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X XXXX' +
-    '  X     ' +
-    '  X XXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '        ' +
-    '        ' +
-    'XXXXXXXX' +
-    '        ' +
-    'XXXXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    'XXX XXXX' +
-    '        ' +
-    'XXX XXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '   X    ' +
-    '   X    ' +
-    'XXXXXXXX' +
-    '        ' +
-    'XXXXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    'XXXXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    'XXXXXXXX' +
-    '        ' +
-    'XXXXXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  XXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   XXXXX' +
-    '   X    ' +
-    '   XXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '   XXXXX' +
-    '   X    ' +
-    '   XXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '  XXXXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    'XXXXXXXX' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-    '  X X   ' +
-
-    '   X    ' +
-    '   X    ' +
-    'XXXXXXXX' +
-    '        ' +
-    'XXXXXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    'XXXX    ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '   XXXXX' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-    '   X    ' +
-
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-
-    'XXXX    ' +
-    'XXXX    ' +
-    'XXXX    ' +
-    'XXXX    ' +
-    'XXXX    ' +
-    'XXXX    ' +
-    'XXXX    ' +
-    'XXXX    ' +
-
-    '    XXXX' +
-    '    XXXX' +
-    '    XXXX' +
-    '    XXXX' +
-    '    XXXX' +
-    '    XXXX' +
-    '    XXXX' +
-    '    XXXX' +
-
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    'XXXXXXXX' +
-    '        ' +
-    '        ' +
-    '        ' +
-    '        ' +
-
-    '        ' +
-    ' XX   X ' +
-    'X  X X  ' +
-    'X   X   ' +
-    'X  X X  ' +
-    ' XX   X ' +
-    '        ' +
-    '        ' +
-
-    '  XXX   ' +
-    ' X   X  ' +
-    ' X  X   ' +
-    ' XXXXX  ' +
-    ' X    X ' +
-    ' X    X ' +
-    'X XXXX  ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    ' X      ' +
-    ' X      ' +
-    ' X      ' +
-    ' X      ' +
-    ' X      ' +
-    ' X      ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    '  X  X  ' +
-    '  X  X  ' +
-    '  X  X  ' +
-    '        ' +
-
-    ' XXXXXX ' +
-    ' X      ' +
-    '  X     ' +
-    '   X    ' +
-    '  X     ' +
-    ' X      ' +
-    ' XXXXXX ' +
-    '        ' +
-
-    '        ' +
-    '        ' +
-    '        ' +
-    ' XXXXXX ' +
-    'X    X  ' +
-    'X    X  ' +
-    ' XXXX   ' +
-    '        ' +
-
-    '';
-
-  var START = '';
-
   function NextChar(ch) {
     return String.fromCharCode(ch.charCodeAt(0) + 1);
   }
@@ -2161,10 +51,13 @@
     var data = new Uint8Array(s.length * dup);
     var pos = 0;
     for (var i = 0; i < 256; ++i) {
+      var row = Math.floor(i / 8);
+      var col = i % 8;
       for(var y = 0; y < 8; ++y) {
         for (var d = 0; d < dup; ++d) {
           for(var x = 0; x < 8; ++x) {
-            data[pos++] = s[x + y * 8 + i * 64] != ' ' ? 255 : 0;
+            data[pos++] = s[x + y * 8 * 8 + col * 8 + row * 64 * 8]
+              != ' ' ? 255 : 0;
           }
         }
       }
@@ -3207,7 +1100,7 @@
         fg_color = FixupColor(undefined);
       }
       if (screen_mode > 0) {
-        bg_color = 0;
+        bg_color = BLACK;
       } else {
         bg_color = FixupColor(bg);
       }
@@ -4697,17 +2590,326 @@
     }
   }
 
-  if (typeof window !== 'undefined') {
-    window.addEventListener('load', Init);
-    window.addEventListener('focusout', function() {
-      timer_halted = GetTimer();
-    });
-    window.addEventListener('focusin', function() {
-      timer_offset = timer_halted - (new Date().getTime() / 1000);
-    });
-  } else {
-    exports.Basic = function(code) {
-      Interpret(code, null);
-    };
+  function Main() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('load', Init);
+      window.addEventListener('focusout', function() {
+        timer_halted = GetTimer();
+      });
+      window.addEventListener('focusin', function() {
+        timer_offset = timer_halted - (new Date().getTime() / 1000);
+      });
+    } else {
+      exports.Basic = function(code) {
+        Interpret(code, null);
+      };
+    }
   }
+
+  Main();
+
+  var CHARSET =
+    '\u0020\u263a\u263b\u2665\u2666\u2663\u2660\u2022' +
+    '\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c' +
+    '\u25ba\u25c4\u2195\u203c\u00b6\u00a7\u25ac\u21a8' +
+    '\u2191\u2193\u2192\u2190\u221f\u2194\u25b2\u25bc' +
+    '\u0020\u0021\u0022\u0023\u0024\u0025\u0026\u0027' +
+    '\u0028\u0029\u002a\u002b\u002c\u002d\u002e\u002f' +
+    '\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037' +
+    '\u0038\u0039\u003a\u003b\u003c\u003d\u003e\u003f' +
+    '\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047' +
+    '\u0048\u0049\u004a\u004b\u004c\u004d\u004e\u004f' +
+    '\u0050\u0051\u0052\u0053\u0054\u0055\u0056\u0057' +
+    '\u0058\u0059\u005a\u005b\u005c\u005d\u005e\u005f' +
+    '\u0060\u0061\u0062\u0063\u0064\u0065\u0066\u0067' +
+    '\u0068\u0069\u006a\u006b\u006c\u006d\u006e\u006f' +
+    '\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077' +
+    '\u0078\u0079\u007a\u007b\u007c\u007d\u007e\u2302' +
+    '\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7' +
+    '\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5' +
+    '\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9' +
+    '\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192' +
+    '\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba' +
+    '\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
+    '\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556' +
+    '\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510' +
+    '\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f' +
+    '\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567' +
+    '\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b' +
+    '\u256a\u2518\u250c\u2588\u0020\u258c\u2590\u2580' +
+    '\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4' +
+    '\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229' +
+    '\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248' +
+    '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u0020';
+
+  var FONT8 =
+    '          XXX     XXX                                           ' +
+    '         X   X   XXXXX                                          ' +
+    '        X X X X XX X XX                                         ' +
+    '        X     X XXXXXXX                                         ' +
+    '        X XXX X XX   XX                                         ' +
+    '         X   X   XXXXX                                          ' +
+    '          XXX     XXX                                           ' +
+    '                                                                ' +
+
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    '                                                                ' +
+
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    '                                                                ' +
+
+    '           XX    XX XX   XX XX   XX XX  XX       XXX       XX   ' +
+    '           XX    XX XX   XX XX  XXXXXXX XX  XX  XX XX      XX   ' +
+    '           XX           XXXXXXX XX         XX    XXX            ' +
+    '           XX            XX XX   XXXXX    XX    XXXX XX         ' +
+    '           XX           XXXXXXX      XX  XX     XX XXX          ' +
+    '                         XX XX  XXXXXXX XX  XX  XX XXX          ' +
+    '           XX            XX XX   XX XX      XX   XXX XX         ' +
+    '                                                                ' +
+
+    '   XX   XX                                                      ' +
+    '  XX     XX     XX X XX   XX                                 XX ' +
+    ' XX       XX      XXX     XX                                XX  ' +
+    ' XX       XX    XXXXXXX XXXXXX           XXXXX             XX   ' +
+    ' XX       XX      XXX     XX                              XX    ' +
+    '  XX     XX     XX X XX   XX       XX                    XX     ' +
+    '   XX   XX                         XX              XX   XX      ' +
+    '                                  XX               XX           ' +
+
+    ' XXXXX     XX    XXXXX   XXXXX  XX  XX  XXXXXXX  XXXXX  XXXXXXX ' +
+    'XX  XXX   XXX   XX   XX XX   XX XX  XX  XX      XX   XX      XX ' +
+    'XX XXXX  XXXX        XX      XX XX  XX  XX      XX          XX  ' +
+    'XXXX XX    XX      XXX    XXXX  XXXXXXX  XXXXX  XXXXXX     XX   ' +
+    'XX   XX    XX    XXX         XX     XX       XX XX   XX   XX    ' +
+    'XX   XX    XX   XX      XX   XX     XX  XX   XX XX   XX   XX    ' +
+    ' XXXXX  XXXXXXX XXXXXXX  XXXXX      XX   XXXXX   XXXXX    XX    ' +
+    '                                                                ' +
+
+    ' XXXXX   XXXXX                                           XXXXX  ' +
+    'XX   XX XX   XX    XX      XX       XXX         XXX     XX   XX ' +
+    'XX   XX XX   XX    XX      XX     XXX   XXXXXXX   XXX   XX   XX ' +
+    ' XXXXX   XXXXXX                 XXX                 XXX     XX  ' +
+    'XX   XX      XX    XX      XX     XXX   XXXXXXX   XXX      XX   ' +
+    'XX   XX XX   XX    XX      XX       XXX         XXX             ' +
+    ' XXXXX   XXXXX            XX                               XX   ' +
+    '                                                                ' +
+
+    ' XXXXX    XXX   XXXXXX   XXXXXX XXXXXX  XXXXXXX XXXXXXX  XXXXX  ' +
+    'XX  XXX  XX XX  XX   XX XX      XX   XX XX      XX      XX   XX ' +
+    'XX XXXX XX   XX XX   XX XX      XX   XX XX      XX      XX      ' +
+    'XX XXXX XXXXXXX XXXXXX  XX      XX   XX XXXXX   XXXXX   XX XXXX ' +
+    'XX  XXX XX   XX XX   XX XX      XX   XX XX      XX      XX   XX ' +
+    'XX      XX   XX XX   XX XX      XX   XX XX      XX      XX   XX ' +
+    ' XXXXX  XX   XX XXXXXX   XXXXXX XXXXXX  XXXXXXX XX       XXXXX  ' +
+    '                                                                ' +
+
+    'XX   XX XXXXXXX      XX XX   XX XX      XX   XX XX   XX  XXXXX  ' +
+    'XX   XX   XXX        XX XX  XX  XX      XXX XXX XXX  XX XX   XX ' +
+    'XX   XX   XXX        XX XX XX   XX      XXXXXXX XXXX XX XX   XX ' +
+    'XXXXXXX   XXX        XX XXXX    XX      XX X XX XXXXXXX XX   XX ' +
+    'XX   XX   XXX   XX   XX XX XX   XX      XX   XX XX XXXX XX   XX ' +
+    'XX   XX   XXX   XX   XX XX  XX  XX      XX   XX XX  XXX XX   XX ' +
+    'XX   XX XXXXXXX  XXXXX  XX   XX XXXXXXX XX   XX XX   XX  XXXXX  ' +
+    '                                                                ' +
+
+    'XXXXXX   XXXXX  XXXXXX   XXXXX  XXXXXXX XX   XX XX   XX XX   XX ' +
+    'XX   XX XX   XX XX   XX XX   XX   XXX   XX   XX XX   XX XX   XX ' +
+    'XX   XX XX   XX XX   XX XX        XXX   XX   XX XX   XX XX   XX ' +
+    'XXXXXX  XX   XX XXXXXX   XXXXX    XXX   XX   XX XX   XX XX   XX ' +
+    'XX      XXXX XX XX   XX      XX   XXX   XX   XX XX   XX XX X XX ' +
+    'XX      XX XXX  XX   XX XX   XX   XXX   XX   XX  XX XX  XX X XX ' +
+    'XX       XXX XX XX   XX  XXXXX    XXX    XXXXX    XXX    XX XX  ' +
+    '                                                                ' +
+
+    'XX   XX XX   XX XXXXXXX  XXXXX           XXXXX     XX           ' +
+    'XX   XX XX   XX      XX  XX     XX          XX    XXXX          ' +
+    ' XX XX   XX XX      XX   XX      XX         XX   XX  XX         ' +
+    '  XXX     XXX     XXX    XX       XX        XX                  ' +
+    ' XX XX    XXX    XX      XX        XX       XX                  ' +
+    'XX   XX   XXX   XX       XX         XX      XX                  ' +
+    'XX   XX   XXX   XXXXXXX  XXXXX       XX  XXXXX                  ' +
+    '                                                        XXXXXXX ' +
+
+    '  XX            XX                   XX           XXXX          ' +
+    '   XX           XX                   XX          XX  XX         ' +
+    '                XX                   XX  XXXX     XX            ' +
+    '         XXXXXX XXXXXX   XXXXX   XXXXXX XX  XX  XXXXXXX  XXXXX  ' +
+    '        XX   XX XX   XX XX      XX   XX XXXXXX    XX    XX   XX ' +
+    '        XX   XX XX   XX XX      XX   XX XX        XX     XXXXXX ' +
+    '         XXXXXX XXXXXX   XXXXX   XXXXXX  XXXXX    XX         XX ' +
+    '                                                         XXXXX  ' +
+    'XX        XX       XX   XX       XX                             ' +
+    'XX        XX       XX   XX       XX                             ' +
+    'XX                      XX  XX   XX                             ' +
+    'XXXXXX   XXXX    XXXXX  XX XX    XX     XXXXXX  XXXXXX   XXXXX  ' +
+    'XX   XX   XX       XX   XXXX     XX     XX X XX XX   XX XX   XX ' +
+    'XX   XX   XX        XX  XX  XX   XX     XX X XX XX   XX XX   XX ' +
+    'XX   XX   XXXX      XX  XX   XX   XXXXX XX X XX XX   XX  XXXXX  ' +
+    '                  XXX                                           ' +
+    '                                                                ' +
+    '                                  XX                            ' +
+    '                         XXXXXX   XX                            ' +
+    'XXXXXX   XXXXX  XX XXX  XX      XXXXXXX XX   XX XX   XX XX   XX ' +
+    'XX   XX XX  XX  XXXX XX  XXXXX    XX    XX   XX XX   XX XX X XX ' +
+    'XXXXXX   XXXXX  XX           XX   XX XX XX   XX  XX XX  XX X XX ' +
+    'XX         XX   XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
+    'XX          XXX                                                 ' +
+    '                             XX   XX    XX                 X    ' +
+    '                           XX     XX      XX     XXX XX   XXX   ' +
+    '                           XX     XX      XX    XX XXX   XX XX  ' +
+    'XX   XX XX   XX XXXXXXX   XX      XX       XX           XX   XX ' +
+    ' XXXXX  XX   XX    XXX     XX     XX      XX            XX   XX ' +
+    ' XXXXX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
+    'XX   XX      XX XXXXXXX      XX   XX    XX              XXXXXXX ' +
+    '         XXXXX                                                  ' +
+    ' XXXXXX                                                  XXXXXX ' +
+    'XX      XX   XX                                         XX      ' +
+    'XX               XXXX                                   XX      ' +
+    'XX      XX   XX XX  XX   XXXXXX  XXXXXX  XXXXXX  XXXXXX XX      ' +
+    'XX      XX   XX XXXXXX  XX   XX XX   XX XX   XX XX   XX XX      ' +
+    'XX      XX   XX XX      XX   XX XX   XX XX   XX XX   XX XX      ' +
+    ' XXXXXX  XXXXXX  XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
+    '                                                                ' +
+    '                          XX      XX      XX      XXX     XXX   ' +
+    '                          XX      XX      XX     XX XX   XX XX  ' +
+    ' XXXX    XXXX    XXXX                           XX   XX XX   XX ' +
+    'XX  XX  XX  XX  XX  XX   XXXX    XXXX    XXXX   XXXXXXX XXXXXXX ' +
+    'XXXXXX  XXXXXX  XXXXXX    XX      XX      XX    XX   XX XX   XX ' +
+    'XX      XX      XX        XX      XX      XX    XX   XX XX   XX ' +
+    ' XXXXX   XXXXX   XXXXX    XXXX    XXXX    XXXX  XX   XX XX   XX ' +
+    '                                                                ' +
+    'XXXXXXX XXXXXXX XXXXXXX                                         ' +
+    'XX      XX      XX                                              ' +
+    'XX      XX      XX                                              ' +
+    'XXXXX   XXXXX   XXXXX    XXXXX   XXXXX   XXXXX  XX   XX XX   XX ' +
+    'XX      XX      XX      XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+    'XX      XX      XX      XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+    'XXXXXXX XXXXXXX XXXXXXX  XXXXX   XXXXX   XXXXX   XXXXXX  XXXXXX ' +
+    '                                                                ' +
+    '         XXXXX  XX   XX  XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
+    '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+    '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+    'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+    'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+    ' XXXXXX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+    '     XX  XXXXX   XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
+    ' XXXXX                                                          ' +
+    '          XX                                                    ' +
+    '          XX                                                    ' +
+    '                                                                ' +
+    ' XXXXXX  XXXX    XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
+    'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+    'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+    ' XXXXXX   XXXX   XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
+    '                                                                ' +
+    '   XX                   X       X          XX                   ' +
+    '                        X  X    X  X              XX XX XX XX   ' +
+    '   XX                     X       X        XX    XX XX   XX XX  ' +
+    ' XXX    XXXXXXX XXXXXXX  X XX    X XX      XX   XX XX     XX XX ' +
+    'XX      XX           XX      X       X     XX    XX XX   XX XX  ' +
+    'XX   XX XX           XX     X       X      XX     XX XX XX XX   ' +
+    ' XXXXX                     XXXX    XXXX    XX                   ' +
+    '                                                                ' +
+    'X   X    X X X X XXX XXX   X       X       X      X X           ' +
+    '  X   X X X X X XX XXX X   X       X       X      X X           ' +
+    'X   X    X X X X XXX XXX   X       X    XXXX      X X           ' +
+    '  X   X X X X X XX XXX X   X    XXXX       X    XXX X   XXXXX   ' +
+    'X   X    X X X X XXX XXX   X       X    XXXX      X X     X X   ' +
+    '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
+    'X   X    X X X X XXX XXX   X       X       X      X X     X X   ' +
+    '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
+    '          X X     X X             X X     X X      X            ' +
+    '          X X     X X             X X     X X      X            ' +
+    'XXXX    XXX X     X X   XXXXX   XXX X     X X   XXXX            ' +
+    '   X        X     X X       X       X   XXXXX      X    XXXX    ' +
+    'XXXX    XXX X     X X   XXX X   XXXXX           XXXX       X    ' +
+    '   X      X X     X X     X X                              X    ' +
+    '   X      X X     X X     X X                              X    ' +
+    '   X      X X     X X     X X                              X    ' +
+    '   X       X               X               X       X      X X   ' +
+    '   X       X               X               X       X      X X   ' +
+    '   X       X               X               X       XXXXX  X X   ' +
+    '   XXXXXXXXXXXXXXXXXXXXX   XXXXXXXXXXXXXXXXXXXXX   X      X XXXX' +
+    '                   X       X               X       XXXXX  X X   ' +
+    '                   X       X               X       X      X X   ' +
+    '                   X       X               X       X      X X   ' +
+    '                   X       X               X       X      X X   ' +
+    '  X X             X X             X X             X X      X    ' +
+    '  X X             X X             X X             X X      X    ' +
+    '  X XXXX  XXXXXXXXX XXXXXXXXXXXX  X XXXXXXXXXXXXXXX XXXXXXXXXXXX' +
+    '  X       X                       X                             ' +
+    '  XXXXXX  X XXXXXXXXXXXXXXX XXXX  X XXXXXXXXXXXXXXX XXXXXXXXXXXX' +
+    '          X X             X X     X X             X X           ' +
+    '          X X             X X     X X             X X           ' +
+    '          X X             X X     X X             X X           ' +
+    '  X X                     X X      X                      X X   ' +
+    '  X X                     X X      X                      X X   ' +
+    '  X X   XXXXXXXX          X X      XXXXX   XXXXX          X X   ' +
+    'XXXXXXXX        XXXXXXXX  XXXXXX   X       X      XXXXXXXXXXXXXX' +
+    '        XXXXXXXX  X X              XXXXX   XXXXX  X X     X X   ' +
+    '           X      X X                      X      X X     X X   ' +
+    '           X      X X                      X      X X     X X   ' +
+    '           X      X X                      X      X X     X X   ' +
+    '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
+    '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
+    'XXXXXXXX   X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
+    '        XXXX       XXXXXXXXXXXXX        XXXX        XXXXXXXXXXXX' +
+    'XXXXXXXX           X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+    '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+    '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+    '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+    '          XXX    XXXXXX          XXXXXX                         ' +
+    ' XX   X  X   X   X               X                              ' +
+    'X  X X   X  X    X                X                             ' +
+    'X   X    XXXXX   X       XXXXXX    X     XXXXXX                 ' +
+    'X  X X   X    X  X        X  X    X     X    X                  ' +
+    ' XX   X  X    X  X        X  X   X      X    X                  ' +
+    '        X XXXX   X        X  X   XXXXXX  XXXX                   ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '                                                                ' +
+    '';
 })();
