@@ -238,8 +238,8 @@
           code = code.substr(1);
           return;
         }
-        if (tok == '' && /[.0-9]/.test(code.substr(0, 1))) {
-          var n = code.match(/^([0-9]*([.][0-9]*)?([eE][+-]?[0-9]+)?)/);
+        if (tok == '' && /[.0-9][#]?/.test(code.substr(0, 1))) {
+          var n = code.match(/^([0-9]*([.][0-9]*)?([eE][+-]?[0-9]+)?[#]?)/);
           if (n === null) {
             Throw('Bad number');
           }
@@ -437,7 +437,7 @@
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
             name == 'chr$' || name == 'sqr' || name == 'int' ||
             name == 'abs' || name == 'len' ||
-            name == 'cos' || name == 'sin' || name == 'tan' ||
+            name == 'cos' || name == 'sin' || name == 'tan' || name == 'atn' ||
             name == 'exp' || name == 'str$' || name == 'peek') {
           Skip('(');
           var e = Expression();
@@ -699,7 +699,7 @@
       return 'a' + vars_getput[name];
     }
 
-    function DimVariable(default_tname) {
+    function DimVariable(default_tname, redim) {
       var name = tok;
       Next();
       // Pick default.
@@ -751,7 +751,7 @@
         Skip('as');
         type_name = TypeName();
       }
-      if (vars[name] !== undefined) {
+      if (!redim && vars[name] !== undefined) {
         Throw('Variable ' + name + ' defined twice');
       }
       // name, dims.
@@ -1725,8 +1725,9 @@
           }
           break;
         }
-      } else if (tok == 'dim') {
-        Skip('dim');
+      } else if (tok == 'dim' || tok == 'redim') {
+        var op = tok;
+        Next();
         if (tok == 'shared') {
           Skip('shared');
         }
@@ -1735,10 +1736,10 @@
           Skip('as');
           tname = TypeName();
         }
-        DimVariable(tname);
+        DimVariable(tname, op == 'redim');
         while (tok == ',') {
           Skip(',');
-          DimVariable(tname);
+          DimVariable(tname, op == 'redim');
         }
       } else if (tok == 'on') {
         Skip('on');
@@ -2163,6 +2164,12 @@
           // TODO: Support cursor
         }
         curop += 'Color(' + fg + ',' + bg + ');\n';
+      } else if (tok == 'palette') {
+        Skip('palette');
+        var c = Expression();
+        Skip(',');
+        var p = Expression();
+        // TODO: Implement.
       } else if (tok == 'swap') {
         Skip('swap');
         var a = tok;
