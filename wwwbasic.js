@@ -123,7 +123,10 @@
     var data_labels = {};
     var flow = [];
     var vars = {};
-    var var_count = 0;
+    var allocated = 0;
+    var str_count = 0;
+    var array_count = 0;
+    var const_count = 0;
     var var_decls = '';
     var vars_getput = {};
     var rstack = [];
@@ -607,13 +610,22 @@
       Throw('Unexpected type "' + tok + '"');
     }
 
-    var TypeMap = {
+    var TYPE_ARRAY_MAP = {
       'Uint8Array': 'b',
       'Int16Array': 'i16',
       'Int32Array': 'i',
       'Float32Array': 's',
       'Float64Array': 'd',
       'Array': 'str',
+    };
+
+    var TYPE_SIZE_MAP = {
+      'Uint8Array': 1,
+      'Int16Array': 2,
+      'Int32Array': 4,
+      'Float32Array': 4,
+      'Float64Array': 8,
+      'Array': 1,
     };
 
     function ImplicitType(name) {
@@ -633,21 +645,40 @@
       }
     }
 
+    function DimScalarVariable(name, type_name, defaults) {
+      var size = TYPE_SIZE_MAP[type_name];
+      var index;
+      if (type_name == 'Array') {
+        index = str_count++;
+      } else {
+        allocated = Math.floor((allocated + size - 1) / size) * size;
+        index = allocated / size;
+        allocated += size;
+      }
+      var code = TYPE_ARRAY_MAP[type_name] + '[' + index + ']';
+      var_decls += '// ' + code + ' is ' + name + '\n';
+      if (defaults.length > 0) {
+        curop += code + ' = ' + defaults[0] + ';\n';
+      }
+      vars[name] = {
+        code: code,
+        dimensions: [],
+      };
+    }
+
     function ImplicitDimVariable(name) {
       // TODO: Handle array variables.
-      var vdef = [var_count++, ImplicitType(name)];
-      vdef[0] = TypeMap[vdef[1]] + '[' + vdef[0] + ']';
-      var_decls += '// ' + vdef[0] + ' is ' + name + '\n';
-      vars[name] = vdef;
-      return vdef;
+      var type_name = ImplicitType(name);
+      DimScalarVariable(name, type_name, []);
+      return vars[name];
     }
 
     function ImplicitDimGetPut(name) {
       if (vars[name] !== undefined) {
-        return vars[name][0];
+        return vars[name].code;
       }
       if (vars_getput[name] === undefined) {
-        vars_getput[name] = var_count++;
+        vars_getput[name] = array_count++;
       }
       return 'a' + vars_getput[name];
     }
@@ -659,35 +690,29 @@
       if (default_tname === null) {
         default_tname = ImplicitType(name);
       }
-      // name, dims.
-      var index;
-      if (vars_getput[name] !== undefined) {
-        index = vars_getput[name];
-      } else {
-        index = var_count++;
-      }
-      var vdef = [index, default_tname];
+      var type_name = default_tname;
+      var dimensions = [];
       var defaults = [];
       if (tok == '(') {
         Skip('(');
         var e = Expression();
-        var d = 'dim' + var_count++;
+        var d = 'dim' + const_count++;
         var_decls += 'const ' + d + ' = (' + e + ');\n';
         if (tok == 'to') {
           Skip('to');
           var e1 = Expression();
-          var d1 = 'dim' + var_count++;
+          var d1 = 'dim' + const_count++;
           var_decls += 'const ' + d1 + ' = (' + e1 + ');\n';
-          vdef.push([d, d1]);
+          dimensions.push([d, d1]);
         } else {
-          vdef.push([option_base, d]);
+          dimensions.push([option_base, d]);
         }
         while (tok == ',') {
           Skip(',');
           var e = Expression();
-          var d = 'dim' + var_count++;
+          var d = 'dim' + const_count++;
           var_decls += 'const ' + d + ' = (' + e + ');\n';
-          vdef.push([option_base, d]);
+          dimensions.push([option_base, d]);
         }
         Skip(')');
         if (tok == '=') {
@@ -709,34 +734,41 @@
       }
       if (tok == 'as') {
         Skip('as');
-        vdef[1] = TypeName();
+        type_name = TypeName();
       }
       if (vars[name] !== undefined) {
         Throw('Variable ' + name + ' defined twice');
       }
-      vars[name] = vdef;
-      if (vdef.length > 2) {
-        vdef[0] = 'a' + vdef[0];
-        var_decls += 'var ' + vdef[0] + ';  // ' + name + '\n';
-        var parts = [];
-        for (var i = 2; i < vdef.length; i++) {
-          parts.push('((' + vdef[i][1] + ')-(' + vdef[i][0] + ')+1)');
+      // name, dims.
+      if (dimensions == 0) {
+        DimScalarVariable(name, type_name, defaults);
+      } else {
+        var index;
+        if (vars_getput[name] !== undefined) {
+          index = vars_getput[name];
+        } else {
+          index = array_count++;
         }
-        curop += 'if (' + vdef[0] + ' === undefined) {\n';
-        curop += '  ' + vdef[0] + ' = new ' + vdef[1] +
+        var code = 'a' + index;
+        var_decls += 'var ' + code + ';  // ' + name + '\n';
+        var parts = [];
+        for (var i = 0; i < dimensions.length; i++) {
+          parts.push('((' + dimensions[i][1] + ')-(' +
+            dimensions[i][0] + ')+1)');
+        }
+        curop += 'if (' + code + ' === undefined) {\n';
+        curop += '  ' + code + ' = new ' + type_name +
           '(' + parts.join('*') + ');\n';
         if (defaults.length > 0) {
           for (var i = 0; i < defaults.length; i++) {
-            curop += '  ' + vdef[0] + '[' + i + '] = (' + defaults[i] + ');\n';
+            curop += '  ' + code + '[' + i + '] = (' + defaults[i] + ');\n';
           }
         }
         curop += '}\n';
-      } else {
-        vdef[0] = TypeMap[vdef[1]] + '[' + vdef[0] + ']';
-        var_decls += '// ' + vdef[0] + ' is ' + name + '\n';
-        if (defaults.length > 0) {
-          curop += vdef[0] + ' = ' + defaults[0] + ';\n';
-        }
+        vars[name] = {
+          code: code,
+          dimensions: dimensions,
+        };
       }
     }
 
@@ -749,7 +781,7 @@
           v = ImplicitDimVariable(name);
         }
       }
-      var vname = v[0];
+      var vname = v.code;
       if (tok == '(') {
         Skip('(');
         var dims = [];
@@ -763,12 +795,13 @@
         Skip(')');
         vname += '[';
         for (var i = 0; i < dims.length; ++i) {
-          if (i + 2 >= v.length) {
+          if (i >= v.dimensions.length) {
             Throw('Bad array name: ' + name);
           }
-          vname += '(((' + dims[i] + ')|0)-' + v[i + 2][0] + ')';
+          vname += '(((' + dims[i] + ')|0)-' + v.dimensions[i][0] + ')';
           for (var j = 0; j < i; ++j) {
-            vname += '*(' + v[j + 2][1] + '-' + v[j + 2][0] + ' + 1)';
+            vname += '*(' + v.dimensions[j][1] + '-' +
+              v.dimensions[j][0] + ' + 1)';
           }
           if (i != dims.length - 1) {
             vname += '+';
@@ -1624,11 +1657,13 @@
           if (v !== undefined) {
             Throw('Constant ' + name + ' defined twice');
           }
-          vars[name] = ['c' + var_count++];
+          vars[name] = {
+            code: 'c' + const_count++,
+          };
           v = vars[name];
           Skip('=');
           var value = Expression();
-          var_decls += 'const ' + v[0] +
+          var_decls += 'const ' + v.code +
             ' = (' + value + ');  // ' + name + '\n';
           if (tok == ',') {
             Skip(',');
@@ -1797,14 +1832,14 @@
           Skip('step');
           step = Expression();
         }
-        curop += v[0] + ' = (' + start + ');';
+        curop += v.code + ' = (' + start + ');';
         NewOp();
         curop += 'if (((' + step + ' > 0) && ' +
-                      v[0] + ' > (' + end + ')) || ' +
+                      v.code + ' > (' + end + ')) || ' +
                      '((' + step + ' < 0) && ' +
-                      v[0] + ' < (' + end + '))) { ip = ';
+                      v.code + ' < (' + end + '))) { ip = ';
         NewOp();
-        flow.push(['for', v[0], ops.length - 1, step]);
+        flow.push(['for', v.code, ops.length - 1, step]);
       } else if (tok == 'next') {
         Skip('next');
         var f = flow.pop();
@@ -2061,11 +2096,11 @@
       } else if (tok == 'read') {
         Skip('read');
         var v = GetVar();
-        curop += v[0] + ' = data[data_pos++];\n';
+        curop += v.code + ' = data[data_pos++];\n';
         while (tok == ',') {
           Skip(',');
           var v = GetVar();
-          curop += v[0] + ' = data[data_pos++];\n';
+          curop += v.code + ' = data[data_pos++];\n';
         }
       } else if (tok == 'restore') {
         Skip('restore');
@@ -2147,28 +2182,28 @@
         curop += 'Yield();';
         NewOp();
         var v = GetVar();
-        curop += v[0] + ' = mouse_x;\n';
+        curop += v.code + ' = mouse_x;\n';
         Skip(',');
         var v = GetVar();
-        curop += v[0] + ' = mouse_y;\n';
+        curop += v.code + ' = mouse_y;\n';
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
             var v = GetVar();
-            curop += v[0] + ' = mouse_wheel;\n';
+            curop += v.code + ' = mouse_wheel;\n';
           }
         }
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
             var v = GetVar();
-            curop += v[0] + ' = mouse_buttons;\n';
+            curop += v.code + ' = mouse_buttons;\n';
           }
         }
         if (tok == ',') {
           Skip(',');
           var v = GetVar();
-          curop += v[0] + ' = mouse_clip;\n';
+          curop += v.code + ' = mouse_clip;\n';
         }
       } else if (tok == '') {
         return;
@@ -2234,13 +2269,17 @@
       curop += 'End();';
       NewOp();
 
+      // Round allocated up.
+      allocated = Math.floor((allocated + 7) / 8) * 8;
+
       var total = '';
-      total += 'var b = new Uint8Array(' + var_count + ');\n';
-      total += 'var i16 = new Int16Array(' + var_count + ');\n';
-      total += 'var i = new Int32Array(' + var_count + ');\n';
-      total += 'var s = new Float32Array(' + var_count + ');\n';
-      total += 'var d = new Float64Array(' + var_count + ');\n';
-      total += 'var str = new Array(' + var_count + ');\n';
+      total += 'var buffer = new ArrayBuffer(' + allocated + ');\n';
+      total += 'var b = new Uint8Array(buffer);\n';
+      total += 'var i16 = new Int16Array(buffer);\n';
+      total += 'var i = new Int32Array(buffer);\n';
+      total += 'var s = new Float32Array(buffer);\n';
+      total += 'var d = new Float64Array(buffer);\n';
+      total += 'var str = new Array(' + str_count + ');\n';
       total += var_decls;
       total += 'for (var j = 0; j < ops.length; ++j) {\n';
       if (debugging_mode) {
