@@ -440,10 +440,13 @@
           return 'Math.random()';
         }
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
-            name == 'chr$' || name == 'sqr' || name == 'int' ||
-            name == 'abs' || name == 'len' ||
+            name == 'chr$' || name == 'sqr' ||
+            name == 'int' || name == 'cint' ||
+            name == 'abs' || name == 'len' || name == 'val' ||
             name == 'cos' || name == 'sin' || name == 'tan' || name == 'atn' ||
-            name == 'exp' || name == 'str$' || name == 'peek') {
+            name == 'exp' || name == 'str$' || name == 'peek' ||
+            name == 'ltrim$' || name == 'rtrim$' ||
+            name == 'space$') {
           Skip('(');
           var e = Expression();
           Skip(')');
@@ -455,6 +458,7 @@
             case 'asc': return '(' + e + ').toCharCode(0)';
             case 'sqr': return 'Math.sqrt(' + e + ')';
             case 'int': return 'Math.floor(' + e + ')';
+            case 'cint': return 'Math.floor(' + e + ')';
             case 'abs': return 'Math.abs(' + e + ')';
             case 'cos': return 'Math.cos(' + e + ')';
             case 'sin': return 'Math.sin(' + e + ')';
@@ -462,12 +466,17 @@
             case 'atn': return 'Math.atan(' + e + ')';
             case 'exp': return 'Math.exp(' + e + ')';
             case 'str$': return '(' + e + ').toString()';
+            case 'val': return 'parseInt(' + e + ')';
             case 'peek': return 'Peek(' + e + ').toString()';
             case 'len': return '((' + e + ').length)';
+            case 'ltrim$': return '((' + e + ').trimStart())';
+            case 'rtrim$': return '((' + e + ').trimEnd())';
+            case 'space$': return 'StringRep((' + e + '), " ")';
           }
           Throw('This cannot happen');
         }
-        if (name == 'atan2' || name == 'string$') {
+        if (name == 'atan2' || name == 'string$' ||
+            name == 'left$' || name == 'right$') {
           Skip('(');
           var a = Expression();
           Skip(',');
@@ -477,6 +486,12 @@
             return 'Math.atan2(' + a + ', ' + b + ')';
           } else if (name == 'string$') {
             return 'StringRep(' + a + ', ' + b + ')';
+          } else if (name == 'left$') {
+            return '((' + a + ').substr(0, (' + b + ')))';
+          } else if (name == 'right$') {
+            return 'Right((' + a + '), (' + b + '))';
+          } else {
+            throw 'impossible';
           }
         }
         if (name == 'inkey$') {
@@ -880,6 +895,10 @@
 
     function Yield() {
       yielding = 1;
+    }
+
+    function Right(s, n) {
+      return s.substr(s.length - n);
     }
 
     function StringRep(n, ch) {
@@ -1568,6 +1587,9 @@
       } else if (tok == 'else') {
         Skip('else');
         Else();
+        if (!EndOfStatement()) {
+          Statement();
+        }
       } else if (tok == 'do') {
         Skip('do');
         NewOp();
@@ -1604,6 +1626,17 @@
         curop += 'ip = ' + f[1] + ';\n';
         NewOp();
         ops[f[1]] += ops.length + '; }\n';
+      } else if (tok == 'exit') {
+        Skip('exit');
+        if (tok == 'sub') {
+          Skip('sub');
+          // TODO: Implement.
+        } else if (tok == 'function') {
+          Skip('function');
+          // TODO: Implement.
+        } else {
+          Throw('Expected sub/function');
+        }
       } else if (tok == 'end') {
         Skip('end');
         if (tok == 'if') {
@@ -1637,6 +1670,14 @@
           for (var i = 0; i < f[4].length; i++) {
             ops[f[4][i]] += 'ip = ' + ops.length + ';\n';
           }
+        } else if (tok == 'sub') {
+          Skip('sub');
+          vars = global_vars;
+          // TODO: Implement.
+        } else if (tok == 'function') {
+          Skip('function');
+          vars = global_vars;
+          // TODO: Implement.
         } else {
           curop += 'End();\n';
         }
@@ -1783,6 +1824,40 @@
         } else {
           // TODO: Implement.
         }
+      } else if (tok == 'sub') {
+        Skip('sub');
+        var name = tok;
+        Next();
+        vars = {};
+        if (tok == '(') {
+          Skip('(');
+          while (tok != ')') {
+            DimVariable();
+            if (tok != ',') {
+              break;
+            }
+            Skip(',');
+          }
+          Skip(')');
+        }
+        // TODO: Implement
+      } else if (tok == 'function') {
+        Skip('function');
+        var name = tok;
+        Next();
+        vars = {};
+        if (tok == '(') {
+          Skip('(');
+          while (tok != ')') {
+            DimVariable();
+            if (tok != ',') {
+              break;
+            }
+            Skip(',');
+          }
+          Skip(')');
+        }
+        // TODO: Implement
       } else if (tok == 'def') {
         Skip('def');
         if (tok == 'seg') {
@@ -2056,11 +2131,15 @@
           [x, y].concat(extra).join('), (') + '));\n';
       } else if (tok == 'line') {
         Skip('line');
-        Skip('(');
-        var x1 = Expression();
-        Skip(',');
-        var y1 = Expression();
-        Skip(')');
+        var x1 = pen_x;
+        var y1 = pen_y;
+        if (tok == '(') {
+          Skip('(');
+          x1 = Expression();
+          Skip(',');
+          y1 = Expression();
+          Skip(')');
+        }
         Skip('-');
         Skip('(');
         var x2 = Expression();
