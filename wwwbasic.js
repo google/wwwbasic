@@ -337,6 +337,17 @@
       Next();
     }
 
+    function EndOfStatement() {
+      return tok == ':' || tok == '<EOL>';
+    }
+
+    function SkipEndOfStatement() {
+      if (!EndOfStatement()) {
+        Throw('Expected : or EOL');
+      }
+      Next();
+    }
+
     function NewOp() {
       ops.push(curop);
       curop = '';
@@ -473,6 +484,19 @@
         }
         if (name == 'timer') {
           return 'GetTimer()';
+        }
+        if (functions[name] !== undefined) {
+          Skip('(');
+          while (tok != ')') {
+            var a = Expression();
+            if (tok != ',') {
+              break;
+            }
+            Skip(',');
+          }
+          Skip(')');
+          // TODO: Implement.
+          return '0';
         }
         return IndexVariable(name);
       }
@@ -795,12 +819,13 @@
         if (tok == '(') {
           Skip('(');
           var dims = [];
-          var e = Expression();
-          dims.push(e);
-          while (tok == ',') {
-            Skip(',');
+          while (tok != ')') {
             var e = Expression();
             dims.push(e);
+            if (tok != ',') {
+              break;
+            }
+            Skip(',');
           }
           Skip(')');
           vname += '[';
@@ -1462,14 +1487,7 @@
     function GetVar() {
       var name = tok;
       Next();
-      if (vars[name] === undefined) {
-        if (option_explicit) {
-          Throw('Unknown variable ' + name);
-        } else {
-          ImplicitDimVariable(name);
-        }
-      }
-      return vars[name];
+      return IndexVariable(name);
     }
 
     var DEFAULT_TYPES = {
@@ -1481,7 +1499,7 @@
     };
 
     function Statement() {
-      if (tok == '<EOL>') {
+      if (EndOfStatement()) {
         // Ignore empty lines.
       } else if (tok == 'rem') {
         do {
@@ -1491,7 +1509,7 @@
         Skip('if');
         var e = Expression();
         Skip('then');
-        if (tok == ':' || tok == '<EOL>') {
+        if (EndOfStatement()) {
           If(e);
           while (tok == ':') {
             Skip(':');
@@ -1682,16 +1700,16 @@
         var type_name = tok;
         Next();
         types[type_name] = {};
-        Skip('<EOL>');
+        SkipEndOfStatement();
         while (tok != 'end') {
-          while (tok != '<EOL>') {
+          while (!EndOfStatement()) {
             DimVariable(null);
             while (tok == ',') {
               Skip(',');
               DimVariable(null);
             }
           }
-          Skip('<EOL>');
+          SkipEndOfStatement();
         }
         Skip('end');
         Skip('type');
@@ -1758,7 +1776,7 @@
         } else if (tok == '0') {
           Skip('0');
           // TODO: Implement.
-        } else if (tok != '<EOL>' && tok != ':') {
+        } else if (!EndOfStatement()) {
           var name = tok;
           Next();
           // TODO: Implement.
@@ -1810,8 +1828,16 @@
         // TODO: Implement.
       } else if (tok == 'close') {
         Skip('close');
-        // #n
-        Next();
+        if (!EndOfStatement()) {
+          // #n
+          Next();
+        }
+        // TODO: Implement.
+      } else if (tok == 'system') {
+        Skip('system');
+        // TODO: Implement.
+      } else if (tok == 'beep') {
+        Skip('beep');
         // TODO: Implement.
       } else if (tok == 'poke') {
         Skip('poke');
@@ -1931,7 +1957,7 @@
         if (f[0] != 'for') {
           Throw('Expected NEXT');
         }
-        if (tok != ':' && tok != '<EOL>') {
+        if (!EndOfStatement()) {
           var name = tok;
           // TODO: Shouldn't this fail?
           /*
@@ -1981,19 +2007,19 @@
         var fill = 0;
         if (tok == ',') {
           Skip(',');
-          if (tok != ',' && tok != '<EOL>') {
+          if (tok != ',' && !EndOfStatement()) {
             start = Expression();
           }
         }
         if (tok == ',') {
           Skip(',');
-          if (tok != ',' && tok != '<EOL>') {
+          if (tok != ',' && !EndOfStatement()) {
             end = Expression();
           }
         }
         if (tok == ',') {
           Skip(',');
-          if (tok != ',' && tok != '<EOL>') {
+          if (tok != ',' && !EndOfStatement()) {
             aspect = Expression();
           }
         }
@@ -2021,7 +2047,7 @@
           extra.push(Expression());
           while (tok == ',') {
             Skip(',');
-            if (tok != ',' && tok != '<EOL>') {
+            if (tok != ',' && !EndOfStatement()) {
               extra.push(Expression());
             }
           }
@@ -2112,7 +2138,7 @@
         ret += '(' + e + ')';
         while (tok == ',') {
           Skip(',');
-          if (tok != ',' && tok != '<EOL>') {
+          if (tok != ',' && !EndOfStatement()) {
             var e = Expression();
             ret += ', (' + e + ')';
           } else {
@@ -2143,6 +2169,11 @@
       } else if (tok == 'width') {
         Skip('width');
         var w = Expression();
+        if (tok == ',') {
+          Skip(',');
+          var n = Expression();
+          // TODO
+        }
         curop += 'Width(' + w + ');\n';
       } else if (tok == 'color') {
         Skip('color');
@@ -2186,16 +2217,14 @@
         ConsumeData();
       } else if (tok == 'read') {
         Skip('read');
-        var v = GetVar();
-        curop += v.code + ' = data[data_pos++];\n';
+        curop += GetVar() + ' = data[data_pos++];\n';
         while (tok == ',') {
           Skip(',');
-          var v = GetVar();
-          curop += v.code + ' = data[data_pos++];\n';
+          curop += GetVar() + ' = data[data_pos++];\n';
         }
       } else if (tok == 'restore') {
         Skip('restore');
-        if (tok != ':' && tok != '<EOL>') {
+        if (!EndOfStatement()) {
           curop += 'data_pos = data_labels["' + tok + '"];\n';
           Next();
         } else {
@@ -2208,7 +2237,7 @@
           Next();
           Skip(',');
         }
-        while (tok != '<EOL>' && tok != ':') {
+        while (!EndOfStatement()) {
           var name = tok;
           Next();
           var v = IndexVariable(name);
@@ -2219,7 +2248,7 @@
         }
       } else if (tok == 'print') {
         Skip('print');
-        if (tok == '<EOL>' || tok == ':') {
+        if (EndOfStatement()) {
           curop += 'Print([]);\n';
           return;
         }
@@ -2235,7 +2264,7 @@
         while (tok == ';' || tok == ',') {
           items.push('"' + tok + '"');
           Next();
-          if (tok == '<EOL>' || tok == ':') {
+          if (EndOfStatement()) {
             break;
           }
           var e = Expression();
@@ -2288,36 +2317,31 @@
         Skip('getmouse');
         curop += 'Yield();';
         NewOp();
-        var v = GetVar();
-        curop += v.code + ' = mouse_x;\n';
+        curop += GetVar() + ' = mouse_x;\n';
         Skip(',');
-        var v = GetVar();
-        curop += v.code + ' = mouse_y;\n';
+        curop += GetVar() + ' = mouse_y;\n';
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
-            var v = GetVar();
-            curop += v.code + ' = mouse_wheel;\n';
+            curop += GetVar() + ' = mouse_wheel;\n';
           }
         }
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
-            var v = GetVar();
-            curop += v.code + ' = mouse_buttons;\n';
+            curop += GetVar() + ' = mouse_buttons;\n';
           }
         }
         if (tok == ',') {
           Skip(',');
-          var v = GetVar();
-          curop += v.code + ' = mouse_clip;\n';
+          curop += GetVar() + ' = mouse_clip;\n';
         }
       } else if (tok == '') {
         return;
       } else if (subroutines[tok] !== undefined) {
         var sub = subroutines[tok];
         Next();
-        while (tok != '<EOL>' && tok != ':') {
+        while (!EndOfStatement()) {
           var e = Expression();
           if (tok != ',') {
             break;
@@ -2371,7 +2395,7 @@
           if (tok == '') {
             break;
           }
-          Skip('<EOL>');
+          SkipEndOfStatement();
         }
       }
 
@@ -2688,13 +2712,13 @@
     '           XX            XX XX   XX XX      XX   XXX XX         ' +
     '                                                                ' +
 
-    '   XX   XX                                                      ' +
-    '  XX     XX     XX X XX   XX                                 XX ' +
-    ' XX       XX      XXX     XX                                XX  ' +
-    ' XX       XX    XXXXXXX XXXXXX           XXXXX             XX   ' +
-    ' XX       XX      XXX     XX                              XX    ' +
-    '  XX     XX     XX X XX   XX       XX                    XX     ' +
-    '   XX   XX                         XX              XX   XX      ' +
+    '   XX     XX                                                    ' +
+    '  XX       XX   XX X XX   XX                                 XX ' +
+    ' XX         XX    XXX     XX                                XX  ' +
+    ' XX         XX  XXXXXXX XXXXXX           XXXXX             XX   ' +
+    ' XX         XX    XXX     XX                              XX    ' +
+    '  XX       XX   XX X XX   XX       XX                    XX     ' +
+    '   XX     XX                       XX              XX   XX      ' +
     '                                  XX               XX           ' +
 
     ' XXXXX     XX    XXXXX   XXXXX  XX  XX  XXXXXXX  XXXXX  XXXXXXX ' +
