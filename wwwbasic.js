@@ -476,7 +476,8 @@
           Throw('This cannot happen');
         }
         if (name == 'atan2' || name == 'string$' ||
-            name == 'left$' || name == 'right$') {
+            name == 'left$' || name == 'right$' ||
+            name == 'instr') {
           Skip('(');
           var a = Expression();
           Skip(',');
@@ -490,6 +491,8 @@
             return '((' + a + ').substr(0, (' + b + ')))';
           } else if (name == 'right$') {
             return 'Right((' + a + '), (' + b + '))';
+          } else if (name == 'instr') {
+            return '(' + a + ').search(' + b + ')';
           } else {
             throw 'impossible';
           }
@@ -986,7 +989,7 @@
       screen_mode = mode;
       pen_x = display.width / 2;
       pen_y = display.height / 2;
-      Cls();
+      Cls(0);
     }
 
     function Width(w) {
@@ -1245,7 +1248,8 @@
     }
     var last = 0;
 
-    function Cls() {
+    function Cls(mode) {
+      // TODO: Handle mode.
       Box(0, 0, display.width, display.height, BLACK);
       text_x = 0;
       text_y = 0;
@@ -1599,6 +1603,11 @@
         }
       } else if (tok == 'do') {
         Skip('do');
+        if (tok == 'while') {
+          // Support DO WHILE
+          Statement();
+          return;
+        }
         NewOp();
         flow.push(['do', ops.length]);
       } else if (tok == 'loop') {
@@ -1608,6 +1617,15 @@
         } else if (tok == 'until') {
           Skip('until');
           // TODO
+        } else if (EndOfStatement()) {
+          var f = flow.pop();
+          if (f[0] != 'while') {
+            Throw('LOOP does not match while');
+          }
+          curop += 'ip = ' + f[1] + ';\n';
+          NewOp();
+          ops[f[1]] += ops.length + '; }\n';
+          return;
         } else {
           Throw('Expected while/until');
         }
@@ -1921,6 +1939,20 @@
       } else if (tok == 'beep') {
         Skip('beep');
         // TODO: Implement.
+      } else if (tok == 'view') {
+        Skip('view');
+        if (tok == 'print') {
+          Skip('print');
+          var top = Expression();
+          Skip('to');
+          var bottom = Expression();
+          // TODO: Implement.
+        } else if (tok == 'screen') {
+          Skip('screen');
+          // TODO: Implement.
+        } else {
+          Throw('Expected PRINT/SCREEN');
+        }
       } else if (tok == 'poke') {
         Skip('poke');
         var addr = Expression();
@@ -2131,6 +2163,21 @@
           [x, y].concat(extra).join('), (') + '));\n';
       } else if (tok == 'line') {
         Skip('line');
+        if (tok == 'input') {
+          Skip('input');
+          if (tok == ';') {
+            Skip(';');
+          }
+          var prompt = '""';
+          if (tok.substr(0, 1) == '"') {
+            var prompt = tok;
+            Next();
+            Skip(';');
+          }
+          var a = GetVar();
+          // TODO: Implement.
+          return;
+        }
         var x1 = pen_x;
         var y1 = pen_y;
         if (tok == '(') {
@@ -2228,7 +2275,12 @@
         curop += ret;
       } else if (tok == 'cls') {
         Skip('cls');
-        curop += 'Cls();\n';
+        var mode = '0';
+        if (tok == '0' || tok == '1' || tok == '2') {
+          mode = tok;
+          Next();
+        }
+        curop += 'Cls(' + mode + ');\n';
       } else if (tok == 'sleep') {
         Skip('sleep');
         var e = Expression();
@@ -2306,6 +2358,15 @@
           Next();
           Skip(',');
         }
+        if (tok == ';') {
+          Skip(';');
+        }
+        var prompt = '""';
+        if (tok.substr(0, 1) == '"') {
+          var prompt = tok;
+          Next();
+          Skip(';');
+        }
         while (!EndOfStatement()) {
           var v = GetVar();
           if (tok != ',') {
@@ -2313,6 +2374,7 @@
           }
           Skip(',');
         }
+        // TODO: Implement.
       } else if (tok == 'print') {
         Skip('print');
         if (EndOfStatement()) {
