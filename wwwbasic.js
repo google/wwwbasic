@@ -173,7 +173,7 @@
     var toklist = [
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
       '+=', '-=', '*=', '/=', '\\=', '^=', '&=',
-      '+', '-', '*', '/', '\\','^', '&',
+      '+', '-', '*', '/', '\\', '^', '&',
       '<=', '>=', '<>', '=>', '=', '<', '>', '@', '\n',
     ];
     if (canvas) {
@@ -695,7 +695,7 @@
     }
 
     function DimScalarVariable(name, type_name, defaults) {
-      var size = TYPE_SIZE_MAP[type_name];
+      var size = TYPE_SIZE_MAP[type_name] || 1;
       var index;
       if (type_name == 'Array') {
         index = str_count++;
@@ -704,7 +704,8 @@
         index = allocated / size;
         allocated += size;
       }
-      var code = TYPE_ARRAY_MAP[type_name] + '[' + index + ']';
+      var array_name = TYPE_ARRAY_MAP[type_name] || 'boo';
+      var code = array_name + '[' + index + ']';
       var_decls += '// ' + code + ' is ' + name + '\n';
       if (defaults.length > 0) {
         curop += code + ' = ' + defaults[0] + ';\n';
@@ -715,8 +716,17 @@
       };
     }
 
-    function ImplicitDimVariable(name) {
+    function MaybeImplicitDimVariable(name) {
       // TODO: Handle array variables.
+      if (global_vars[name] !== undefined) {
+        return global_vars[name];
+      }
+      if (vars[name] !== undefined) {
+        return vars[name];
+      }
+      if (option_explicit) {
+        Throw('Undeclared variable ' + name);
+      }
       var type_name = ImplicitType(name);
       DimScalarVariable(name, type_name, []);
       return vars[name];
@@ -784,11 +794,14 @@
         Skip('as');
         type_name = TypeName();
       }
-      if (!redim && vars[name] !== undefined) {
+      if (vars[name] !== undefined) {
+        if (redim) {
+          return;
+        }
         Throw('Variable ' + name + ' defined twice');
       }
       // name, dims.
-      if (dimensions == 0) {
+      if (dimensions.length == 0) {
         DimScalarVariable(name, type_name, defaults);
       } else {
         var index;
@@ -821,14 +834,7 @@
     }
 
     function IndexVariable(name) {
-      var v = vars[name];
-      if (v === undefined) {
-        if (option_explicit) {
-          Throw('Undeclared variable ' + name);
-        } else {
-          v = ImplicitDimVariable(name);
-        }
-      }
+      var v = MaybeImplicitDimVariable(name);
       var vname = v.code;
       while (tok == '(' || tok == '.') {
         if (tok == '(') {
@@ -844,10 +850,11 @@
           }
           Skip(')');
           vname += '[';
+          if (dims.length != v.dimensions.length) {
+            Throw('Array dimension expected ' + v.dimensions.length +
+                  ' but found ' + dims.length + ', array named: ' + name);
+          }
           for (var i = 0; i < dims.length; ++i) {
-            if (i >= v.dimensions.length) {
-              Throw('Bad array name: ' + name);
-            }
             vname += '(((' + dims[i] + ')|0)-' + v.dimensions[i][0] + ')';
             for (var j = 0; j < i; ++j) {
               vname += '*(' + v.dimensions[j][1] + '-' +
@@ -2000,14 +2007,7 @@
       } else if (tok == 'for') {
         Skip('for');
         var name = tok;
-        var v = vars[name];
-        if (v === undefined) {
-          if (option_explicit) {
-            Throw('Undeclared variable ' + name);
-          } else {
-            v = ImplicitDimVariable(name);
-          }
-        }
+        var v = MaybeImplicitDimVariable(name);
         Next();
         Skip('=');
         var start = Expression();
@@ -2276,22 +2276,12 @@
         // TODO: Implement.
       } else if (tok == 'swap') {
         Skip('swap');
-        var a = tok;
-        Next();
-        var va = vars[a];
-        if (va == undefined) {
-          Throw('Expected variable name');
-        }
+        var a = GetVar();
         Skip(',');
-        var b = tok;
-        Next();
-        var vb = vars[b];
-        if (vb == undefined) {
-          Throw('Expected variable name');
-        }
-        curop += 'var t = ' + va[0] + ';\n';
-        curop += va[0] + ' = ' + vb[0] + ';\n';
-        curop += vb[0] + ' = ' + va[0] + ';\n';
+        var b = GetVar();
+        curop += 'var t = ' + a + ';\n';
+        curop += a + ' = ' + b + ';\n';
+        curop += b + ' = ' + a + ';\n';
       } else if (tok == 'data') {
         ConsumeData();
       } else if (tok == 'read') {
@@ -2317,9 +2307,7 @@
           Skip(',');
         }
         while (!EndOfStatement()) {
-          var name = tok;
-          Next();
-          var v = IndexVariable(name);
+          var v = GetVar();
           if (tok != ',') {
             break;
           }
