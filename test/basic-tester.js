@@ -23,7 +23,9 @@ function BASIC_TEST(suite, name, code, expected_log, expected_error) {
   code = code.substr(1);  // skip \n
   expected_log = expected_log.substr(1);  // skip \n
   if (expected_error !== undefined) {
-    expected_error = expected_error.substr(1);  // skip \n
+    if (expected_error.substr(0, 1) == '\n') {
+      expected_error = expected_error.substr(1);  // skip \n
+    }
   }
 
   var result_log = '';
@@ -38,13 +40,12 @@ function BASIC_TEST(suite, name, code, expected_log, expected_error) {
       result_error += msg + '\n';
     };
     basic.Basic(code);
-    if (result_log != expected_log) {
-      throw 'Unexpected log:\n' + result_log +
-        '\nExpected:\n' + expected_log;
-    }
-    if (expected_error !== undefined && result_error != expected_error) {
-      throw 'Unexpected error:\n' + result_error +
-        '\nExpected:\n' + expected_error;
+    if (result_log != expected_log ||
+        (expected_error !== undefined && result_error != expected_error)) {
+      throw 'Result:\n' + result_log +
+        '\nExpected:\n' + expected_log +
+        '\nResult error:\n' + result_error +
+        '\nExpected error:\n' + expected_error;
     }
   } finally {
     console.log = console_log;

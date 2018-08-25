@@ -15,8 +15,22 @@
 'use strict';
 
 (function() {
+  var DYNAMIC_HEAP_SIZE = 1024 * 1024 * 16;
   var BLACK = 0xff000000;
   var WHITE = 0xffffffff;
+
+  var SIMPLE_TYPE_INFO = {
+  'byte': {array: 'Uint8Array', size: 1, shift: 0, view: 'b'},
+  'short': {array: 'Int16Array', size: 2, shift: 1, view: 'i16'},
+  'long': {array: 'Int32Array', size: 4, shift: 2, view: 'i'},
+  'single': {array: 'Float32Array', size: 4, shift: 2, view: 's'},
+  'double': {array: 'Float64Array', size: 8, shift: 3, view: 'd'},
+  'string': {array: 'Array', size: 1, shift: 0, view: 'str'},
+  };
+
+  var IMPLICIT_TYPE_MAP = {
+  '$': 'string', '%': 'short', '&': 'long', '!': 'single', '#': 'double',
+  };
 
   function NextChar(ch) {
     return String.fromCharCode(ch.charCodeAt(0) + 1);
@@ -123,10 +137,8 @@
     var vars = global_vars;
     var allocated = 0;
     var str_count = 0;
-    var array_count = 0;
     var const_count = 0;
     var var_decls = '';
-    var vars_getput = {};
     var rstack = [];
     var data = [];
     var data_pos = 0;
@@ -151,7 +163,7 @@
     // Default is single.
     var i = 'a';
     do {
-      letter_default[i] = 'Float32Array';
+      letter_default[i] = 'single';
       i = NextChar(i);
     } while (i != 'z');
 
@@ -173,7 +185,7 @@
     var toklist = [
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
       '+=', '-=', '*=', '/=', '\\=', '^=', '&=',
-      '+', '-', '*', '/', '\\', '^', '&',
+      '+', '-', '*', '/', '\\', '^', '&', '.',
       '<=', '>=', '<>', '=>', '=', '<', '>', '@', '\n',
     ];
     if (canvas) {
@@ -439,6 +451,16 @@
           }
           return 'Math.random()';
         }
+        if (name == 'varptr') {
+          Skip('(');
+          var vname = tok;
+          Next();
+          Skip(')');
+          if (vars[vname] === undefined) {
+            Throw('Undefined variable name');
+          }
+          return vars[vname].offset;
+        }
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
             name == 'chr$' || name == 'sqr' ||
             name == 'int' || name == 'cint' ||
@@ -632,92 +654,67 @@
     }
 
     function TypeName() {
-      if (tok == 'byte') {
-        Skip('byte');
-        return 'Uint8Array';
-      } else if (tok == 'single') {
-        Skip('single');
-        return 'Float32Array';
-      } else if (tok == 'double') {
-        Skip('double');
-        return 'Float64Array';
+      if (SIMPLE_TYPE_INFO[tok]) {
+        var type = tok;
+        Next();
+        return type;
       } else if (tok == 'integer') {
         Skip('integer');
-        return 'Int32Array';
-      } else if (tok == 'long') {
-        Skip('long');
-        return 'Int32Array';
-      } else if (tok == 'string') {
-        Skip('string');
-        return 'Array';
+        return 'long';
       } else if (tok == 'any') {
         Skip('any');
-        return 'Array';
+        // TODO: Handle this properly.
+        return 'string';
       } else if (types[tok] !== undefined) {
-        var t = types[tok];
+        var type_name = tok;
+        if (types[type_name] === undefined) {
+          Throw('Undefined type');
+        }
         Next();
-        // TODO: Implement.
-        return 'Array';
+        return type_name;
       }
       Throw('Undefined type "' + tok + '"');
     }
 
-    var TYPE_ARRAY_MAP = {
-      'Uint8Array': 'b',
-      'Int16Array': 'i16',
-      'Int32Array': 'i',
-      'Float32Array': 's',
-      'Float64Array': 'd',
-      'Array': 'str',
-    };
-
-    var TYPE_SIZE_MAP = {
-      'Uint8Array': 1,
-      'Int16Array': 2,
-      'Int32Array': 4,
-      'Float32Array': 4,
-      'Float64Array': 8,
-      'Array': 1,
-    };
-
     function ImplicitType(name) {
-      if (name[name.length-1] == '$') {
-        // TODO: String Array Init.
-        return 'Array';
-      } else if (name[name.length-1] == '%') {
-        return 'Int16Array';
-      } else if (name[name.length-1] == '&') {
-        return 'Int32Array';
-      } else if (name[name.length-1] == '!') {
-        return 'Float32Array';
-      } else if (name[name.length-1] == '#') {
-        return 'Float64Array';
-      } else {
-        return letter_default[name[0]] || 'Float32Array';
-      }
+      return IMPLICIT_TYPE_MAP[name[name.length - 1]] ||
+        letter_default[name[0]] || 'single';
+    }
+
+    function Align(alignment) {
+      allocated = Math.floor((allocated + alignment - 1) /
+          alignment) * alignment;
+    }
+
+    function Allocate(size) {
+      Align(size > 8 ? 8 : size);
+      var ret = allocated;
+      allocated += size;
+      return ret;
     }
 
     function DimScalarVariable(name, type_name, defaults) {
-      var size = TYPE_SIZE_MAP[type_name] || 1;
-      var index;
-      if (type_name == 'Array') {
-        index = str_count++;
+      var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
+      if (info === undefined) {
+        Throw('Unknown type');
+      }
+      var size = info.size;
+      var offset;
+      if (type_name == 'string') {
+        offset = str_count++;
       } else {
-        allocated = Math.floor((allocated + size - 1) / size) * size;
-        index = allocated / size;
-        allocated += size;
+        offset = Allocate(size);
       }
-      var array_name = TYPE_ARRAY_MAP[type_name] || 'boo';
-      var code = array_name + '[' + index + ']';
-      var_decls += '// ' + code + ' is ' + name + '\n';
-      if (defaults.length > 0) {
-        curop += code + ' = ' + defaults[0] + ';\n';
-      }
+      var_decls += '// ' + name + ' is at ' + offset + '\n';
       vars[name] = {
-        code: code,
+        offset: offset,
         dimensions: [],
+        type_name: type_name,
       };
-    }
+      if (defaults.length > 0) {
+        curop += IndexVariable(name) + ' = ' + defaults[0] + ';\n';
+      }
+   }
 
     function MaybeImplicitDimVariable(name) {
       // TODO: Handle array variables.
@@ -735,14 +732,19 @@
       return vars[name];
     }
 
-    function ImplicitDimGetPut(name) {
-      if (vars[name] !== undefined) {
-        return vars[name].code;
+    function ReserveArrayCell(name) {
+      if (vars[name] === undefined) {
+        var addr = Allocate(4);
+        var vcell = SIMPLE_TYPE_INFO['long'].view + '[' + (addr >> 2) + ']';
+        vars[name] = {
+          offset: vcell,
+          dimensions: null,
+          type_name: null,
+        };
+        var_decls += '// ' + name + ' is at ' + vcell +
+          ' (cell-addr: ' + addr + ')\n';
       }
-      if (vars_getput[name] === undefined) {
-        vars_getput[name] = array_count++;
-      }
-      return 'a' + vars_getput[name];
+      return vars[name];
     }
 
     function DimVariable(default_tname, redim) {
@@ -797,7 +799,7 @@
         Skip('as');
         type_name = TypeName();
       }
-      if (vars[name] !== undefined) {
+      if (vars[name] !== undefined && vars[name].dimensions != null) {
         if (redim) {
           return;
         }
@@ -807,38 +809,42 @@
       if (dimensions.length == 0) {
         DimScalarVariable(name, type_name, defaults);
       } else {
-        var index;
-        if (vars_getput[name] !== undefined) {
-          index = vars_getput[name];
-        } else {
-          index = array_count++;
-        }
-        var code = 'a' + index;
-        var_decls += 'var ' + code + ';  // ' + name + '\n';
+        var vcell = ReserveArrayCell(name).offset;
+        var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
         var parts = [];
         for (var i = 0; i < dimensions.length; i++) {
           parts.push('((' + dimensions[i][1] + ')-(' +
             dimensions[i][0] + ')+1)');
         }
-        curop += 'if (' + code + ' === undefined) {\n';
-        curop += '  ' + code + ' = new ' + type_name +
-          '(' + parts.join('*') + ');\n';
+        curop += 'if (' + vcell + ' === 0) {\n';
+        curop += '  ' + vcell + ' = Allocate(' +
+          parts.join('*') + '*' + info.size + ');\n';
         if (defaults.length > 0) {
+          if (dimensions.length > 1) {
+            Throw('Only 1-d array defaults supported');
+          }
+          if (!SIMPLE_TYPE_INFO[type_name]) {
+            Throw('Only simple type array defaults supported');
+          }
           for (var i = 0; i < defaults.length; i++) {
-            curop += '  ' + code + '[' + i + '] = (' + defaults[i] + ');\n';
+            curop += '  ' + info.view + '[' +
+              ' + (' + vcell + ' >> ' + info.shift + ') + '
+              + i + '] = (' + defaults[i] + ');\n';
           }
         }
         curop += '}\n';
         vars[name] = {
-          code: code,
+          offset: vcell,
           dimensions: dimensions,
+          type_name: type_name,
         };
       }
     }
 
     function IndexVariable(name) {
       var v = MaybeImplicitDimVariable(name);
-      var vname = v.code;
+      var offset = '' + v.offset;
+      var type_name = v.type_name;
       while (tok == '(' || tok == '.') {
         if (tok == '(') {
           Skip('(');
@@ -852,29 +858,43 @@
             Skip(',');
           }
           Skip(')');
-          vname += '[';
+          var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
+          offset = '(' + offset + ' + ' + info.size + '*(';
           if (dims.length != v.dimensions.length) {
             Throw('Array dimension expected ' + v.dimensions.length +
                   ' but found ' + dims.length + ', array named: ' + name);
           }
           for (var i = 0; i < dims.length; ++i) {
-            vname += '(((' + dims[i] + ')|0)-' + v.dimensions[i][0] + ')';
+            offset += '(((' + dims[i] + ')|0)-' + v.dimensions[i][0] + ')';
             for (var j = 0; j < i; ++j) {
-              vname += '*(' + v.dimensions[j][1] + '-' +
+              offset += '*(' + v.dimensions[j][1] + '-' +
                 v.dimensions[j][0] + ' + 1)';
             }
             if (i != dims.length - 1) {
-              vname += '+';
+              offset += '+';
             }
           }
-          vname += ']';
+          offset += '))';
         } else if (tok == '.') {
           Skip('.');
+          var ntype = types[type_name];
+          if (ntype === undefined) {
+            Throw('Not a struct type');
+          }
+          var field = ntype.vars[tok];
+          if (field === undefined) {
+            Throw('Invalid field name');
+          }
           Next();
-          // TODO
+          offset = '(' + offset + ' + ' + field.offset + ')';
+          type_name = field.type_name;
         }
       }
-      return vname;
+      var info = SIMPLE_TYPE_INFO[type_name];
+      if (!info) {
+        Throw('Expected simple type');
+      }
+      return info.view + '[' + offset + '>>' + info.shift + ']';
     }
 
     function End() {
@@ -993,8 +1013,8 @@
     }
 
     function Width(w) {
-      if (w == 80 || w == 40) {
-        SetupDisplay(w * 8, display.height, screen_aspect, font_height);
+      if (screen_mode == 0 && (w == 80 || w == 40)) {
+        SetupDisplay(w * 8, display.height, w == 80 ? 2.4 : 1.2, font_height);
       }
     }
 
@@ -1279,22 +1299,22 @@
       }
     }
 
-    function GetImage(x1, y1, x2, y2, buffer) {
+    function GetImage(x1, y1, x2, y2, buffer, offset) {
       x1 = x1 | 0;
       y1 = y1 | 0;
       x2 = x2 | 0;
       y2 = y2 | 0;
-      var d16 = new Uint16Array(buffer.buffer);
+      var d16 = new Uint16Array(buffer);
       if (screen_bpp <= 2) {
-        d16[0] = (x2 - x1 + 1) * screen_bpp;
+        d16[(offset >> 1) + 0] = (x2 - x1 + 1) * screen_bpp;
       } else {
-        d16[0] = (x2 - x1 + 1);
+        d16[(offset >> 1) + 0] = (x2 - x1 + 1);
       }
-      d16[1] = y2 - y1 + 1;
-      var d = new Uint8Array(buffer.buffer);
+      d16[(offset >> 1) + 1] = y2 - y1 + 1;
+      var d = new Uint8Array(buffer);
       var src = display_data;
       if (screen_bpp > 8) {
-        var dstpos = 4;
+        var dstpos = offset + 4;
         for (var y = y1; y <= y2; ++y) {
           var srcpos = x1 + y * display.width;
           for (var x = x1; x <= x2; ++x) {
@@ -1305,7 +1325,7 @@
           }
         }
       } else {
-        var dstpos = 4;
+        var dstpos = offset + 4;
         var shift = 8;
         var v = 0;
         for (var y = y1; y <= y2; ++y) {
@@ -1329,21 +1349,21 @@
       }
     }
 
-    function PutImage(x1, y1, buffer, mode) {
+    function PutImage(x1, y1, buffer, offset, mode) {
       x1 = x1 | 0;
       y1 = y1 | 0;
-      var s16 = new Uint16Array(buffer.buffer);
+      var s16 = new Uint16Array(buffer);
       var x2;
       if (screen_bpp <= 2) {
-        x2 = x1 + (s16[0] / screen_bpp) - 1;
+        x2 = x1 + (s16[(offset >> 1) + 0] / screen_bpp) - 1;
       } else {
-        x2 = x1 + s16[0] - 1;
+        x2 = x1 + s16[(offset >> 1)] - 1;
       }
-      var y2 = y1 + s16[1] - 1;
-      var s = new Uint8Array(buffer.buffer);
+      var y2 = y1 + s16[(offset >> 1) + 1] - 1;
+      var s = new Uint8Array(buffer);
       var dst = display_data;
       if (screen_bpp > 8) {
-        var srcpos = 4;
+        var srcpos = offset + 4;
         for (var y = y1; y <= y2; ++y) {
           var dstpos = x1 + y * display.width;
           for (var x = x1; x <= x2; ++x) {
@@ -1363,7 +1383,7 @@
           }
         }
       } else {
-        var srcpos = 4;
+        var srcpos = offset + 4;
         var mask = (1 << screen_bpp) - 1;
         for (var y = y1; y <= y2; ++y) {
           var dstpos = x1 + y * display.width;
@@ -1521,11 +1541,11 @@
     }
 
     var DEFAULT_TYPES = {
-      'defdbl': 'Float64Array',
-      'defsng': 'Float32Array',
-      'defint': 'Int32Array',
-      'deflng': 'Int32Array',
-      'defstr': 'Array',
+      'defdbl': 'double',
+      'defsng': 'single',
+      'defint': 'short',
+      'deflng': 'long',
+      'defstr': 'string',
     };
 
     function Statement() {
@@ -1761,11 +1781,18 @@
           Throw('Unexpected declaration');
         }
       } else if (tok == 'type') {
+        var old_allocated = allocated;
         vars = {};
         Skip('type');
         var type_name = tok;
         Next();
-        types[type_name] = {};
+        if (types[type_name] !== undefined) {
+          Throw('Duplicate type definition');
+        }
+        types[type_name] = {
+          vars: vars,
+          size: 0,
+        };
         SkipEndOfStatement();
         while (tok != 'end') {
           while (!EndOfStatement()) {
@@ -1779,9 +1806,12 @@
         }
         Skip('end');
         Skip('type');
+        types[type_name].size = allocated;
         vars = global_vars;
+        allocated = old_allocated;
       } else if (tok == 'const') {
         Skip('const');
+        // TODO: Enforce consts are const.
         for (;;) {
           var name = tok;
           Next();
@@ -1789,13 +1819,16 @@
           if (v !== undefined) {
             Throw('Constant ' + name + ' defined twice');
           }
+          var offset = Allocate(8);
           vars[name] = {
-            code: 'c' + const_count++,
+            offset: offset,
+            type_name: 'double',
           };
           v = vars[name];
           Skip('=');
           var value = Expression();
-          var_decls += 'const ' + v.code +
+          var_decls += SIMPLE_TYPE_INFO['double'].view +
+            '[' + (offset>>3) + ']' +
             ' = (' + value + ');  // ' + name + '\n';
           if (tok == ',') {
             Skip(',');
@@ -2039,7 +2072,7 @@
       } else if (tok == 'for') {
         Skip('for');
         var name = tok;
-        var v = MaybeImplicitDimVariable(name);
+        var v = IndexVariable(name);
         Next();
         Skip('=');
         var start = Expression();
@@ -2050,14 +2083,14 @@
           Skip('step');
           step = Expression();
         }
-        curop += v.code + ' = (' + start + ');';
+        curop += v + ' = (' + start + ');';
         NewOp();
         curop += 'if (((' + step + ' > 0) && ' +
-                      v.code + ' > (' + end + ')) || ' +
+                      v + ' > (' + end + ')) || ' +
                      '((' + step + ' < 0) && ' +
-                      v.code + ' < (' + end + '))) { ip = ';
+                      v + ' < (' + end + '))) { ip = ';
         NewOp();
-        flow.push(['for', v.code, ops.length - 1, step]);
+        flow.push(['for', v, ops.length - 1, step]);
       } else if (tok == 'next') {
         Skip('next');
         var f = flow.pop();
@@ -2230,9 +2263,9 @@
         Skip(',');
         var name = tok;
         Next();
-        var v = ImplicitDimGetPut(name);
+        var v = ReserveArrayCell(name).offset;
         curop += 'GetImage(' + x1 + ', ' + y1 + ', ' +
-          x2 + ', ' +  y2 + ', ' + v + ');\n';
+          x2 + ', ' +  y2 + ', buffer, ' + v + ');\n';
       } else if (tok == 'put') {
         Skip('put');
         Skip('(');
@@ -2243,7 +2276,7 @@
         Skip(',');
         var name = tok;
         Next();
-        var v = ImplicitDimGetPut(name);
+        var v = ReserveArrayCell(name).offset;
         var mode = 'xor';
         if (tok == ',') {
           Skip(',');
@@ -2255,7 +2288,7 @@
             Throw('Invalid put mode');
           }
         }
-        curop += 'PutImage(' + x + ', ' + y + ', ' +
+        curop += 'PutImage(' + x + ', ' + y + ', buffer, ' +
           v + ', "' + mode + '");\n';
       } else if (tok == 'screen') {
         Skip('screen');
@@ -2539,17 +2572,21 @@
       curop += 'End();';
       NewOp();
 
-      // Round allocated up.
-      allocated = Math.floor((allocated + 7) / 8) * 8;
+      // Align to 8.
+      Align(8);
 
       var total = '';
-      total += 'var buffer = new ArrayBuffer(' + allocated + ');\n';
-      total += 'var b = new Uint8Array(buffer);\n';
-      total += 'var i16 = new Int16Array(buffer);\n';
-      total += 'var i = new Int32Array(buffer);\n';
-      total += 'var s = new Float32Array(buffer);\n';
-      total += 'var d = new Float64Array(buffer);\n';
-      total += 'var str = new Array(' + str_count + ');\n';
+      total += 'var buffer = new ArrayBuffer(' +
+          allocated + ' + ' + DYNAMIC_HEAP_SIZE + ');\n';
+      for (var i in SIMPLE_TYPE_INFO) {
+        var info = SIMPLE_TYPE_INFO[i];
+        if (i == 'string') {
+          total += 'var str = new Array(' + str_count + ');\n';
+        } else {
+          total += 'var ' + info.view +
+            ' = new ' + info.array + '(buffer);\n';
+        }
+      }
       total += var_decls;
       total += 'for (var j = 0; j < ops.length; ++j) {\n';
       if (debugging_mode) {
@@ -2672,7 +2709,9 @@
       } else {
         console.error(e.toString());
       }
-      console.info(e.stack);
+      if (e.stack !== undefined) {
+        console.info(e.stack);
+      }
     }
     InitEvents();
     Render();

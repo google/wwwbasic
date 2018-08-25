@@ -16,10 +16,17 @@
 
 var basic_test = require('./basic-tester.js');
 
-basic_test.BASIC_TEST('Const', 'Declarations', `
-CONST x = 1
-CONST y = &h1a2b3
-CONST z = 123
+basic_test.BASIC_TEST('Const', 'AllocationLayout', `
+CONST foo=314159
+CONST bar=100000
+DIM gap(100)
+FOR i = 0 to 100
+  gap(i) = 0
+NEXT i
+PRINT foo
+PRINT bar
 `, `
+314159
+100000
 `);
 
