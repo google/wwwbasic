@@ -1057,9 +1057,12 @@
         }
       }
       text_x++;
-      if (text_x > text_width) {
+      if (text_x >= text_width) {
         text_y++;
         text_x = 0;
+      }
+      if (text_y >= text_height) {
+        text_y = 0;
       }
     }
 
