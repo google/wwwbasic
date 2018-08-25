@@ -16,6 +16,7 @@
 
 (function() {
   var DYNAMIC_HEAP_SIZE = 1024 * 1024 * 16;
+  var MAX_DIMENSIONS = 7;
   var BLACK = 0xff000000;
   var WHITE = 0xffffffff;
 
@@ -708,7 +709,7 @@
       var_decls += '// ' + name + ' is at ' + offset + '\n';
       vars[name] = {
         offset: offset,
-        dimensions: [],
+        dimensions: 0,
         type_name: type_name,
       };
       if (defaults.length > 0) {
@@ -732,17 +733,20 @@
       return vars[name];
     }
 
+    function ArrayPart(offset, i) {
+       return SIMPLE_TYPE_INFO['long'].view + '[' + ((offset >> 2) + i) + ']';
+    }
+
     function ReserveArrayCell(name) {
       if (vars[name] === undefined) {
-        var addr = Allocate(4);
-        var vcell = SIMPLE_TYPE_INFO['long'].view + '[' + (addr >> 2) + ']';
+        var offset = Allocate(4 + MAX_DIMENSIONS * 4 * 2);
         vars[name] = {
-          offset: vcell,
+          offset: offset,
           dimensions: null,
           type_name: null,
         };
-        var_decls += '// ' + name + ' is at ' + vcell +
-          ' (cell-addr: ' + addr + ')\n';
+        var_decls += '// ' + name + ' is at ' + ArrayPart(offset, 0) +
+          ' (cell-addr: ' + offset + ')\n';
       }
       return vars[name];
     }
@@ -809,16 +813,25 @@
       if (dimensions.length == 0) {
         DimScalarVariable(name, type_name, defaults);
       } else {
-        var vcell = ReserveArrayCell(name).offset;
+        if (dimensions > MAX_DIMENSIONS) {
+          Throw('Too many dimensions');
+        }
+        var offset = ReserveArrayCell(name).offset;
         var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
         var parts = [];
         for (var i = 0; i < dimensions.length; i++) {
           parts.push('((' + dimensions[i][1] + ')-(' +
             dimensions[i][0] + ')+1)');
         }
-        curop += 'if (' + vcell + ' === 0) {\n';
-        curop += '  ' + vcell + ' = Allocate(' +
+        curop += 'if (' + ArrayPart(offset, 0) + ' === 0) {\n';
+        curop += '  ' + ArrayPart(offset, 0) + ' = Allocate(' +
           parts.join('*') + '*' + info.size + ');\n';
+        for (var i = 0; i < dimensions.length; i++) {
+          curop += '  ' + ArrayPart(offset, i * 2 + 1) + ' = ' +
+            dimensions[i][0] + ';\n';
+          curop += '  ' + ArrayPart(offset, i * 2 + 2) + ' = ' +
+            [info.size].concat(parts).slice(0, i + 1).join('*') + ';\n';
+        }
         if (defaults.length > 0) {
           if (dimensions.length > 1) {
             Throw('Only 1-d array defaults supported');
@@ -828,14 +841,14 @@
           }
           for (var i = 0; i < defaults.length; i++) {
             curop += '  ' + info.view + '[' +
-              ' + (' + vcell + ' >> ' + info.shift + ') + '
+              ' + (' + ArrayPart(offset, 0) + ' >> ' + info.shift + ') + '
               + i + '] = (' + defaults[i] + ');\n';
           }
         }
         curop += '}\n';
         vars[name] = {
-          offset: vcell,
-          dimensions: dimensions,
+          offset: offset,
+          dimensions: dimensions.length,
           type_name: type_name,
         };
       }
@@ -843,7 +856,7 @@
 
     function IndexVariable(name) {
       var v = MaybeImplicitDimVariable(name);
-      var offset = '' + v.offset;
+      var offset = v.offset;
       var type_name = v.type_name;
       while (tok == '(' || tok == '.') {
         if (tok == '(') {
@@ -859,29 +872,28 @@
           }
           Skip(')');
           var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
-          offset = '(' + offset + ' + ' + info.size + '*(';
-          if (dims.length != v.dimensions.length) {
-            Throw('Array dimension expected ' + v.dimensions.length +
+          var noffset = '(' + ArrayPart(offset, 0) + ' + (';
+          if (dims.length != v.dimensions) {
+            Throw('Array dimension expected ' + v.dimensions +
                   ' but found ' + dims.length + ', array named: ' + name);
           }
           for (var i = 0; i < dims.length; ++i) {
-            offset += '(((' + dims[i] + ')|0)-' + v.dimensions[i][0] + ')';
-            for (var j = 0; j < i; ++j) {
-              offset += '*(' + v.dimensions[j][1] + '-' +
-                v.dimensions[j][0] + ' + 1)';
-            }
+            noffset += '(((' + dims[i] + ')|0)-' +
+                ArrayPart(offset, i * 2 + 1) + ')';
+            noffset += '*' + ArrayPart(offset, i * 2 + 2);
             if (i != dims.length - 1) {
-              offset += '+';
+              noffset += '+';
             }
           }
-          offset += '))';
+          noffset += '))';
+          offset = noffset;
         } else if (tok == '.') {
           Skip('.');
-          var ntype = types[type_name];
-          if (ntype === undefined) {
+          v = types[type_name];
+          if (v === undefined) {
             Throw('Not a struct type');
           }
-          var field = ntype.vars[tok];
+          var field = v.vars[tok];
           if (field === undefined) {
             Throw('Invalid field name');
           }
@@ -1753,10 +1765,10 @@
           vars = {};
           Skip('(');
           if (tok != ')') {
-            DimVariable(tname);
+            DimVariable(null);
             while (tok == ',') {
               Skip(',');
-              DimVariable(tname);
+              DimVariable(null);
             }
           }
           Skip(')');
@@ -1769,10 +1781,10 @@
           vars = {};
           Skip('(');
           if (tok != ')') {
-            DimVariable(tname);
+            DimVariable(null);
             while (tok == ',') {
               Skip(',');
-              DimVariable(tname);
+              DimVariable(null);
             }
           }
           Skip(')');
@@ -1890,7 +1902,7 @@
         if (tok == '(') {
           Skip('(');
           while (tok != ')') {
-            DimVariable();
+            DimVariable(null);
             if (tok != ',') {
               break;
             }
@@ -1907,7 +1919,7 @@
         if (tok == '(') {
           Skip('(');
           while (tok != ')') {
-            DimVariable();
+            DimVariable(null);
             if (tok != ',') {
               break;
             }
@@ -1931,10 +1943,10 @@
           vars = {};
           Skip('(');
           if (tok != ')') {
-            DimVariable(tname);
+            DimVariable(null);
             while (tok == ',') {
               Skip(',');
-              DimVariable(tname);
+              DimVariable(null);
             }
           }
           Skip(')');
@@ -2263,7 +2275,7 @@
         Skip(',');
         var name = tok;
         Next();
-        var v = ReserveArrayCell(name).offset;
+        var v = ArrayPart(ReserveArrayCell(name).offset, 0);
         curop += 'GetImage(' + x1 + ', ' + y1 + ', ' +
           x2 + ', ' +  y2 + ', buffer, ' + v + ');\n';
       } else if (tok == 'put') {
@@ -2276,7 +2288,7 @@
         Skip(',');
         var name = tok;
         Next();
-        var v = ReserveArrayCell(name).offset;
+        var v = ArrayPart(ReserveArrayCell(name).offset, 0);
         var mode = 'xor';
         if (tok == ',') {
           Skip(',');
