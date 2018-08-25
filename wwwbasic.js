@@ -469,7 +469,7 @@
             name == 'cos' || name == 'sin' || name == 'tan' || name == 'atn' ||
             name == 'exp' || name == 'str$' || name == 'peek' ||
             name == 'ltrim$' || name == 'rtrim$' ||
-            name == 'space$') {
+            name == 'space$' || name == 'tab') {
           Skip('(');
           var e = Expression();
           Skip(')');
@@ -495,12 +495,13 @@
             case 'ltrim$': return '((' + e + ').trimStart())';
             case 'rtrim$': return '((' + e + ').trimEnd())';
             case 'space$': return 'StringRep((' + e + '), " ")';
+            case 'tab': return 'StringRep((' + e + '), "\t")';
           }
           Throw('This cannot happen');
         }
         if (name == 'atan2' || name == 'string$' ||
             name == 'left$' || name == 'right$' ||
-            name == 'instr') {
+            name == 'instr' || name == 'point') {
           Skip('(');
           var a = Expression();
           Skip(',');
@@ -516,9 +517,21 @@
             return 'Right((' + a + '), (' + b + '))';
           } else if (name == 'instr') {
             return '(' + a + ').search(' + b + ')';
+          } else if (name == 'point') {
+            return 'Point((' + a + '), (' + b + '))';
           } else {
             throw 'impossible';
           }
+        }
+        if (name == 'mid$') {
+          Skip('(');
+          var a = Expression();
+          Skip(',');
+          var b = Expression();
+          Skip(',');
+          var c = Expression();
+          Skip(')');
+          return '((' + a + ').substr((' + b + '), (' + c + ')))';
         }
         if (name == 'inkey$') {
           return 'Inkey()';
@@ -578,7 +591,7 @@
       while (tok == '\\') {
         var b = Next();
         Factor();
-        a = '(' + a + ')//(' + b + ')';
+        a = 'Math.floor((' + a + ')/(' + b + '))';
       }
       return a;
     }
@@ -761,8 +774,10 @@
       var type_name = default_tname;
       var dimensions = [];
       var defaults = [];
+      var is_scalar = true;
       if (tok == '(') {
         Skip('(');
+        is_scalar = false;
         while (tok != ')') {
           var e = Expression();
           var d = 'dim' + const_count++;
@@ -810,10 +825,10 @@
         Throw('Variable ' + name + ' defined twice');
       }
       // name, dims.
-      if (dimensions.length == 0) {
+      if (is_scalar) {
         DimScalarVariable(name, type_name, defaults);
       } else {
-        if (dimensions > MAX_DIMENSIONS) {
+        if (dimensions.length > MAX_DIMENSIONS) {
           Throw('Too many dimensions');
         }
         var offset = ReserveArrayCell(name).offset;
@@ -825,7 +840,7 @@
         }
         curop += 'if (' + ArrayPart(offset, 0) + ' === 0) {\n';
         curop += '  ' + ArrayPart(offset, 0) + ' = Allocate(' +
-          parts.join('*') + '*' + info.size + ');\n';
+          [info.size].concat(parts).join('*') + ');\n';
         for (var i = 0; i < dimensions.length; i++) {
           curop += '  ' + ArrayPart(offset, i * 2 + 1) + ' = ' +
             dimensions[i][0] + ';\n';
@@ -848,7 +863,7 @@
         curop += '}\n';
         vars[name] = {
           offset: offset,
-          dimensions: dimensions.length,
+          dimensions: dimensions.length > 0 ? dimensions.length : -1,
           type_name: type_name,
         };
       }
@@ -873,7 +888,7 @@
           Skip(')');
           var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
           var noffset = '(' + ArrayPart(offset, 0) + ' + (';
-          if (dims.length != v.dimensions) {
+          if (v.dimensions !== -1 && dims.length != v.dimensions) {
             Throw('Array dimension expected ' + v.dimensions +
                   ' but found ' + dims.length + ', array named: ' + name);
           }
@@ -941,6 +956,11 @@
 
     function Right(s, n) {
       return s.substr(s.length - n);
+    }
+
+    function Point(x, y) {
+      // TODO: Implement.
+      return 0;
     }
 
     function StringRep(n, ch) {
@@ -1764,13 +1784,19 @@
           Skip('sub');
           var name = tok;
           Next();
-          subroutines[name] = {};
+          var parameters = [];
           vars = {};
+          subroutines[name] = {
+            parameters: parameters,
+            vars: vars,
+          };
           Skip('(');
           if (tok != ')') {
+            parameters.push(tok);
             DimVariable(null);
             while (tok == ',') {
               Skip(',');
+              parameters.push(tok);
               DimVariable(null);
             }
           }
@@ -2001,6 +2027,10 @@
         } else {
           Throw('Expected PRINT/SCREEN');
         }
+      } else if (tok == 'randomize') {
+        Skip('randomize');
+        var seed = Expression();
+        // TODO: Implement.
       } else if (tok == 'poke') {
         Skip('poke');
         var addr = Expression();
@@ -2515,16 +2545,32 @@
         }
       } else if (tok == '') {
         return;
-      } else if (subroutines[tok] !== undefined) {
-        var sub = subroutines[tok];
-        Next();
-        while (!EndOfStatement()) {
-          var e = Expression();
-          if (tok != ',') {
-            break;
-          }
-          Skip(',');
+      } else if (tok == 'call' || subroutines[tok] !== undefined) {
+        var is_call = false;
+        if (tok == 'call') {
+          Next();
+          is_call = true;
         }
+        var sub = subroutines[tok];
+        if (sub === undefined) {
+          Throw('Expected valid subroutine name');
+        }
+        Next();
+        if (is_call) { Skip('('); }
+        for (var i = 0; i < sub.parameters.length; ++i) {
+          if (sub.vars[sub.parameters[i]].dimensions == -1) {
+            var vname = tok;
+            Next();
+            Skip('(');
+            Skip(')');
+          } else {
+            var e = Expression();
+          }
+          if (i != sub.parameters.length - 1) {
+            Skip(',');
+          }
+        }
+        if (is_call) { Skip(')'); }
       } else {
         var name = tok;
         Next();
