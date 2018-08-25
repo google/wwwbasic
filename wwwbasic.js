@@ -16,6 +16,7 @@
 
 (function() {
   var DYNAMIC_HEAP_SIZE = 1024 * 1024 * 16;
+  var STACK_SIZE = 64 * 1024;
   var MAX_DIMENSIONS = 7;
   var BLACK = 0xff000000;
   var WHITE = 0xffffffff;
@@ -140,12 +141,16 @@
     var str_count = 0;
     var const_count = 0;
     var var_decls = '';
-    var rstack = [];
     var data = [];
     var data_pos = 0;
     var ops = [];
     var curop = '';
     var ip = 0;
+
+    // Call stack
+    var stack = 0;
+    var sp = 0;
+    var bp = 0;
 
     // Input State
     var keys = [];
@@ -540,15 +545,25 @@
           return 'GetTimer()';
         }
         if (functions[name] !== undefined) {
+          var func = functions[name];
           Skip('(');
-          while (tok != ')') {
-            var a = Expression();
-            if (tok != ',') {
-              break;
+          for (var i = 0; i < func.parameters.length; ++i) {
+            if (func.vars[func.parameters[i]].dimensions == -1) {
+              var vname = tok;
+              Next();
+              Skip('(');
+              Skip(')');
+            } else {
+              var e = Expression();
+              curop += 'i[sp] = ' + e + ';\n';
             }
-            Skip(',');
+            if (i != func.parameters.length - 1) {
+              Skip(',');
+            }
           }
           Skip(')');
+          curop += 'i[sp] = ip; sp += 8;\n';
+          curop += 'ip = functions["' + name + '"].ip;\n';
           // TODO: Implement.
           return '0';
         }
@@ -719,12 +734,17 @@
       } else {
         offset = Allocate(size);
       }
-      var_decls += '// ' + name + ' is at ' + offset + '\n';
       vars[name] = {
         offset: offset,
         dimensions: 0,
         type_name: type_name,
+        global: vars === global_vars,
       };
+      if (vars[name].global) {
+        var_decls += '// ' + name + ' is at ' + offset + '\n';
+      } else {
+        var_decls += '// ' + name + ' is at (bp + ' + offset + ')\n';
+      }
       if (defaults.length > 0) {
         curop += IndexVariable(name) + ' = ' + defaults[0] + ';\n';
       }
@@ -757,6 +777,7 @@
           offset: offset,
           dimensions: null,
           type_name: null,
+          global: vars === global_vars,
         };
         var_decls += '// ' + name + ' is at ' + ArrayPart(offset, 0) +
           ' (cell-addr: ' + offset + ')\n';
@@ -824,7 +845,6 @@
         }
         Throw('Variable ' + name + ' defined twice');
       }
-      // name, dims.
       if (is_scalar) {
         DimScalarVariable(name, type_name, defaults);
       } else {
@@ -865,6 +885,7 @@
           offset: offset,
           dimensions: dimensions.length > 0 ? dimensions.length : -1,
           type_name: type_name,
+          global: vars === global_vars,
         };
       }
     }
@@ -872,6 +893,9 @@
     function IndexVariable(name) {
       var v = MaybeImplicitDimVariable(name);
       var offset = v.offset;
+      if (!v.global) {
+        offset = '(bp+' + offset + ')';
+      }
       var type_name = v.type_name;
       while (tok == '(' || tok == '.') {
         if (tok == '(') {
@@ -887,7 +911,8 @@
           }
           Skip(')');
           var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
-          var noffset = '(' + ArrayPart(offset, 0) + ' + (';
+          var noffset = '(';
+          noffset += ArrayPart(offset, 0) + ' + (';
           if (v.dimensions !== -1 && dims.length != v.dimensions) {
             Throw('Array dimension expected ' + v.dimensions +
                   ' but found ' + dims.length + ', array named: ' + name);
@@ -917,6 +942,17 @@
           type_name = field.type_name;
         }
       }
+      var info = SIMPLE_TYPE_INFO[type_name];
+      if (!info) {
+        Throw('Expected simple type');
+      }
+      return info.view + '[' + offset + '>>' + info.shift + ']';
+    }
+
+    function IndexSimpleVariable(name) {
+      var v = MaybeImplicitDimVariable(name);
+      var offset = v.offset;
+      var type_name = v.type_name;
       var info = SIMPLE_TYPE_INFO[type_name];
       if (!info) {
         Throw('Expected simple type');
@@ -1771,12 +1807,12 @@
         Skip('gosub');
         var name = tok;
         Next();
-        curop += 'rstack.push(ip);\n';
+        curop += 'i[sp] = ip; sp += 8;\n';
         curop += 'ip = labels["' + name + '"];\n';
         NewOp();
       } else if (tok == 'return') {
         Skip('return');
-        curop += 'ip = rstack.pop();\n';
+        curop += 'sp -= 8; ip = i[sp];\n';
         NewOp();
       } else if (tok == 'declare') {
         Skip('declare');
@@ -1864,6 +1900,7 @@
           vars[name] = {
             offset: offset,
             type_name: 'double',
+            global: vars === global_vars,
           };
           v = vars[name];
           Skip('=');
@@ -1967,21 +2004,38 @@
             // TODO: Do something useful with it?
           }
         } else if (tok.substr(0, 2) == 'fn') {
-          functions[tok] = {};
+          var fname = tok;
           Next();
+          NewOp();
+          var pos = ops.length - 1;
           vars = {};
+          var parameters = [];
+          functions[fname] = {
+            vars: vars,
+            parameters: parameters,
+            ip: ops.length,
+          };
+          DimScalarVariable(fname, ImplicitType(fname), []);
           Skip('(');
           if (tok != ')') {
+            parameters.push(tok);
             DimVariable(null);
             while (tok == ',') {
               Skip(',');
+              parameters.push(tok);
               DimVariable(null);
             }
           }
           Skip(')');
+          Align(8);
           Skip('=');
+          curop += 'i[sp] = bp; sp += 8;\n'
+          curop += 'bp = sp - ' + allocated + ' - 16;\n';
           var e = Expression();
-          // TODO: Implement.
+          curop += IndexSimpleVariable(fname) + ' = ' + e + ';\n';
+          curop += 'sp -= 8; ip = i[sp];\n';
+          NewOp();
+          ops[pos] += 'ip = ' + ops.length + ';\n';
           vars = global_vars;
         } else {
           Throw('Expected seg');
@@ -2635,6 +2689,12 @@
 
       // Align to 8.
       Align(8);
+
+      // Allocate stack.
+      stack = Allocate(STACK_SIZE);
+      sp = stack;
+      bp = sp;
+
 
       var total = '';
       total += 'var buffer = new ArrayBuffer(' +
