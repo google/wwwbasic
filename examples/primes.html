@@ -1,13 +1,25 @@
 <!DOCTYPE html>
 <script src="../wwwbasic.js"></script>
 <script type="text/basic">
-
-FOR i = 2 TO 3000
-  prime = -1
-  FOR j = 2 TO i-1
-    IF i MOD j = 0 THEN prime = 0
-  NEXT j
-  IF prime THEN PRINT i; " ";
+PRINT 2; " ";
+FOR i = 3 TO 3000 STEP 2
+    IN = i
+    GOTO GetLengthOfNumber
+    Primetest:
+        prime = 1
+        FOR j = 3 TO (i / OUT)
+            IF i MOD j = 0 THEN prime = 0
+        NEXT j
+        IF prime THEN PRINT i; " ";
 NEXT i
-
+GOTO End
+GetLengthOfNumber:
+    A = 1
+    WHILE(IN > 9)
+        A = A + 1
+        IN = IN / 10
+    WEND
+    OUT = A + 1
+    A = 1
+    GOTO PrimeTest
 </script>
