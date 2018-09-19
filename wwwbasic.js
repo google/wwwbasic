@@ -1674,12 +1674,14 @@
           // TODO
         } else if (EndOfStatement()) {
           var f = flow.pop();
-          if (f[0] != 'while') {
-            Throw('LOOP does not match while');
+          if (f[0] != 'while' && f[0] != 'do') {
+            Throw('LOOP does not match DO / WHILE');
           }
           curop += 'ip = ' + f[1] + ';\n';
           NewOp();
-          ops[f[1]] += ops.length + '; }\n';
+          if (f[0] == 'while') {
+            ops[f[1]] += ops.length + '; }\n';
+          }
           return;
         } else {
           Throw('Expected while/until');
@@ -1687,7 +1689,7 @@
         var e = Expression();
         var f = flow.pop();
         if (f[0] != 'do') {
-          Throw('Loop does not match do');
+          Throw('LOOP does not match DO');
         }
         curop += 'if (' + e + ') { ip = ' + f[1] + '; }\n';
       } else if (tok == 'while') {
@@ -2578,6 +2580,10 @@
           Skip(':');
           AddLabel(name);
           return;
+        }
+        if (name == 'let') {
+          name = tok;
+          Next();
         }
         var vname = IndexVariable(name);
         if (tok == '=' || tok == '+=' || tok == '-=' ||
