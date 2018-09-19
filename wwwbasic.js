@@ -3009,42 +3009,42 @@
     'XX   XX   XXX   XXXXXXX  XXXXX       XX  XXXXX                  ' +
     '                                                        XXXXXXX ' +
 
-    '  XX            XX                   XX           XXXX          ' +
-    '   XX           XX                   XX          XX  XX         ' +
-    '                XX                   XX  XXXX     XX            ' +
-    '         XXXXXX XXXXXX   XXXXX   XXXXXX XX  XX  XXXXXXX  XXXXX  ' +
+    '  XX            XX                   XX            XXXX         ' +
+    '   XX           XX                   XX           XX            ' +
+    '         XXXXXX XX       XXXXX       XX  XXXX     XX     XXXXX  ' +
+    '        XX   XX XXXXXX  XX       XXXXXX XX  XX  XXXXXXX XX   XX ' +
     '        XX   XX XX   XX XX      XX   XX XXXXXX    XX    XX   XX ' +
     '        XX   XX XX   XX XX      XX   XX XX        XX     XXXXXX ' +
     '         XXXXXX XXXXXX   XXXXX   XXXXXX  XXXXX    XX         XX ' +
     '                                                         XXXXX  ' +
-    'XX        XX       XX   XX       XX                             ' +
-    'XX        XX       XX   XX       XX                             ' +
-    'XX                      XX  XX   XX                             ' +
-    'XXXXXX   XXXX    XXXXX  XX XX    XX     XXXXXX  XXXXXX   XXXXX  ' +
-    'XX   XX   XX       XX   XXXX     XX     XX X XX XX   XX XX   XX ' +
-    'XX   XX   XX        XX  XX  XX   XX     XX X XX XX   XX XX   XX ' +
-    'XX   XX   XXXX      XX  XX   XX   XXXXX XX X XX XX   XX  XXXXX  ' +
+    'XX        XX       XX   XX        XXX                           ' +
+    'XX                      XX   XX    XX                           ' +
+    'XXXXXX   XXX      XXXX  XX  XX     XX   XXXXXX  XXXXXX   XXXXX  ' +
+    'XX   XX   XX        XX  XXXXX      XX   XX X XX XX   XX XX   XX ' +
+    'XX   XX   XX        XX  XX  XX     XX   XX X XX XX   XX XX   XX ' +
+    'XX   XX   XX        XX  XX   XX    XX   XX X XX XX   XX XX   XX ' +
+    'XX   XX  XXXX       XX  XX   XX   XXXX  XX X XX XX   XX  XXXXX  ' +
     '                  XXX                                           ' +
     '                                                                ' +
     '                                  XX                            ' +
-    '                         XXXXXX   XX                            ' +
-    'XXXXXX   XXXXX  XX XXX  XX      XXXXXXX XX   XX XX   XX XX   XX ' +
-    'XX   XX XX  XX  XXXX XX  XXXXX    XX    XX   XX XX   XX XX X XX ' +
+    'XXXXXX   XXXXX  XX XXX   XXXXXX   XX    XX   XX XX   XX XX   XX ' +
+    'XX   XX XX  XX  XXXX XX XX      XXXXXXX XX   XX XX   XX XX   XX ' +
+    'XX   XX XX  XX  XX       XXXXX    XX    XX   XX XX   XX XX X XX ' +
     'XXXXXX   XXXXX  XX           XX   XX XX XX   XX  XX XX  XX X XX ' +
-    'XX         XX   XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
-    'XX          XXX                                                 ' +
+    'XX          XX  XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
+    'XX          XX                                                  ' +
     '                             XX   XX    XX                 X    ' +
     '                           XX     XX      XX     XXX XX   XXX   ' +
-    '                           XX     XX      XX    XX XXX   XX XX  ' +
-    'XX   XX XX   XX XXXXXXX   XX      XX       XX           XX   XX ' +
-    ' XXXXX  XX   XX    XXX     XX     XX      XX            XX   XX ' +
-    ' XXXXX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
+    'XX   XX XX   XX XXXXXXX    XX     XX      XX    XX XXX   XX XX  ' +
+    ' XX XX  XX   XX    XXX    XX      XX       XX           XX   XX ' +
+    '  XXX   XX   XX   XXX      XX     XX      XX            XX   XX ' +
+    ' XX XX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
     'XX   XX      XX XXXXXXX      XX   XX    XX              XXXXXXX ' +
     '         XXXXX                                                  ' +
     ' XXXXXX                                                  XXXXXX ' +
     'XX      XX   XX                                         XX      ' +
-    'XX               XXXX                                   XX      ' +
-    'XX      XX   XX XX  XX   XXXXXX  XXXXXX  XXXXXX  XXXXXX XX      ' +
+    'XX               XXXX    XXXXXX  XXXXXX  XXXXX   XXXXXX XX      ' +
+    'XX      XX   XX XX  XX  XX   XX XX   XX XX   XX XX   XX XX      ' +
     'XX      XX   XX XXXXXX  XX   XX XX   XX XX   XX XX   XX XX      ' +
     'XX      XX   XX XX      XX   XX XX   XX XX   XX XX   XX XX      ' +
     ' XXXXXX  XXXXXX  XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
@@ -3052,10 +3052,10 @@
     '                          XX      XX      XX      XXX     XXX   ' +
     '                          XX      XX      XX     XX XX   XX XX  ' +
     ' XXXX    XXXX    XXXX                           XX   XX XX   XX ' +
-    'XX  XX  XX  XX  XX  XX   XXXX    XXXX    XXXX   XXXXXXX XXXXXXX ' +
+    'XX  XX  XX  XX  XX  XX   XXX     XXX     XXX    XXXXXXX XXXXXXX ' +
     'XXXXXX  XXXXXX  XXXXXX    XX      XX      XX    XX   XX XX   XX ' +
     'XX      XX      XX        XX      XX      XX    XX   XX XX   XX ' +
-    ' XXXXX   XXXXX   XXXXX    XXXX    XXXX    XXXX  XX   XX XX   XX ' +
+    ' XXXXX   XXXXX   XXXXX   XXXX    XXXX    XXXX   XX   XX XX   XX ' +
     '                                                                ' +
     'XXXXXXX XXXXXXX XXXXXXX                                         ' +
     'XX      XX      XX                                              ' +
@@ -3067,7 +3067,7 @@
     '                                                                ' +
     '         XXXXX  XX   XX  XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
     '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
-    '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+    'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     ' XXXXXX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
@@ -3075,11 +3075,11 @@
     ' XXXXX                                                          ' +
     '          XX                                                    ' +
     '          XX                                                    ' +
-    '                                                                ' +
-    ' XXXXXX  XXXX    XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
+    ' XXXXXX          XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
+    'XX   XX  XXX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
     'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
     'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
-    ' XXXXXX   XXXX   XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
+    ' XXXXXX  XXXX    XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
     '                                                                ' +
     '   XX                   X       X          XX                   ' +
     '                        X  X    X  X              XX XX XX XX   ' +
