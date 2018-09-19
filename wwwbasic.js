@@ -2837,7 +2837,7 @@
       if (tags[t].src) {
         var request = new XMLHttpRequest();
         request.addEventListener("load", function(e) {
-          Interpret(request.responseText, canvas);
+          Interpret(request.responseText, canvas, true);
         }, false);
         request.open("GET", tag.src);
         request.send();
