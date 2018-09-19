@@ -90,7 +90,7 @@
     }
   }
 
-  function Interpret(code, canvas) {
+  function Interpret(code, canvas, from_tag) {
     // Display Info (in browser only).
     var screen_mode = 0;
     var screen_bpp = 4;
@@ -189,7 +189,7 @@
       '+', '-', '*', '/', '\\', '^', '&', '.',
       '<=', '>=', '<>', '=>', '=', '<', '>', '@', '\n',
     ];
-    if (canvas) {
+    if (from_tag) {
       code = code.replace(/&lt;/g, '<');
       code = code.replace(/&gt;/g, '>');
       code = code.replace(/&amp;/g, '&');
@@ -2665,8 +2665,10 @@
     var viewport_w, viewport_h;
 
     function Resize() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
+      if (from_tag) {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
       var raspect = canvas.width / canvas.height;
       var aspect = display.width / (display.height * screen_aspect);
       if (raspect > aspect) {
@@ -2707,7 +2709,9 @@
         return;
       }
       Resize();
-      window.addEventListener('resize', Resize, false);
+      if (from_tag) {
+        window.addEventListener('resize', Resize, false);
+      }
       window.addEventListener('keydown', function(e) {
         var k = e.key;
         if (k == 'Escape') { k = String.fromCharCode(27); }
@@ -2838,7 +2842,7 @@
         request.open("GET", tag.src);
         request.send();
       } else {
-        Interpret(tag.text, canvas);
+        Interpret(tag.text, canvas, true);
       }
     }
   }
@@ -2852,6 +2856,7 @@
       window.addEventListener('focusin', function() {
         timer_offset = timer_halted - (new Date().getTime() / 1000);
       });
+      window.Basic = Interpret;
     } else {
       exports.Basic = function(code) {
         Interpret(code, null);
