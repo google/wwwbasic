@@ -34,9 +34,31 @@ basic_test.BASIC_TEST('DoLoopWhile', 'SixToOne', `
 i = 6
 DO
   PRINT i
-  i = i + 1
-LOOP WHILE i <= 5
+  i = i - 1
+LOOP WHILE i > 0
 `, `
 6
+5
+4
+3
+2
+1
+`);
+
+basic_test.BASIC_TEST('DoLoopWhile', 'JustDoLoop', `
+i = 6
+DO
+  PRINT i
+  i = i - 1
+  IF i = 0 THEN GOTO done
+LOOP
+done:
+`, `
+6
+5
+4
+3
+2
+1
 `);
 

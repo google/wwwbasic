@@ -48,19 +48,24 @@ It can be run with: `./run-tests.sh`.
 ## Examples
 
 * [Circles](https://google.github.io/wwwbasic/examples/circles.html)
-  ([source](examples/circles.html))
+  ([source](examples/circles.html)) - Some circles...
 * [DONKEY.BAS](https://google.github.io/wwwbasic/examples/donkey.html)
-  ([source](examples/donkey.html))
+  ([source](examples/donkey.html)) -
+  The classic "game", apparently
+  [co-authored by Bill Gates himself](https://blog.codinghorror.com/bill-gates-and-donkey-bas/).
 * [GET & PUT](https://google.github.io/wwwbasic/examples/getput.html)
-  ([source](examples/getput.html))
+  ([source](examples/getput.html)) - Test of GET/PUT.
 * [Hello World](https://google.github.io/wwwbasic/examples/hello_world.html)
-  ([source](examples/hello_world.html))
+  ([source](examples/hello_world.html)) - Hello.
 * [Lines](https://google.github.io/wwwbasic/examples/lines.html)
-  ([source](examples/lines.html))
+  ([source](examples/lines.html)) - Some lines...
 * [Primes](https://google.github.io/wwwbasic/examples/primes.html)
-  ([source](examples/primes.html))
+  ([source](examples/primes.html)) - Primes <3000.
 * [Slides](https://google.github.io/wwwbasic/examples/slides.html)
-  ([source](examples/slides.html))
+  ([source](examples/slides.html)) - Reveal.BAS :-)
+* [Editor](https://google.github.io/wwwbasic/examples/editor.html)
+  ([source](examples/editor.html)) - Live editor using
+  [Ace](https://ace.c9.io/).
 
 ## Source Code Headers
 
