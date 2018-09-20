@@ -1,0 +1,7 @@
+/examples/
+/test/
+/third_party/
+.gitignore
+.gitmodules
+.travis.yml
+run-tests.sh
