@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/google/wwwbasic.svg?branch=master)](https://travis-ci.org/google/wwwbasic)
+[![Build Status](https://travis-ci.org/google/wwwbasic.svg?branch=master)](https://travis-ci.org/google/wwwbasic) [![NPM Package](https://img.shields.io/npm/v/wwwbasic.svg)](https://www.npmjs.com/package/wwwbasic)
 
 # WWWBasic
 
@@ -23,7 +23,8 @@ NEXT i
 You can also import WWWBasic as a Node.js module:
 
 ```
-var basic = require('./wwwbasic.js');
+var basic = require('./wwwbasic.js'); // from within the directory
+// var basic = require('wwwbasic'); // from NPM
 basic.Basic(
 `
 PRINT "Hello World!"
