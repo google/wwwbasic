@@ -1305,7 +1305,7 @@
 
     function Cls(mode) {
       // TODO: Handle mode.
-      Box(0, 0, display.width, display.height, BLACK);
+      Box(0, 0, display.width, display.height, bg_color);
       text_x = 0;
       text_y = 0;
     }
