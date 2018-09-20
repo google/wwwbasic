@@ -9,22 +9,32 @@ Instruction Code) designed to be easy to run on the Web.
 
 You can include WWWBasic directly in Web pages:
 
-```
+```html
 <!DOCTYPE html>
-<script src="https://google.github.io/wwwbasic/wwwbasic.js"></script>
-<script type="text/basic">
-PRINT "Hello World!"
-FOR i = 1 to 10
-  PRINT "Counting "; i
-NEXT i
-</script>
+<html>
+  <head>
+    <script src="https://google.github.io/wwwbasic/wwwbasic.js"></script>
+    <script type="text/basic">
+      PRINT "Hello World!"
+      FOR i = 1 to 10
+        PRINT "Counting "; i
+      NEXT i
+    </script>
+  </head>
+</html>
 ```
 
-You can also import WWWBasic as a Node.js module:
+You can also import WWWBasic as a Node.js module.
 
-```
-var basic = require('./wwwbasic.js'); // from within the directory
-// var basic = require('wwwbasic'); // from NPM
+Either install  it via [npm](https://www.npmjs.com/): `npm install -S wwwbasic`
+
+or clone the repository: `git clone https://github.com/google/wwwbasic.git`
+
+Then run your code:
+```js
+var basic = require('wwwbasic'); // from NPM
+// var basic = require('./wwwbasic.js'); // from within the cloned repository directory
+
 basic.Basic(
 `
 PRINT "Hello World!"
