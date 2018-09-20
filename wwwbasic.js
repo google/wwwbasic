@@ -90,7 +90,7 @@
     }
   }
 
-  function Interpret(code, canvas) {
+  function Interpret(code, canvas, from_tag) {
     // Display Info (in browser only).
     var screen_mode = 0;
     var screen_bpp = 4;
@@ -189,7 +189,7 @@
       '+', '-', '*', '/', '\\', '^', '&', '.',
       '<=', '>=', '<>', '=>', '=', '<', '>', '@', '\n',
     ];
-    if (canvas) {
+    if (from_tag) {
       code = code.replace(/&lt;/g, '<');
       code = code.replace(/&gt;/g, '>');
       code = code.replace(/&amp;/g, '&');
@@ -1305,7 +1305,7 @@
 
     function Cls(mode) {
       // TODO: Handle mode.
-      Box(0, 0, display.width, display.height, BLACK);
+      Box(0, 0, display.width, display.height, bg_color);
       text_x = 0;
       text_y = 0;
     }
@@ -1674,12 +1674,14 @@
           // TODO
         } else if (EndOfStatement()) {
           var f = flow.pop();
-          if (f[0] != 'while') {
-            Throw('LOOP does not match while');
+          if (f[0] != 'while' && f[0] != 'do') {
+            Throw('LOOP does not match DO / WHILE');
           }
           curop += 'ip = ' + f[1] + ';\n';
           NewOp();
-          ops[f[1]] += ops.length + '; }\n';
+          if (f[0] == 'while') {
+            ops[f[1]] += ops.length + '; }\n';
+          }
           return;
         } else {
           Throw('Expected while/until');
@@ -1687,7 +1689,7 @@
         var e = Expression();
         var f = flow.pop();
         if (f[0] != 'do') {
-          Throw('Loop does not match do');
+          Throw('LOOP does not match DO');
         }
         curop += 'if (' + e + ') { ip = ' + f[1] + '; }\n';
       } else if (tok == 'while') {
@@ -2579,6 +2581,10 @@
           AddLabel(name);
           return;
         }
+        if (name == 'let') {
+          name = tok;
+          Next();
+        }
         var vname = IndexVariable(name);
         if (tok == '=' || tok == '+=' || tok == '-=' ||
             tok == '*=' || tok == '/=' || tok == '\\=' ||
@@ -2665,8 +2671,10 @@
     var viewport_w, viewport_h;
 
     function Resize() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
+      if (from_tag) {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
       var raspect = canvas.width / canvas.height;
       var aspect = display.width / (display.height * screen_aspect);
       if (raspect > aspect) {
@@ -2707,7 +2715,9 @@
         return;
       }
       Resize();
-      window.addEventListener('resize', Resize, false);
+      if (from_tag) {
+        window.addEventListener('resize', Resize, false);
+      }
       window.addEventListener('keydown', function(e) {
         var k = e.key;
         if (k == 'Escape') { k = String.fromCharCode(27); }
@@ -2833,12 +2843,12 @@
       if (tags[t].src) {
         var request = new XMLHttpRequest();
         request.addEventListener("load", function(e) {
-          Interpret(request.responseText, canvas);
+          Interpret(request.responseText, canvas, true);
         }, false);
         request.open("GET", tag.src);
         request.send();
       } else {
-        Interpret(tag.text, canvas);
+        Interpret(tag.text, canvas, true);
       }
     }
   }
@@ -2852,6 +2862,7 @@
       window.addEventListener('focusin', function() {
         timer_offset = timer_halted - (new Date().getTime() / 1000);
       });
+      window.Basic = Interpret;
     } else {
       exports.Basic = function(code) {
         Interpret(code, null);
@@ -3004,42 +3015,42 @@
     'XX   XX   XXX   XXXXXXX  XXXXX       XX  XXXXX                  ' +
     '                                                        XXXXXXX ' +
 
-    '  XX            XX                   XX           XXXX          ' +
-    '   XX           XX                   XX          XX  XX         ' +
-    '                XX                   XX  XXXX     XX            ' +
-    '         XXXXXX XXXXXX   XXXXX   XXXXXX XX  XX  XXXXXXX  XXXXX  ' +
+    '  XX            XX                   XX            XXXX         ' +
+    '   XX           XX                   XX           XX            ' +
+    '         XXXXXX XX       XXXXX       XX  XXXX     XX     XXXXX  ' +
+    '        XX   XX XXXXXX  XX       XXXXXX XX  XX  XXXXXXX XX   XX ' +
     '        XX   XX XX   XX XX      XX   XX XXXXXX    XX    XX   XX ' +
     '        XX   XX XX   XX XX      XX   XX XX        XX     XXXXXX ' +
     '         XXXXXX XXXXXX   XXXXX   XXXXXX  XXXXX    XX         XX ' +
     '                                                         XXXXX  ' +
-    'XX        XX       XX   XX       XX                             ' +
-    'XX        XX       XX   XX       XX                             ' +
-    'XX                      XX  XX   XX                             ' +
-    'XXXXXX   XXXX    XXXXX  XX XX    XX     XXXXXX  XXXXXX   XXXXX  ' +
-    'XX   XX   XX       XX   XXXX     XX     XX X XX XX   XX XX   XX ' +
-    'XX   XX   XX        XX  XX  XX   XX     XX X XX XX   XX XX   XX ' +
-    'XX   XX   XXXX      XX  XX   XX   XXXXX XX X XX XX   XX  XXXXX  ' +
+    'XX        XX       XX   XX        XXX                           ' +
+    'XX                      XX   XX    XX                           ' +
+    'XXXXXX   XXX      XXXX  XX  XX     XX   XXXXXX  XXXXXX   XXXXX  ' +
+    'XX   XX   XX        XX  XXXXX      XX   XX X XX XX   XX XX   XX ' +
+    'XX   XX   XX        XX  XX  XX     XX   XX X XX XX   XX XX   XX ' +
+    'XX   XX   XX        XX  XX   XX    XX   XX X XX XX   XX XX   XX ' +
+    'XX   XX  XXXX       XX  XX   XX   XXXX  XX X XX XX   XX  XXXXX  ' +
     '                  XXX                                           ' +
     '                                                                ' +
     '                                  XX                            ' +
-    '                         XXXXXX   XX                            ' +
-    'XXXXXX   XXXXX  XX XXX  XX      XXXXXXX XX   XX XX   XX XX   XX ' +
-    'XX   XX XX  XX  XXXX XX  XXXXX    XX    XX   XX XX   XX XX X XX ' +
+    'XXXXXX   XXXXX  XX XXX   XXXXXX   XX    XX   XX XX   XX XX   XX ' +
+    'XX   XX XX  XX  XXXX XX XX      XXXXXXX XX   XX XX   XX XX   XX ' +
+    'XX   XX XX  XX  XX       XXXXX    XX    XX   XX XX   XX XX X XX ' +
     'XXXXXX   XXXXX  XX           XX   XX XX XX   XX  XX XX  XX X XX ' +
-    'XX         XX   XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
-    'XX          XXX                                                 ' +
+    'XX          XX  XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
+    'XX          XX                                                  ' +
     '                             XX   XX    XX                 X    ' +
     '                           XX     XX      XX     XXX XX   XXX   ' +
-    '                           XX     XX      XX    XX XXX   XX XX  ' +
-    'XX   XX XX   XX XXXXXXX   XX      XX       XX           XX   XX ' +
-    ' XXXXX  XX   XX    XXX     XX     XX      XX            XX   XX ' +
-    ' XXXXX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
+    'XX   XX XX   XX XXXXXXX    XX     XX      XX    XX XXX   XX XX  ' +
+    ' XX XX  XX   XX    XXX    XX      XX       XX           XX   XX ' +
+    '  XXX   XX   XX   XXX      XX     XX      XX            XX   XX ' +
+    ' XX XX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
     'XX   XX      XX XXXXXXX      XX   XX    XX              XXXXXXX ' +
     '         XXXXX                                                  ' +
     ' XXXXXX                                                  XXXXXX ' +
     'XX      XX   XX                                         XX      ' +
-    'XX               XXXX                                   XX      ' +
-    'XX      XX   XX XX  XX   XXXXXX  XXXXXX  XXXXXX  XXXXXX XX      ' +
+    'XX               XXXX    XXXXXX  XXXXXX  XXXXX   XXXXXX XX      ' +
+    'XX      XX   XX XX  XX  XX   XX XX   XX XX   XX XX   XX XX      ' +
     'XX      XX   XX XXXXXX  XX   XX XX   XX XX   XX XX   XX XX      ' +
     'XX      XX   XX XX      XX   XX XX   XX XX   XX XX   XX XX      ' +
     ' XXXXXX  XXXXXX  XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
@@ -3047,10 +3058,10 @@
     '                          XX      XX      XX      XXX     XXX   ' +
     '                          XX      XX      XX     XX XX   XX XX  ' +
     ' XXXX    XXXX    XXXX                           XX   XX XX   XX ' +
-    'XX  XX  XX  XX  XX  XX   XXXX    XXXX    XXXX   XXXXXXX XXXXXXX ' +
+    'XX  XX  XX  XX  XX  XX   XXX     XXX     XXX    XXXXXXX XXXXXXX ' +
     'XXXXXX  XXXXXX  XXXXXX    XX      XX      XX    XX   XX XX   XX ' +
     'XX      XX      XX        XX      XX      XX    XX   XX XX   XX ' +
-    ' XXXXX   XXXXX   XXXXX    XXXX    XXXX    XXXX  XX   XX XX   XX ' +
+    ' XXXXX   XXXXX   XXXXX   XXXX    XXXX    XXXX   XX   XX XX   XX ' +
     '                                                                ' +
     'XXXXXXX XXXXXXX XXXXXXX                                         ' +
     'XX      XX      XX                                              ' +
@@ -3062,7 +3073,7 @@
     '                                                                ' +
     '         XXXXX  XX   XX  XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
     '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
-    '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+    'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     ' XXXXXX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
@@ -3070,11 +3081,11 @@
     ' XXXXX                                                          ' +
     '          XX                                                    ' +
     '          XX                                                    ' +
-    '                                                                ' +
-    ' XXXXXX  XXXX    XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
+    ' XXXXXX          XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
+    'XX   XX  XXX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
     'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
     'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
-    ' XXXXXX   XXXX   XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
+    ' XXXXXX  XXXX    XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
     '                                                                ' +
     '   XX                   X       X          XX                   ' +
     '                        X  X    X  X              XX XX XX XX   ' +

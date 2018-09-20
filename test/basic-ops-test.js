@@ -58,3 +58,11 @@ PRINT 3*2^4
 48
 `);
 
+basic_test.BASIC_TEST('BasicOps', 'Let', `
+LET x = 2
+LET y = 3
+PRINT x * y
+`, `
+6
+`);
+
