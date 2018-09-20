@@ -1,0 +1,30 @@
+{
+  "name": "wwwbasic",
+  "version": "1.0.0",
+  "description": "An implementation of BASIC designed to be easy to run on the Web",
+  "keywords": [
+    "BASIC"
+  ],
+  "homepage": "https://github.com/google/wwwbasic#readme",
+  "bugs": {
+    "url": "https://github.com/google/wwwbasic/issues"
+  },
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Brad Nelson",
+    "email": "flagxor@gmail.com",
+    "url": "http://flagxor.com/"
+  },
+  "main": "wwwbasic.js",
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/google/wwwbasic.git"
+  },
+  "scripts": {
+    "test": "./run-tests.sh"
+  }
+}
