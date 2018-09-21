@@ -1906,7 +1906,8 @@
           Skip('goto');
           var name = tok;
           Next();
-          // TODO: Implement.
+          curop += 'ip = labels["' + name + '"];\n';
+          NewOp();
         } else {
           Throw('Expected goto');
         }
