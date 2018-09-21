@@ -21,16 +21,16 @@
   var WHITE = 0xffffffff;
 
   var SIMPLE_TYPE_INFO = {
-  'byte': {array: 'Uint8Array', size: 1, shift: 0, view: 'b'},
-  'short': {array: 'Int16Array', size: 2, shift: 1, view: 'i16'},
-  'long': {array: 'Int32Array', size: 4, shift: 2, view: 'i'},
-  'single': {array: 'Float32Array', size: 4, shift: 2, view: 's'},
-  'double': {array: 'Float64Array', size: 8, shift: 3, view: 'd'},
-  'string': {array: 'Array', size: 1, shift: 0, view: 'str'},
+    'byte': {array: 'Uint8Array', size: 1, shift: 0, view: 'b'},
+    'short': {array: 'Int16Array', size: 2, shift: 1, view: 'i16'},
+    'long': {array: 'Int32Array', size: 4, shift: 2, view: 'i'},
+    'single': {array: 'Float32Array', size: 4, shift: 2, view: 's'},
+    'double': {array: 'Float64Array', size: 8, shift: 3, view: 'd'},
+    'string': {array: 'Array', size: 1, shift: 0, view: 'str'},
   };
 
   var IMPLICIT_TYPE_MAP = {
-  '$': 'string', '%': 'short', '&': 'long', '!': 'single', '#': 'double',
+    '$': 'string', '%': 'short', '&': 'long', '!': 'single', '#': 'double',
   };
 
   function NextChar(ch) {
@@ -52,7 +52,7 @@
       ctx.restore();
       var pix = ctx.getImageData(0, 0, 8, height);
       var pdata = pix.data;
-      for (var j = 0; j < pdata.length; j+=4) {
+      for (var j = 0; j < pdata.length; j += 4) {
         var level = pdata[j] * 0.1140 +
                     pdata[j + 1] * 0.5870 +
                     pdata[j + 2] * 0.2989;
@@ -68,9 +68,9 @@
     for (var i = 0; i < 256; ++i) {
       var row = Math.floor(i / 8);
       var col = i % 8;
-      for(var y = 0; y < 8; ++y) {
+      for (var y = 0; y < 8; ++y) {
         for (var d = 0; d < dup; ++d) {
-          for(var x = 0; x < 8; ++x) {
+          for (var x = 0; x < 8; ++x) {
             data[pos++] = s[x + y * 8 * 8 + col * 8 + row * 64 * 8]
               != ' ' ? 255 : 0;
           }
@@ -258,7 +258,7 @@
           if (code.substr(0, toklist[i].length) == toklist[i]) {
             if (tok != '') {
               if (code.substr(0, 1) == '&' &&
-                code.substr(code.length-1) != '$') {
+                code.substr(code.length - 1) != '$') {
                 tok += '&';
                 code = code.substr(1);
               }
@@ -345,7 +345,7 @@
 
     function Skip(t) {
       if (tok != t) {
-        Throw('Expected "'+ t + '" found "' + tok + '"');
+        Throw('Expected "' + t + '" found "' + tok + '"');
       }
       Next();
     }
@@ -474,28 +474,28 @@
           var e = Expression();
           Skip(')');
           switch (name) {
-            case 'log': return 'Math.log(' + e + ')';
-            case 'ucase$': return '(' + e + ').toUpperCase()';
-            case 'lcase$': return '(' + e + ').toLowerCase()';
-            case 'chr$': return 'String.fromCharCode(' + e + ')';
-            case 'asc': return '(' + e + ').toCharCode(0)';
-            case 'sqr': return 'Math.sqrt(' + e + ')';
-            case 'int': return 'Math.floor(' + e + ')';
-            case 'cint': return 'Math.floor(' + e + ')';
-            case 'abs': return 'Math.abs(' + e + ')';
-            case 'cos': return 'Math.cos(' + e + ')';
-            case 'sin': return 'Math.sin(' + e + ')';
-            case 'tan': return 'Math.tan(' + e + ')';
-            case 'atn': return 'Math.atan(' + e + ')';
-            case 'exp': return 'Math.exp(' + e + ')';
-            case 'str$': return '(' + e + ').toString()';
-            case 'val': return 'parseInt(' + e + ')';
-            case 'peek': return 'Peek(' + e + ').toString()';
-            case 'len': return '((' + e + ').length)';
-            case 'ltrim$': return '((' + e + ').trimStart())';
-            case 'rtrim$': return '((' + e + ').trimEnd())';
-            case 'space$': return 'StringRep((' + e + '), " ")';
-            case 'tab': return 'StringRep((' + e + '), "\t")';
+          case 'log': return 'Math.log(' + e + ')';
+          case 'ucase$': return '(' + e + ').toUpperCase()';
+          case 'lcase$': return '(' + e + ').toLowerCase()';
+          case 'chr$': return 'String.fromCharCode(' + e + ')';
+          case 'asc': return '(' + e + ').toCharCode(0)';
+          case 'sqr': return 'Math.sqrt(' + e + ')';
+          case 'int': return 'Math.floor(' + e + ')';
+          case 'cint': return 'Math.floor(' + e + ')';
+          case 'abs': return 'Math.abs(' + e + ')';
+          case 'cos': return 'Math.cos(' + e + ')';
+          case 'sin': return 'Math.sin(' + e + ')';
+          case 'tan': return 'Math.tan(' + e + ')';
+          case 'atn': return 'Math.atan(' + e + ')';
+          case 'exp': return 'Math.exp(' + e + ')';
+          case 'str$': return '(' + e + ').toString()';
+          case 'val': return 'parseInt(' + e + ')';
+          case 'peek': return 'Peek(' + e + ').toString()';
+          case 'len': return '((' + e + ').length)';
+          case 'ltrim$': return '((' + e + ').trimStart())';
+          case 'rtrim$': return '((' + e + ').trimEnd())';
+          case 'space$': return 'StringRep((' + e + '), " ")';
+          case 'tab': return 'StringRep((' + e + '), "\t")';
           }
           Throw('This cannot happen');
         }
@@ -728,7 +728,7 @@
       if (defaults.length > 0) {
         curop += IndexVariable(name) + ' = ' + defaults[0] + ';\n';
       }
-   }
+    }
 
     function MaybeImplicitDimVariable(name) {
       // TODO: Handle array variables.
@@ -747,7 +747,7 @@
     }
 
     function ArrayPart(offset, i) {
-       return SIMPLE_TYPE_INFO['long'].view + '[' + ((offset >> 2) + i) + ']';
+      return SIMPLE_TYPE_INFO['long'].view + '[' + ((offset >> 2) + i) + ']';
     }
 
     function ReserveArrayCell(name) {
@@ -1101,12 +1101,12 @@
         for (var j = 0; j < text.length; j++) {
           PutCh(text[j]);
         }
-        if (items[i+1] == ',') {
+        if (items[i + 1] == ',') {
           PutCh(' ');
           PutCh(' ');
           PutCh(' ');
         }
-        if (items[i+1] != ';' && items[i+1] != ',') {
+        if (items[i + 1] != ';' && items[i + 1] != ',') {
           PutCh(null);
         }
       }
@@ -1698,7 +1698,7 @@
         NewOp();
         curop += 'if (!(' + e + ')) { ip = ';
         NewOp();
-        flow.push(['while', ops.length-1]);
+        flow.push(['while', ops.length - 1]);
       } else if (tok == 'wend') {
         Skip('wend');
         var f = flow.pop();
@@ -1871,7 +1871,7 @@
           Skip('=');
           var value = Expression();
           var_decls += SIMPLE_TYPE_INFO['double'].view +
-            '[' + (offset>>3) + ']' +
+            '[' + (offset >> 3) + ']' +
             ' = (' + value + ');  // ' + name + '\n';
           if (tok == ',') {
             Skip(',');
@@ -2703,8 +2703,8 @@
       var ctx = canvas.getContext('2d');
       ctx.fillStyle = '#111';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-//      ctx.imageSmoothingQuality = 'low';
-//      ctx.imageSmoothingEnabled = false;
+      //      ctx.imageSmoothingQuality = 'low';
+      //      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(scale_canvas, viewport_x, viewport_y,
         viewport_w, viewport_h);
       requestAnimationFrame(Render);
@@ -2842,10 +2842,10 @@
       var canvas = SetupCanvas(tag, full_window);
       if (tags[t].src) {
         var request = new XMLHttpRequest();
-        request.addEventListener("load", function(e) {
+        request.addEventListener('load', function(e) {
           Interpret(request.responseText, canvas, true);
         }, false);
-        request.open("GET", tag.src);
+        request.open('GET', tag.src);
         request.send();
       } else {
         Interpret(tag.text, canvas, true);

@@ -17,21 +17,24 @@
 var basic = require('../wwwbasic.js');
 
 function BASIC_TEST(suite, name, code, expected_log, expected_error) {
-  var full_name = suite + '.' + name;
+  const full_name = suite + '.' + name;
   console.log('...... ' + full_name);
 
-  code = code.substr(1);  // skip \n
-  expected_log = expected_log.substr(1);  // skip \n
+  // skip \n
+  code = code.substr(1);
+  // skip \n
+  expected_log = expected_log.substr(1);
   if (expected_error !== undefined) {
     if (expected_error.substr(0, 1) == '\n') {
-      expected_error = expected_error.substr(1);  // skip \n
+      // skip \n
+      expected_error = expected_error.substr(1);
     }
   }
 
-  var result_log = '';
-  var result_error = '';
-  var console_log = console.log;
-  var console_error = console.error;
+  let result_log = '';
+  let result_error = '';
+  const console_log = console.log;
+  const console_error = console.error;
   try {
     console.log = function(msg) {
       result_log += msg + '\n';
