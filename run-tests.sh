@@ -15,6 +15,17 @@
 
 set -e
 
+# Run tests.
 for x in $(ls test/*-test.js); do
   node $x
 done
+
+# Run linter.
+echo "Linting..."
+bash ./lint.sh
+echo "[ OK ]"
+
+# Test packaging.
+echo "Test packaging..."
+npm publish --dry-run >/dev/null 2>/dev/null
+echo "[ OK ]"

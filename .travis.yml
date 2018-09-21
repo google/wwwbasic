@@ -4,7 +4,6 @@ node_js:
   - "node"
 
 script:
-  - bash ./lint.sh
   - bash ./run-tests.sh
 
 os:
