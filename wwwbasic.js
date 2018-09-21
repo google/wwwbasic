@@ -1490,10 +1490,21 @@
       noplot: false,
       nomove: false,
       angle: 0,
-      turn_angle: 0,
       color: undefined,
       scale: 1,
     };
+
+    function rotate_x(x,o){
+      x * Math.cos(torad(draw_state.angle + o)) / Math.cos(torad(o));
+    }
+
+    function rotate_y(y,o){
+      y * Math.sin(torad(draw_state.angle + o)) / Math.sin(torad(o));
+    }
+
+    function torad(deg){
+      return deg * Math.PI / 180;
+    }
 
     function StepUnscaled(dx, dy) {
       if (!draw_state.noplot) {
@@ -1518,14 +1529,21 @@
         if (m = cmds.match(/^(u|d|l|r|e|f|g|h|a|ta|c|s)([0-9]+)?/)) {
           var op = m[1];
           var n = m[2] == '' ? 1 : parseInt(m[2]);
+          if(Math.sign(n) )
           if (op == 'c') {
             draw_state.color = n;
           } else if (op == 'a') {
-            draw_state.angle = n;
-            // TODO: Implement.
+            if(n >= 0 && n <= 3){
+              draw_state.angle = n * 90;
+            } else {
+              Throw("Invalid A Rotation");
+            }
           } else if (op == 'ta') {
-            draw_state.turn_angle = n;
-            // TODO: Implement.
+            if(n > -360 && n < 360){
+              draw_state.angle = n;
+            } else {
+              Throw("Invalid TA Rotation");
+            }
           } else if (op == 's') {
             draw_state.scale = n / 4;
           } else if (op == 'u') {
@@ -1533,17 +1551,17 @@
           } else if (op == 'd') {
             Step(0, n);
           } else if (op == 'l') {
-            Step(-n, 0);
+            Step(-n,0);
           } else if (op == 'r') {
-            Step(n, 0);
+            Step(n,0);
           } else if (op == 'e') {
-            Step(n, -n);
+            Step(rotate_x(n,135), rotate_y(-n,135));
           } else if (op == 'f') {
-            Step(n, n);
+            Step(rotate_x(n,45), rotate_y(n,45));
           } else if (op == 'g') {
-            Step(-n, n);
+            Step(rotate_x(-n,315), rotate_y(n,315));
           } else if (op == 'h') {
-            Step(-n, -n);
+            Step(rotate_x(-n,225), rotate_y(-n,225));
           }
         } else if (m = cmds.match(/^(m)([+-]?)([0-9]+)[,]([+-]?[0-9]+)/)) {
           var op = m[1];
