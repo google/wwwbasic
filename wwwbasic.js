@@ -2388,6 +2388,13 @@
         curop += 'Width(' + w + ');\n';
       } else if (tok == 'color') {
         Skip('color');
+        if (tok == ',') {
+          // foreground color can be ommited to change only bg_color
+          Skip(',');
+          bg = Expression();
+          curop += 'Color(' + fg + ',' + bg + ');\n';
+          return;
+        }
         var fg = Expression();
         var bg = 0;
         if (tok == ',') {
