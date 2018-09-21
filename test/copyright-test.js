@@ -24,6 +24,7 @@ const EXCLUDED_FILENAMES = [
   'third_party',
   '.DS_Store',
   'package.json',
+  'package-lock.json',
   'CONTRIBUTING.md',
   'LICENSE',
   'README.md',
