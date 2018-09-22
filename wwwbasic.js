@@ -189,6 +189,8 @@
       '+', '-', '*', '/', '\\', '^', '&', '.',
       '<=', '>=', '<>', '=>', '=', '<', '>', '@', '\n',
     ];
+    code = code.replace(/\r/g, ' ');
+    code = code.replace(/\t/g, ' ');
     if (from_tag) {
       code = code.replace(/&lt;/g, '<');
       code = code.replace(/&gt;/g, '>');

@@ -20,15 +20,18 @@ function BASIC_TEST(suite, name, code, expected_log, expected_error) {
   const full_name = suite + '.' + name;
   console.log('...... ' + full_name);
 
-  // skip \n
-  code = code.substr(1);
-  // skip \n
-  expected_log = expected_log.substr(1);
-  if (expected_error !== undefined) {
-    if (expected_error.substr(0, 1) == '\n') {
-      // skip \n
-      expected_error = expected_error.substr(1);
+  function StripLeading(s) {
+    if (s[0] == '\n') {
+      return s.substr(1);
+    } else {
+      return s;
     }
+  }
+
+  code = StripLeading(code);
+  expected_log = StripLeading(expected_log);
+  if (expected_error !== undefined) {
+    expected_error = StripLeading(expected_error);
   }
 
   let result_log = '';
