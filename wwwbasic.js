@@ -1204,14 +1204,14 @@
 
     function Color(fg, bg) {
       if (screen_mode == 0 || screen_mode > 2) {
-        fg_color = FixupColor(fg);
+        if (fg != undefined) fg_color = FixupColor(fg);
       } else {
         fg_color = FixupColor(undefined);
       }
       if (screen_mode > 0) {
         bg_color = BLACK;
       } else {
-        bg_color = FixupColor(bg);
+        if (bg != undefined) bg_color = FixupColor(bg);
       }
     }
 
@@ -2388,15 +2388,9 @@
         curop += 'Width(' + w + ');\n';
       } else if (tok == 'color') {
         Skip('color');
-        if (tok == ',') {
-          // foreground color can be ommited to change only bg_color
-          Skip(',');
-          bg = Expression();
-          curop += 'Color(' + fg + ',' + bg + ');\n';
-          return;
-        }
-        var fg = Expression();
-        var bg = 0;
+        var fg = undefined;
+        var bg = undefined;
+        if (tok != ',') fg = Expression();
         if (tok == ',') {
           Skip(',');
           bg = Expression();
