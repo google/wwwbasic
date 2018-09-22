@@ -2388,8 +2388,8 @@
         curop += 'Width(' + w + ');\n';
       } else if (tok == 'color') {
         Skip('color');
-        var fg = undefined;
-        var bg = undefined;
+        var fg;
+        var bg;
         if (tok != ',') fg = Expression();
         if (tok == ',') {
           Skip(',');
