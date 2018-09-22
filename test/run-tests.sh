@@ -15,14 +15,18 @@
 
 set -e
 
+# Move to root of project.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+cd ${SCRIPT_DIR}/..
+
 # Run tests.
-for x in $(ls test/*-test.js); do
+for x in $(ls ./test/*-test.js); do
   node $x
 done
 
 # Run linter.
 echo "Linting..."
-bash ./lint.sh
+bash ./tools/lint.sh
 echo "[ OK ]"
 
 # Test packaging.

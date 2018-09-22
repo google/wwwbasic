@@ -1,9 +1,8 @@
 /examples/
 /test/
+/tools/
 /third_party/
 .eslintrc.js
 .gitignore
 .gitmodules
 .travis.yml
-run-tests.sh
-lint.sh

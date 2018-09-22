@@ -18,13 +18,14 @@
   "main": "wwwbasic.js",
   "directories": {
     "example": "examples",
-    "test": "test"
+    "test": "test",
+    "tools": "tools"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/google/wwwbasic.git"
   },
   "scripts": {
-    "test": "./run-tests.sh"
+    "test": "./test/run-tests.sh"
   }
 }
