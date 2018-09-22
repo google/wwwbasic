@@ -26,7 +26,12 @@ done
 
 # Run linter.
 echo "Linting..."
-bash ./tools/lint.sh
+./tools/lint.sh
+echo "[ OK ]"
+
+# Make sure keyword dumper runs.
+echo "Keyword dumping..."
+./tools/keyword_dump.js >/dev/null
 echo "[ OK ]"
 
 # Test packaging.

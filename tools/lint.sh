@@ -15,6 +15,10 @@
 
 set -e
 
+# Move to root of project.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+cd ${SCRIPT_DIR}/..
+
 LINTER_DIR=./third_party/install_linter
 ESLINT=${LINTER_DIR}/node_modules/.bin/eslint
 
@@ -34,4 +38,4 @@ cd ${OLD_PWD}
 # Lint it.
 ${ESLINT} $* \
     --ignore-pattern '!.eslintrc.js' \
-    .eslintrc.js wwwbasic.js test/
+    .eslintrc.js wwwbasic.js test/ tools/

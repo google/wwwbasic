@@ -81,8 +81,7 @@ const COPYRIGHT_HASH =
 `;
 
 const COPYRIGHT_BASH = '#! /bin/bash\n' + COPYRIGHT_HASH;
-
-const COPYRIGHT_CHECK = /fds/;
+const COPYRIGHT_NODE = '#! /usr/bin/env node\n' + COPYRIGHT_JS;
 
 console.log('Copyright header test...');
 
@@ -98,6 +97,7 @@ function CheckDir(path) {
       var data = fs.readFileSync(path + file, 'utf8');
       if (data.indexOf(COPYRIGHT_JS) != 0 &&
           data.indexOf(COPYRIGHT_HTML) != 0 &&
+          data.indexOf(COPYRIGHT_NODE) != 0 &&
           data.indexOf(COPYRIGHT_BASH) != 0 &&
           data.indexOf(COPYRIGHT_HASH) != 0) {
         throw 'Missing copyright header in: ' + path + file;
