@@ -1898,20 +1898,24 @@
           DimVariable(tname, op == 'redim');
         }
       } else if (tok == 'on') {
-        Skip('on');
-        if (tok == 'error') {
-          Skip('error');
-        } else {
-          Throw('Expected error');
+        Skip('on'); 
+        var name = Expression();
+        Skip('goto');
+        if(EndOfStatement()) {
+          Throw('Expected labels.');
         }
-        if (tok == 'goto') {
-          Skip('goto');
-          var name = tok;
+        curop += 'ip = labels[[';
+        while (!(EndOfStatement())) { 
+          curop += '\'' + String(tok) + '\'';
           Next();
-          // TODO: Implement.
-        } else {
-          Throw('Expected goto');
+          if(EndOfStatement()) {
+            curop += '][(('+name+')|0) - 1]] || ip;\n';
+          }else {
+            curop += tok;
+            Skip(',');
+          }
         }
+        NewOp();
       } else if (tok == 'resume') {
         Skip('resume');
         if (tok == 'next') {
