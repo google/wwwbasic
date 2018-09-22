@@ -103,6 +103,8 @@
     var display;
     var display_data;
     var scale_canvas;
+	var audio_ctx = new window.AudioContext;				/* Context for the audio playback, beep, sound commands */
+	var audio_sampleRate = audio_ctx.sampleRate;					/* Get sample rate from the audio context,  needed for proper timing */
 
     function SetupDisplay(width, height, aspect, fheight) {
       if (!canvas) {
@@ -1336,6 +1338,46 @@
       }
     }
 
+			/**
+		*Play a frequency for a duration of time
+		*
+		*frequency:  hertz
+		*ticks:      duration in ticks.  References show that 18.2 ticks in a second
+		*
+		*return:  none
+	*/
+	function PlayFrequency(frequency,ticks) {
+		var frameCount = audio_sampleRate * (ticks / 18.2);
+		if (frameCount < 1)
+			return;
+		var AudioBuffer = audio_ctx.createBuffer(1, frameCount, audio_sampleRate);
+
+		var ChannelData = AudioBuffer.getChannelData(0);
+		var FrequencyScalar = 2 * 3.14 *  frequency / audio_sampleRate;
+		var xPos = 0;
+		for (var i = 0; i < frameCount; i++) {
+			// Range is -1 to 1, same as sin
+			ChannelData[i] = Math.sin(xPos);
+			xPos+=FrequencyScalar;
+			
+		}
+		var source = audio_ctx.createBufferSource();
+		source.buffer = AudioBuffer;
+		source.connect(audio_ctx.destination);
+		source.start();
+	}
+	
+	/**
+		*Simulate the PC speaker beep
+		*
+		*return:  none
+	*/
+	function Beep()
+	{
+		PlayFrequency(1000,3);
+	}
+
+	
     function GetImage(x1, y1, x2, y2, buffer, offset) {
       x1 = x1 | 0;
       y1 = y1 | 0;
@@ -2016,7 +2058,7 @@
         // TODO: Implement.
       } else if (tok == 'beep') {
         Skip('beep');
-        // TODO: Implement.
+		curop += 'Beep();\n';
       } else if (tok == 'view') {
         Skip('view');
         if (tok == 'print') {
@@ -2056,7 +2098,7 @@
         var freq = Expression();
         Skip(',');
         var duration = Expression();
-        // TODO: Implement this.
+		curop += 'PlayFrequency(' + freq + ',' + duration + ');\n';
       } else if (tok == 'play') {
         Skip('play');
         var notes = Expression();
