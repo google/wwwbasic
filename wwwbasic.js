@@ -1206,14 +1206,14 @@
 
     function Color(fg, bg) {
       if (screen_mode == 0 || screen_mode > 2) {
-        fg_color = FixupColor(fg);
+        if (fg != undefined) fg_color = FixupColor(fg);
       } else {
         fg_color = FixupColor(undefined);
       }
       if (screen_mode > 0) {
         bg_color = BLACK;
       } else {
-        bg_color = FixupColor(bg);
+        if (bg != undefined) bg_color = FixupColor(bg);
       }
     }
 
@@ -2390,8 +2390,9 @@
         curop += 'Width(' + w + ');\n';
       } else if (tok == 'color') {
         Skip('color');
-        var fg = Expression();
-        var bg = 0;
+        var fg;
+        var bg;
+        if (tok != ',') fg = Expression();
         if (tok == ',') {
           Skip(',');
           bg = Expression();
