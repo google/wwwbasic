@@ -106,6 +106,14 @@
 	var audio_ctx = new window.AudioContext;				/* Context for the audio playback, beep, sound commands */
 	var audio_sampleRate = audio_ctx.sampleRate;					/* Get sample rate from the audio context,  needed for proper timing */
 
+	var PlayNote_Tempo = 120;			/* Default to 120 quarter notes per second. */
+	var PlayNote_Duration = 4;	/* set default to quarter note */
+	var PlayNote_Octave = 3;			/* Can't find much on the default.  But figured 0 - 6 and picked the mid */
+	var PlayNote_LegatoStaccato = 7/8;
+	var PlayNote_Volume = 200;
+	var bPlayNote_Foreground = true;	/* play in the foreground, block application until music is done */
+	var bPlayNote_PWM_Mode = true;		/* use sine waves or PWM like the cassic systems */
+	
     function SetupDisplay(width, height, aspect, fheight) {
       if (!canvas) {
         return;
@@ -1338,11 +1346,295 @@
       }
     }
 
-			/**
-		*Play a frequency for a duration of time
+	
+	function PlayNotes(notes)
+	{
+		
+		notes = notes.toUpperCase();	/* make it easier to follow by going with all uppercase */
+		
+		var frameCount = PlayNotes_Parse(notes,false,null);
+		
+		var AudioBuffer = audio_ctx.createBuffer(1, frameCount, audio_sampleRate);
+		var ChannelData = AudioBuffer.getChannelData(0);
+		
+		PlayNotes_Parse(notes,true,ChannelData,frameCount);
+		
+		var source = audio_ctx.createBufferSource();
+		source.buffer = AudioBuffer;
+		source.connect(audio_ctx.destination);
+		source.start();
+
+		if(bPlayNote_Foreground) {
+			var millisecs = (frameCount / audio_sampleRate ) * 1000;
+			var initiation = new Date().getTime();
+			while ((new Date().getTime() - initiation) < millisecs);
+		}
+		
+	}
+	
+
+	/**
+		Parses the notes and calculates the audio frames required
+		
+		@notes string of notes
+		@play  boolean to play notes or just calculate length
+		@channeldata audio buffer channel data
+	
+		return totalframes
+	*/
+	function PlayNotes_Parse(notes,bPlay,ChannelData,MaxFrames)
+	{
+		/*
+			Source:  https://en.wikibooks.org/wiki/QBasic/Appendix#PLAY
+			{A|B|C|D|E|F|G}[#|+|-][m]	Play a note. 
+			+ or # indicates sharp. 
+			- indicates flat. 
+				m is a numeric literal and indicates PlayNote_Duration of an mth note. m is in the range [0—64]. If m=0 or omitted, use the default length.
+
+			Ln     Sets the PlayNote_Duration (length) of the notes. The variable n does not indicate an actual PlayNote_Duration
+				   amount but rather a note type; L1 - whole note, L2 - half note, L4 - quarter note, etc.
+				   (L8, L16, L32, L64, ...). By default, n = 4.
+				   For triplets and quintets, use L3, L6, L12, ... and L5, L10, L20, ... series respectively.
+				   The shorthand notation of length is also provided for a note. For example, "L4 CDE L8 FG L4 AB"
+				   can be shortened to "L4 CDE F8G8 AB". F and G play as eighth notes while others play as quarter notes.
+			On     Sets the current PlayNote_Octave. Valid values for n are 0 through 6. An PlayNote_Octave begins with C and ends with B.
+				   Remember that C- is equivalent to B. 
+			< >    Changes the current PlayNote_Octave respectively down or up one level.
+			Nn     Plays a specified note in the seven-PlayNote_Octave range. Valid values are from 0 to 84. (0 is a pause.)
+				   Cannot use with sharp and flat. Cannot use with the shorthand notation neither.
+			MN     Stand for Music Normal. Note PlayNote_Duration is 7/8ths of the length indicated by Ln. It is the default mode.
+			ML     Stand for Music Legato. Note PlayNote_Duration is full length of that indicated by Ln.
+			MS     Stand for Music Staccato. Note PlayNote_Duration is 3/4ths of the length indicated by Ln.
+			Pn     Causes a silence (pause) for the length of note indicated (same as Ln). 
+			Tn     Sets the number of "L4"s per minute (PlayNote_Tempo). Valid values are from 32 to 255. The default value is T120. 
+			.      When placed after a note, it causes the PlayNote_Duration of the note to be 3/2 of the set PlayNote_Duration.
+				   This is how to get "dotted" notes. "L4 C#." would play C sharp as a dotted quarter note.
+				   It can be used for a pause as well.
+			MB MF  Stand for Music Background and Music Foreground. MB places a maximum of 32 notes in the music buffer
+				   and plays them while executing other statements. Works very well for games.
+				   MF switches the PLAY mode back to normal. Default is MF.
+		*/
+
+
+	   
+		var NoteIndex = 0;		// Pointer current character in the notes buffer
+		var BufferLength = 0;
+		
+		/* We could play each note through the PlayFrequency one at a time.  It could lead to very small pops between each note as the code queues up the next
+	      note.  I am going to instead interate through the array to first get total length in time and create a buffer and then encode the data */
+		
+		var TotalFrames = 0;
+		var Command = "";		/* current command */
+		var Modifier = "";		/* current modifier */
+		var Modifier2 = "";		/* current modifier second digit */
+		var Modifier3 = "";		/* current modifier third digit */
+		var NotePlayNote_Duration = "";	/* current PlayNote_Duration */
+		var CurrentNote = "";	/* Current note */
+		var frameCount = 0;		/* total audio frames in a note or pause */
+		var ChannelDataIndex = 0;	/* index in channel data */
+		/* Note Frequency at PlayNote_Octave 0 from https://pages.mtu.edu/~suits/notefreqs.html */
+		var NotesArray = {'C':16.35, 'C#':17.32,'D-': 17.32,'D':18.35,'D#':19.45,'E-':19.45,'E':20.60,'F':21.83,
+				'F#':23.12,'G-':23.12,'G':24.50,'G#':25.96,'A-':25.96,'A':27.50,'A#':29.14,'B-':29.14,'B':30.87};
+		
+		while (NoteIndex < notes.length) 
+		{
+			NotePlayNote_Duration = PlayNote_Duration;	/* reset the notePlayNote_Duration to the standard PlayNote_Duration.  A PlayNote_Duration can be changed for just a single note */
+			Command = notes.charAt(NoteIndex);
+			if(Command >= 'A' && Command <= 'G') {				/* is it a note? */
+				var NoteDuration = NotePlayNote_Duration;
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				
+				CurrentNote = Command;							/* Set the note */
+				Modifier = notes.charAt(NoteIndex);				/* check for modifiers */
+				if(Modifier == '#' || Modifier == '+') {		/* sharp */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					CurrentNote = CurrentNote + "#";
+				} else if(Modifier == "-")	{					/* flat */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					CurrentNote = CurrentNote + "-";
+				} else if(Modifier >= '0' && Modifier <= '9') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					Modifier2 = notes.charAt(NoteIndex);
+					if(Modifier2 >= '0' && Modifier2 <= '9') {
+						NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+						Modifier = Modifier.concat(Modifier2);
+					}
+					NoteDuration = parseInt(Modifier);
+				}
+
+				/* do the PlayNote_Duration again incase we had a PlayNote_Duration after the sharp or flat */
+				Modifier = notes.charAt(NoteIndex);
+				if(Modifier >= '0' && Modifier <= '9') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					Modifier2 = notes.charAt(NoteIndex);
+					if(Modifier2 >= '0' && Modifier2 <= '9') {
+						NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+						Modifier = Modifier.concat(Modifier2);
+					}
+					NoteDuration = parseInt(Modifier);
+				}
+				if(Modifier == '.') {		/* PlayNote_Duration modifier */
+					NoteDuration = NotePlayNote_Duration * 3 / 2;
+				}
+				frameCount=PlayNotes_GetAudioFrameCount(PlayNote_Tempo,NoteDuration);
+				TotalFrames+=frameCount;
+				if(bPlay==true) {
+				   
+					/* console.log("PlayNotes_PlayNote: " + CurrentNote +","+PlayNote_Octave+","+PlayNote_Tempo+","+NoteDuration+","+PlayNote_LegatoStaccato); */
+					var Frequency = parseFloat(NotesArray[CurrentNote]) * (PlayNote_Octave + 14);
+					var FrequencyScalar = 2 * 3.14 *  Frequency / audio_sampleRate;
+					var xPos = 0;
+					var LegatoStop = PlayNote_LegatoStaccato * frameCount;
+					var audio_val = 0;
+					for (var i = 0; i < frameCount; i++) {
+						// Range is -1 to 1, same as sin
+						audio_val = (Math.sin(xPos) * PlayNote_Volume)/255;
+						if(bPlayNote_PWM_Mode) {
+							if(audio_val > 0)
+								audio_val = 1 * PlayNote_Volume / 255;
+							else
+								audio_val = -1 * PlayNote_Volume / 255;
+						}
+							
+						if(bPlayNote_PWM_Mode)
+							
+						if(i < LegatoStop)
+							ChannelData[ChannelDataIndex] =  audio_val;
+						else
+							ChannelData[ChannelDataIndex] = 0;
+						ChannelDataIndex++;
+						xPos+=FrequencyScalar;
+						
+					}
+	
+					
+				}
+
+			} else if(Command == 'L') {							/* change PlayNote_Duration */
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				Modifier = notes.charAt(NoteIndex);				/* check for modifiers */
+				if(Modifier >= '0' && Modifier <= '9') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					Modifier2 = notes.charAt(NoteIndex);
+					if(Modifier2 >= '0' && Modifier2 <= '9') {
+						NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+						Modifier = Modifier.concat(Modifier2);
+					}
+					//Duraton = parseInt(Modifier);
+					NotePlayNote_Duration = parseInt(Modifier);
+				}
+
+			} else if(Command == 'O') {		
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				Modifier = notes.charAt(NoteIndex);				/* check for modifiers */
+				if(Modifier >= '0' && Modifier <= '9') {		/* PlayNote_Duration modifier */
+					PlayNote_Octave = parseInt(Modifier);
+				}
+			
+			} else if(Command == '>') {		
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				PlayNote_Octave++;
+				if(PlayNote_Octave > 7) {
+					PlayNote_Octave = 7;
+				}
+			
+			} else if(Command == '<') {		
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				PlayNote_Octave--;
+				if(PlayNote_Octave < 0) {
+					PlayNote_Octave = 0;
+				}
+			
+			} else if(Command == 'M') {		
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				Modifier = notes.charAt(NoteIndex);				/* check for modifiers */
+				if(Modifier == 'N') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					PlayNote_LegatoStaccato = 7/8;
+				} else if(Modifier == 'N') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					PlayNote_LegatoStaccato = 8/8;
+				} else if(Modifier == 'S') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					PlayNote_LegatoStaccato = 3/4;
+				}
+
+			} else if(Command == 'P') {		
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				Modifier = notes.charAt(NoteIndex);				/* check for modifiers */
+				if(Modifier >= '0' && Modifier <= '9') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					Modifier2 = notes.charAt(NoteIndex);
+					if(Modifier2 >= '0' && Modifier2 <= '9') {
+						NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+						Modifier = Modifier.concat(Modifier2);
+					}
+					NotePlayNote_Duration = parseInt(Modifier);
+					frameCount=PlayNotes_GetAudioFrameCount(PlayNote_Tempo,NotePlayNote_Duration);
+					TotalFrames+=frameCount;
+					if(bPlay==true) {
+					   for (var i = 0; i < frameCount; i++) {
+							ChannelData[ChannelDataIndex++] = 0;
+						}
+					}
+				}
+			} else if(Command == '.') {		
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				NotePlayNote_Duration = NotePlayNote_Duration * 3 / 2;
+				frameCount=PlayNotes_GetAudioFrameCount(PlayNote_Tempo,NotePlayNote_Duration);
+				TotalFrames+=frameCount;
+				if(bPlay==true) {
+				   for (var i = 0; i < frameCount; i++) {
+						ChannelData[ChannelDataIndex++] = 0;
+					}
+				}
+			} else if(Command == 'T') {		
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+				Modifier = notes.charAt(NoteIndex);				/* check for modifiers */
+
+				if(Modifier >= '0' && Modifier <= '9') {		/* PlayNote_Duration modifier */
+					NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+					Modifier2 = notes.charAt(NoteIndex);
+
+					if(Modifier2 >= '0' && Modifier2 <= '9') {
+						NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+						Modifier = Modifier.concat(Modifier2);
+						Modifier3 = notes.charAt(NoteIndex);
+					
+						if(Modifier3 >= '0' && Modifier2 <= '9') {
+							NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+							Modifier = Modifier.concat(Modifier3);
+						}
+					}
+					PlayNote_Tempo = parseInt(Modifier);
+				}
+	
+			} else {
+				NoteIndex=NoteIndex+1; if(NoteIndex > notes.length) break; 									/* we read a note so increment */
+			}
+			
+		} 
+		return TotalFrames;
+	}
+
+	/**
+		Get the total frames required for a note a temp with PlayNote_Duration
+		
+		@temp:  current temp in quarter notes per second
+		@PlayNote_Duration:  how long the notes is 1=full note, 2=1/2, 3=1/3, 4=1/4 etc
+		@PlayNote_LegatoStaccato:  special music timing
+	*/
+	function PlayNotes_GetAudioFrameCount(PlayNote_Tempo,PlayNote_Duration)
+	{
+		var NoteLength = (audio_sampleRate  / PlayNote_Tempo) * 4 * 60;	/* get quarter note length and multiply by 4 to get full note length */
+		var frameCount = NoteLength / PlayNote_Duration;		/* time is actually 1 note length / PlayNote_Duration */ 
+		return frameCount;
+	}
+	/**
+		*Play a frequency for a PlayNote_Duration of time
 		*
 		*frequency:  hertz
-		*ticks:      duration in ticks.  References show that 18.2 ticks in a second
+		*ticks:      PlayNote_Duration in ticks.  References show that 18.2 ticks in a second
 		*
 		*return:  none
 	*/
@@ -2097,12 +2389,12 @@
         Skip('sound');
         var freq = Expression();
         Skip(',');
-        var duration = Expression();
-		curop += 'PlayFrequency(' + freq + ',' + duration + ');\n';
+        var PlayNote_Duration = Expression();
+		curop += 'PlayFrequency(' + freq + ',' + PlayNote_Duration + ');\n';
       } else if (tok == 'play') {
         Skip('play');
         var notes = Expression();
-        // TODO: Implement this.
+		curop += 'PlayNotes(\'' + notes + '\');\n';
       } else if (tok == 'draw') {
         Skip('draw');
         var cmds = Expression();
