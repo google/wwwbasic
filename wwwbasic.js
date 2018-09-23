@@ -1898,19 +1898,19 @@
           DimVariable(tname, op == 'redim');
         }
       } else if (tok == 'on') {
-        Skip('on'); 
+        Skip('on');
         var name = Expression();
         Skip('goto');
-        if(EndOfStatement()) {
+        if (EndOfStatement()) {
           Throw('Expected labels.');
         }
         curop += 'ip = labels[[';
-        while (!(EndOfStatement())) { 
+        while (!(EndOfStatement())) {
           curop += '\'' + String(tok) + '\'';
           Next();
-          if(EndOfStatement()) {
-            curop += '][(('+name+')|0) - 1]] || ip;\n';
-          }else {
+          if (EndOfStatement()) {
+            curop += '][((' + name + ')|0) - 1]] || ip;\n';
+          } else {
             curop += tok;
             Skip(',');
           }
