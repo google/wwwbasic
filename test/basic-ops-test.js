@@ -66,3 +66,19 @@ PRINT x * y
 6
 `);
 
+basic_test.BASIC_TEST('BasicOps', 'Mod', `
+LET x = 5
+LET y = 3
+PRINT x mod y
+`, `
+2
+`);
+
+basic_test.BASIC_TEST('BasicOps', 'FloorDivide', `
+LET x = 7
+LET y = 3
+PRINT x \\ y
+`, `
+2
+`);
+

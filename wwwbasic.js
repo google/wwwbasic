@@ -591,8 +591,8 @@
     function Term2() {
       var a = Factor();
       while (tok == '\\') {
-        var b = Next();
-        Factor();
+        Next();
+        var b = Factor();
         a = 'Math.floor((' + a + ')/(' + b + '))';
       }
       return a;
@@ -2087,7 +2087,7 @@
           Skip('base');
           if (tok == '0') {
             option_base = 0;
-          } if (tok == '1') {
+          } else if (tok == '1') {
             option_base = 1;
           } else {
             Throw('Unexpected option base "' + tok + '"');
