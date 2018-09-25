@@ -1900,22 +1900,32 @@
       } else if (tok == 'on') {
         Skip('on');
         var name = Expression();
-        Skip('goto');
-        if (EndOfStatement()) {
-          Throw('Expected labels.');
-        }
-        curop += 'ip = labels[[';
-        while (!(EndOfStatement())) {
-          curop += '\'' + String(tok) + '\'';
+        if (tok == 'error') {
+          Skip('error');
+          // TODO: Implement.
+        } else if (tok == 'goto' || tok == 'gosub') {
+          if (tok == 'gosub') {
+            curop += 'rstack.push(ip);\n';
+          }
           Next();
           if (EndOfStatement()) {
-            curop += '][((' + name + ')|0) - 1]] || ip;\n';
-          } else {
-            curop += tok;
-            Skip(',');
+            Throw('Expected labels.');
           }
+          curop += 'ip = labels[[';
+          while (!(EndOfStatement())) {
+            curop += '\'' + String(tok) + '\'';
+            Next();
+            if (EndOfStatement()) {
+              curop += '][((' + name + ')|0) - 1]] || ip;\n';
+            } else {
+              curop += tok;
+              Skip(',');
+            }
+          }
+          NewOp();
+        } else {
+          Throw('Expected GOTO/GOSUB or ERROR. Found ' + tok);
         }
-        NewOp();
       } else if (tok == 'resume') {
         Skip('resume');
         if (tok == 'next') {
