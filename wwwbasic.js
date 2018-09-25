@@ -1900,9 +1900,7 @@
       } else if (tok == 'on') {
         Skip('on');
         var name = Expression();
-        if (tok != 'goto' && tok != 'gosub' && tok != 'error') {
-          Throw('Expected GOTO/GOSUB or ERROR. Found ' + tok);
-        } else if (tok == 'error') {
+        if (tok == 'error') {
           Skip('error');
           // TODO: Implement.
         } else if (tok == 'goto' || tok == 'gosub') {
@@ -1925,6 +1923,8 @@
             }
           }
           NewOp();
+        } else {
+          Throw('Expected GOTO/GOSUB or ERROR. Found ' + tok);
         }
       } else if (tok == 'resume') {
         Skip('resume');
