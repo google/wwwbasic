@@ -147,7 +147,6 @@
     var curop = '';
     var ip = 0;
     var function_define_pos = 0;
-    var function_return_var;
     var function_old_allocated = 0;
 
     // Call stack
@@ -967,20 +966,21 @@
       DimScalarVariable(name, ImplicitType(name), []);
       // In case return value gets redefined.
       Align(8);
-      Skip('(');
-      if (tok != ')') {
-        parameters.push(tok);
-        DimVariable(null);
-        while (tok == ',') {
-          Skip(',');
+      if (tok == '(') {
+        Skip('(');
+        if (tok != ')') {
           parameters.push(tok);
           DimVariable(null);
+          while (tok == ',') {
+            Skip(',');
+            parameters.push(tok);
+            DimVariable(null);
+          }
         }
+        Skip(')');
+        Align(8);
       }
-      Skip(')');
-      Align(8);
       nfunc.allocation = allocated;
-      function_return_var = vars[name];
       if (options.is_declaration) {
         vars = global_vars;
         allocated = old_allocated;
@@ -996,6 +996,18 @@
         function_old_allocated = old_allocated;
         function_define_pos = pos;
         functions[name] = nfunc;
+      }
+      if (tok == 'as') {
+        Skip('as');
+        var type_name = TypeName();
+        if (!SIMPLE_TYPE_INFO[type_name]) {
+          Throw('Expected basic type');
+        }
+        functions[name].type_name = type_name;
+      }
+      if (tok == 'static') {
+        Skip('static');
+        // TODO: Implement.
       }
     }
 
@@ -1017,13 +1029,6 @@
       allocated = function_old_allocated;
     }
 
-    function FunctionRetype(type_name) {
-      if (!SIMPLE_TYPE_INFO[type_name]) {
-        Throw('Expected basic type');
-      }
-      function_return_var.type_name = type_name;
-    }
-
     function FunctionCall(name, options) {
       var func = functions[name];
       if (options.is_subroutine !== func.is_subroutine) {
@@ -1034,7 +1039,8 @@
         }
       }
       curop += 'i[sp>>2] = bp; sp += 8;\n';
-      if (options.is_call || !options.is_subroutine) {
+      var has_parens = tok == '(' || func.parameters.length != 0;
+      if (options.is_call || (!options.is_subroutine && has_parens)) {
         Skip('(');
       }
       for (var i = 0; i < func.parameters.length; ++i) {
@@ -1052,7 +1058,7 @@
           Skip(',');
         }
       }
-      if (options.is_call || !options.is_subroutine) {
+      if (options.is_call || (!options.is_subroutine && has_parens)) {
         Skip(')');
       }
       curop += 'bp = sp;\n';
@@ -1945,10 +1951,6 @@
         } else if (tok == 'function') {
           Skip('function');
           FunctionDefine({is_subroutine: false, is_declaration: true});
-          if (tok == 'as') {
-            Skip('as');
-            FunctionRetype(TypeName());
-          }
         } else {
           Throw('Unexpected declaration');
         }
@@ -2075,10 +2077,6 @@
       } else if (tok == 'function') {
         Skip('function');
         FunctionDefine({is_subroutine: false});
-        if (tok == 'as') {
-          Skip('as');
-          FunctionRetype(TypeName());
-        }
       } else if (tok == 'def') {
         Skip('def');
         if (tok == 'seg') {
@@ -2129,9 +2127,11 @@
         Skip('view');
         if (tok == 'print') {
           Skip('print');
-          var top = Expression();
-          Skip('to');
-          var bottom = Expression();
+          if (!EndOfStatement()) {
+            var top = Expression();
+            Skip('to');
+            var bottom = Expression();
+          }
           // TODO: Implement.
         } else if (tok == 'screen') {
           Skip('screen');
@@ -2675,6 +2675,7 @@
         if (tok == ':') {
           Skip(':');
           AddLabel(name);
+          Statement();
           return;
         }
         if (name == 'let') {
