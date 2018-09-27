@@ -2027,7 +2027,7 @@
           // TODO: Implement.
         } else if (tok == 'goto' || tok == 'gosub') {
           if (tok == 'gosub') {
-            curop += 'rstack.push(ip);\n';
+            curop += 'i[sp>>2] = ip; sp += 8;\n';
           }
           Next();
           if (EndOfStatement()) {
