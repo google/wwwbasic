@@ -1820,11 +1820,13 @@
         flow.push(['do', ops.length]);
       } else if (tok == 'loop') {
         Skip('loop');
+        var is_while;
         if (tok == 'while') {
           Skip('while');
+          is_while = true;
         } else if (tok == 'until') {
           Skip('until');
-          // TODO
+          is_while = false;
         } else if (EndOfStatement()) {
           var f = flow.pop();
           if (f[0] != 'while' && f[0] != 'do') {
@@ -1844,7 +1846,11 @@
         if (f[0] != 'do') {
           Throw('LOOP does not match DO');
         }
-        curop += 'if (' + e + ') { ip = ' + f[1] + '; }\n';
+        if (is_while) {
+          curop += 'if (' + e + ') { ip = ' + f[1] + '; }\n';
+        } else {
+          curop += 'if (!(' + e + ')) { ip = ' + f[1] + '; }\n';
+        }
       } else if (tok == 'while') {
         Skip('while');
         var e = Expression();

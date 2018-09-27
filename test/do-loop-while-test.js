@@ -45,6 +45,21 @@ LOOP WHILE i > 0
 1
 `);
 
+basic_test.BASIC_TEST('DoLoopWhile', 'LoopUntilSixToOne', `
+i = 6
+DO
+  PRINT i
+  i = i - 1
+LOOP UNTIL i = 0
+`, `
+6
+5
+4
+3
+2
+1
+`);
+
 basic_test.BASIC_TEST('DoLoopWhile', 'JustDoLoop', `
 i = 6
 DO
