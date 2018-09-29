@@ -2034,19 +2034,25 @@
           Skip('error');
           // TODO: Implement.
         } else if (tok == 'goto' || tok == 'gosub') {
-          if (tok == 'gosub') {
-            curop += 'i[sp>>2] = ip; sp += 8;\n';
-          }
+          var isGosub = (tok == 'gosub');
           Next();
           if (EndOfStatement()) {
             Throw('Expected labels.');
+          }
+          if (isGosub) {
+            curop += 'i[sp>>2] = ip; sp += 8;\n';
           }
           curop += 'ip = labels[[';
           while (!(EndOfStatement())) {
             curop += '\'' + String(tok) + '\'';
             Next();
             if (EndOfStatement()) {
-              curop += '][((' + name + ')|0) - 1]] || ip;\n';
+              if (isGosub) {
+                curop += '][((' + name + ')|0) - 1]];\n';
+                curop += 'if(ip == undefined){ sp -= 8; ip = i[sp>>2]; }\n';
+              } else {
+                curop += '][((' + name + ')|0) - 1]] || ip;\n';
+              }
             } else {
               curop += tok;
               Skip(',');
