@@ -50,3 +50,19 @@ basic_test.BASIC_TEST('OnGosub', 'SubroutineAtLines', `
 done
 `);
 
+basic_test.BASIC_TEST('OnGosub', 'OutOfRange', `
+ON 0 GOSUB a,b
+ON 5 GOSUB a,b
+ON 3 GOSUB a,b,c
+PRINT "done"
+END
+a: 
+  PRINT "a"
+  RETURN
+b:
+  PRINT "b"
+  RETURN
+`, `
+done
+`);
+
