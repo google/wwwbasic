@@ -2695,7 +2695,7 @@
           var op = tok;
           Next();
           var e = Expression();
-          if (op == '&='){
+          if (op == '&=') {
             op = '+=';
           } else if (op == '\\=') {
             op = '//=';
