@@ -210,7 +210,7 @@
     function Next() {
       tok = '';
       for (;;) {
-        while (code.substr(0, 1) == ' '  ||
+        while (code.substr(0, 1) == ' ' ||
                code.substr(0, 1) == '\t') {
           if (tok != '') {
             return;
@@ -2428,7 +2428,7 @@
         Next();
         var v = ArrayPart(ReserveArrayCell(name).offset, 0);
         curop += 'GetImage(' + x1 + ', ' + y1 + ', ' +
-          x2 + ', ' +  y2 + ', buffer, ' + v + ');\n';
+          x2 + ', ' + y2 + ', buffer, ' + v + ');\n';
       } else if (tok == 'put') {
         Skip('put');
         Skip('(');
@@ -2781,7 +2781,7 @@
 
     function Resize() {
       if (from_tag) {
-        canvas.width  = window.innerWidth;
+        canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
       }
       var raspect = canvas.width / canvas.height;
