@@ -16,44 +16,84 @@ limitations under the License.
 <!DOCTYPE html>
 <script src="../wwwbasic.js"></script>
 <script type="text/basic">
+TYPE line
+  color AS SINGLE
+  posX AS SINGLE
+  posY AS SINGLE
+  text AS STRING
+END TYPE
 
-Slide:
-  CLS
-  COLOR 14
-Row:
-  READ a$
-  IF a$="---" THEN GOTO Wait
-  IF a$="===" THEN
-    RESTORE : GOTO Slide
+slideIndex = 0
+lineIndex = 0
+numberOfSlides = 0
+currentSlide = 0
+DIM slides(100, 32) AS line
+
+ParseSlide:
+  READ color$
+  IF color$="---" THEN
+    slideIndex = slideIndex + 1
+    lineIndex = 0
+    GOTO ParseSlide
   END IF
-  PRINT a$
+  IF color$="===" THEN
+    numberOfSlides = slideIndex
+    GOTO DrawSlide
+  END IF
+  READ posX
+  READ posY
+  READ text$
+
+  slides(slideIndex, lineIndex).color = color$
+  slides(slideIndex, lineIndex).posX = posX
+  slides(slideIndex, lineIndex).posY = posY
+  slides(slideIndex, lineIndex).text = text$
+
+  lineIndex = lineIndex + 1
+  GOTO ParseSlide
+
+DrawSlide:  
+  CLS
+  FOR i = 0 to 10
+    COLOR slides(currentSlide, i).color
+    LOCATE slides(currentSlide, i).posY, slides(currentSlide, i).posX
+    PRINT slides(currentSlide, i).text
+  NEXT i
   COLOR 15
-  GOTO Row
-Wait:
-  IF INKEY$="" THEN GOTO Wait
-  GOTO Slide
+  LOCATE 24, 74
+  PRINT (currentSlide + 1) + "/" + numberOfSlides
+  PRINT
 
-DATA Sample Slide Deck
-DATA * Shows how you could do a slide deck.
-DATA * Is pretty BASIC :-)
+CheckForInput:
+  key$ = INKEY$
+  IF key$="ArrowLeft" THEN
+    IF currentSlide > 0 THEN
+      currentSlide = currentSlide - 1
+      GOTO DrawSlide
+    END IF
+  END IF
+  IF key$="ArrowRight" THEN
+    IF currentSlide < numberOfSlides - 1 THEN
+      currentSlide = currentSlide + 1
+      GOTO DrawSlide
+    END IF
+  END IF
+  GOTO CheckForInput
+
+DATA 14, 32, 2, Sample Slide Deck
+DATA 15, 2, 4, * The slides can be formatted
+DATA 13, 22, 4, formatted
+DATA 15, 2, 5, * You can navigate with arrow keys
 DATA ---
 
-DATA But Why?
-DATA * Why not!
-DATA * Slides are fun
+DATA 14, 32, 2, But Why?
+DATA 15, 2, 4, * Why not!
+DATA 15, 2, 5, * Slides are fun
 DATA ---
 
-DATA Improvements Needed!
-DATA * Ability to rewind
-DATA * Ability to format the slides
-DATA ---
-
-DATA QUESTIONS?
-DATA
-DATA "    Questions"
+DATA 14, 32, 2, QUESTIONS?
 DATA ---
 
 DATA ===
 
 </script>
-
