@@ -1,13 +1,13 @@
 [![Build Status](https://travis-ci.org/google/wwwbasic.svg?branch=master)](https://travis-ci.org/google/wwwbasic) [![NPM Package](https://img.shields.io/npm/v/wwwbasic.svg)](https://www.npmjs.com/package/wwwbasic)
 
-# WWWBasic
+# wwwBASIC
 
-WWWBasic is an implementation of BASIC (Beginner's All-purpose Symbolic
+wwwBASIC is an implementation of BASIC (Beginner's All-purpose Symbolic
 Instruction Code) designed to be easy to run on the Web.
 
-## How to use WWWBasic
+## How to use wwwBASIC
 
-You can include WWWBasic directly in Web pages:
+You can include wwwBASIC directly in Web pages:
 
 ```html
 <!DOCTYPE html>
@@ -24,7 +24,7 @@ You can include WWWBasic directly in Web pages:
 </html>
 ```
 
-You can also import WWWBasic as a Node.js module.
+You can also import wwwBASIC as a Node.js module.
 
 Either install  it via [npm](https://www.npmjs.com/): `npm install -S wwwbasic`
 
@@ -53,7 +53,7 @@ It supports a range of features including:
 
 ## Test Suite
 
-WWWBasic has a "Work-in-progress" test suite.
+wwwBASIC has a "Work-in-progress" test suite.
 It can be run with: `./run-tests.sh`.
 
 ## Examples
