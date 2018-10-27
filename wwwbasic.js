@@ -2841,12 +2841,25 @@
         mouse_y = Math.floor(
           (e.clientY - rect.top - viewport_y) * display.height / viewport_h);
       }, false);
+      canvas.addEventListener('touchmove', function(e) {
+        var touch = e.touches.item(0);
+        let evt = new Event('mousemove');
+        evt.clientX = touch.clientX;
+        evt.clientY = touch.clientY;
+        canvas.dispatchEvent(evt);
+      }, false);
       canvas.addEventListener('mousedown', function(e) {
         mouse_buttons = 1;
+      }, false);
+      canvas.addEventListener('touchstart', function(e) {
+        canvas.dispatchEvent(new Event('mousedown'));
       }, false);
       canvas.addEventListener('mouseup', function(e) {
         mouse_buttons = 0;
       }, false);
+      canvas.addEventListener('touchend', function(e) {
+        canvas.dispatchEvent(new Event('mouseup'));
+      }, false)
       // TODO: Implement Mouse Wheel!
       // TODO: Implement Mouse Clip!
     }
