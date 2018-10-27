@@ -2843,7 +2843,7 @@
       }, false);
       canvas.addEventListener('touchmove', function(e) {
         var touch = e.touches.item(0);
-        let evt = new Event('mousemove');
+        const evt = new Event('mousemove');
         evt.clientX = touch.clientX;
         evt.clientY = touch.clientY;
         canvas.dispatchEvent(evt);
