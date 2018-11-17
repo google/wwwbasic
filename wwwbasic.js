@@ -1088,7 +1088,7 @@
       yielding = 1;
       quitting = 1;
       if (canvas) {
-        console.log('BASIC END');
+        console.log('=== BASIC END ===');
       } else {
         if (output_buffer != '') {
           PutCh(null);
