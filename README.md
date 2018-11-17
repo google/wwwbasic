@@ -78,6 +78,31 @@ It can be run with: `./run-tests.sh`.
   ([source](examples/editor.html)) - Live editor using
   [Ace](https://ace.c9.io/).
 
+## But Why?
+
+The immediate trigger for wwwBASIC's existence was
+Ed Thelen's Nike Hercules
+[simulator](http://ed-thelen.org/NikeSimulation.html#SimBrowser).
+It had been written in BASIC some time back,
+then ported to some unknown version of FreeBasic.
+However, while he had screenshots and source code,
+it also included a Windows .EXE to a download,
+and the statement, "guaranteed to be free of viruses" :-/
+
+As it was meant to capture how something historical worked,
+it seemed unfortunate that something of this sort
+couldn't just be accessible directly on the web.
+Various whole system emulators that run on the web are available,
+but booting a whole system for a small program seemed like overkill.
+
+Hence the first goal was to get
+[this](http://ed-thelen.org/nike-fromBradNelsonSept26.html) to run.
+
+From there, bringing up
+[DONKEY.BAS](https://google.github.io/wwwbasic/examples/donkey.html)
+seemed a nice logical milestone.
+Bringing up GORILLA.BAS and NIBBLES.BAS are a current focus.
+
 ## Source Code Headers
 
 Every file containing source code must include copyright and license
