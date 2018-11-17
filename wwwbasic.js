@@ -2396,7 +2396,9 @@
           if (tok.substr(0, 1) == '"') {
             var prompt = tok;
             Next();
-            Skip(';');
+            if (tok == ';' || tok == ',') {
+              Next();
+            }
           }
           curop += 'Print([' + prompt + ', ";"]);\n';
           curop += 'PutCh(String.fromCharCode(219));\n';
@@ -2587,7 +2589,9 @@
         if (tok[0] == '#') {
           // TODO: Implement.
           Next();
-          Skip(',');
+          if (tok == ';' || tok == ',') {
+            Next();
+          }
         }
         if (tok == ';') {
           Skip(';');
@@ -2596,7 +2600,9 @@
         if (tok.substr(0, 1) == '"') {
           var prompt = tok;
           Next();
-          Skip(',');
+          if (tok == ';' || tok == ',') {
+            Next();
+          }
         }
         curop += 'Print([' + prompt + ', ";"]);\n';
         curop += 'PutCh(String.fromCharCode(219));\n';
