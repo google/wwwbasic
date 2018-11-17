@@ -156,6 +156,7 @@
 
     // Input State
     var keys = [];
+    var input_string = '';
     var mouse_x = 0;
     var mouse_y = 0;
     var mouse_buttons = 0;
@@ -1243,6 +1244,33 @@
       if (text_y >= text_height) {
         text_y = 0;
       }
+    }
+
+    function LineInput() {
+      while (keys.length > 0) {
+        const key = keys.shift();
+        if (key == String.fromCharCode(13)) {
+          --text_x;
+          PutCh(' ');
+          PutCh(null);
+          return;
+        }
+        if (key == String.fromCharCode(8) && input_string.length > 0) {
+          input_string = input_string.substr(0, input_string.length - 1);
+          --text_x;
+          PutCh(' ');
+          text_x -= 2;
+          PutCh(String.fromCharCode(219));
+        }
+        if (key.charCodeAt(0) >= 32 && key.charCodeAt(0) <= 126) {
+          --text_x;
+          PutCh(key);
+          PutCh(String.fromCharCode(219));
+          input_string += key;
+        }
+      }
+      yielding = 1;
+      --ip;
     }
 
     function Print(items) {
@@ -2370,8 +2398,14 @@
             Next();
             Skip(';');
           }
+          curop += 'Print([' + prompt + ', ";"]);\n';
+          curop += 'PutCh(String.fromCharCode(219));\n';
+          curop += 'input_string = ""\n';
+          NewOp();
+          curop += 'LineInput();\n';
+          NewOp();
           var a = GetVar();
-          // TODO: Implement.
+          curop += a + ' = input_string;\n';
           return;
         }
         var x1 = pen_x;
@@ -2558,20 +2592,26 @@
         if (tok == ';') {
           Skip(';');
         }
-        var prompt = '""';
+        var prompt = '"? "';
         if (tok.substr(0, 1) == '"') {
           var prompt = tok;
           Next();
-          Skip(';');
+          Skip(',');
         }
+        curop += 'Print([' + prompt + ', ";"]);\n';
+        curop += 'PutCh(String.fromCharCode(219));\n';
+        curop += 'input_string = ""\n';
+        NewOp();
+        curop += 'LineInput();\n';
+        NewOp();
+        var n = 0;
         while (!EndOfStatement()) {
-          var v = GetVar();
+          curop += GetVar() + ' = input_string.split(",")[' + n++ + '];\n';
           if (tok != ',') {
             break;
           }
           Skip(',');
         }
-        // TODO: Implement.
       } else if (tok == 'print') {
         Skip('print');
         if (EndOfStatement()) {
@@ -2966,7 +3006,7 @@
     } catch (e) {
       if (canvas) {
         Locate(1, 1);
-        Color(WHITE);
+        Color(15);
         Print([e.toString(), ';']);
       } else {
         console.error(e.toString());
