@@ -473,7 +473,7 @@
         }
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
             name == 'chr$' || name == 'sqr' ||
-            name == 'int' || name == 'cint' ||
+            name == 'int' || name == 'cint' || name == 'asc' ||
             name == 'abs' || name == 'len' || name == 'val' ||
             name == 'cos' || name == 'sin' || name == 'tan' || name == 'atn' ||
             name == 'exp' || name == 'str$' || name == 'peek' ||
@@ -487,7 +487,7 @@
           case 'ucase$': return '(' + e + ').toUpperCase()';
           case 'lcase$': return '(' + e + ').toLowerCase()';
           case 'chr$': return 'String.fromCharCode(' + e + ')';
-          case 'asc': return '(' + e + ').toCharCode(0)';
+          case 'asc': return '(' + e + ').charCodeAt(0)';
           case 'sqr': return 'Math.sqrt(' + e + ')';
           case 'int': return 'Math.floor(' + e + ')';
           case 'cint': return 'Math.floor(' + e + ')';
@@ -525,7 +525,7 @@
           } else if (name == 'right$') {
             return 'Right((' + a + '), (' + b + '))';
           } else if (name == 'instr') {
-            return '(' + a + ').search(' + b + ')';
+            return '((' + a + ').search(' + b + ') + 1)';
           } else if (name == 'point') {
             return 'Point((' + a + '), (' + b + '))';
           } else {
@@ -540,7 +540,7 @@
           Skip(',');
           var c = Expression();
           Skip(')');
-          return '((' + a + ').substr((' + b + '), (' + c + ')))';
+          return '((' + a + ').substr((' + b + ') - 1, (' + c + ')))';
         }
         if (name == 'inkey$') {
           return 'Inkey()';
@@ -2819,6 +2819,14 @@
       requestAnimationFrame(Render);
     }
 
+    function RegularKey(n) {
+       keys.push(String.fromCharCode(n));
+    }
+
+    function ExtendedKey(n) {
+       keys.push(String.fromCharCode(0) + String.fromCharCode(n));
+    }
+
     function InitEvents() {
       if (!canvas) {
         return;
@@ -2828,9 +2836,67 @@
         window.addEventListener('resize', Resize, false);
       }
       window.addEventListener('keydown', function(e) {
-        var k = e.key;
-        if (k == 'Escape') { k = String.fromCharCode(27); }
-        keys.push(k);
+        if (e.keyCode >= 112 && e.keyCode <= 123) {
+          // F1 - F10
+          if (e.altKey) {
+            ExtendedKey(e.keyCode - 112 + 104);
+          } else if (e.ctrlKey) {
+            ExtendedKey(e.keyCode - 112 + 94);
+          } else if (e.shiftKey) {
+            ExtendedKey(e.keyCode - 112 + 84);
+          } else {
+            ExtendedKey(e.keyCode - 112 + 59);
+          }
+        } else if (e.keyCode == 9) {
+          // TAB, Shift-TAB
+          if (e.shiftKey) {
+            RegularKey(15);
+          } else {
+            RegularKey(9);
+          }
+        } else if (e.keyCode == 8 || e.keyCode == 27) {
+          // BACKSPACE, ESCAPE
+          RegularKey(e.keyCode);
+        } else if (e.keyCode == 45 || e.keyCode == 46) {
+          // INS, DEL
+          RegularKey(e.keyCode - 45 + 82);
+        } else if (e.ctrlKey && e.keyCode >= 65 && e.keyCode <=90) {
+          // Ctrl-A to Ctrl-Z
+          RegularKey(e.keyCode - 65 + 1);
+        } else if (e.keyCode == 33) {
+          ExtendedKey(73);  // PGUP
+        } else if (e.keyCode == 34) {
+          ExtendedKey(81);  // PGDN
+        } else if (e.keyCode == 35) {
+          ExtendedKey(79);  // END
+        } else if (e.keyCode == 36) {
+          ExtendedKey(71);  // HOME
+        } else if (e.keyCode == 37) {
+          ExtendedKey(75);  // LEFT
+        } else if (e.keyCode == 38) {
+          ExtendedKey(72);  // UP
+        } else if (e.keyCode == 39) {
+          ExtendedKey(77);  // RIGHT
+        } else if (e.keyCode == 40) {
+          ExtendedKey(80);  // RIGHT
+        } else if (e.altKey) {
+          const ch = String.fromCharCode(e.keyCode);
+          const row1 = '1234567890-='.indexOf(ch);
+          const row2 = 'QWERTYUIOP'.indexOf(ch);
+          const row3 = 'ASDFGHJKL'.indexOf(ch);
+          const row4 = 'ZXCVBNM'.indexOf(ch);
+          if (row1 >= 0) {
+            ExtendedKey(row1 + 120);
+          } else if (row2 >= 0) {
+            ExtendedKey(row2 + 16);
+          } else if (row3 >= 0) {
+            ExtendedKey(row3 + 30);
+          } else if (row4 >= 0) {
+            ExtendedKey(row4 + 44);
+          }
+        } else {
+          RegularKey(e.key.charCodeAt(0));
+        }
       }, false);
       canvas.addEventListener('mousemove', function(e) {
         // TODO: Generalize for non-fullscreen.
