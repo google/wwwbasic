@@ -2895,7 +2895,10 @@
             ExtendedKey(row4 + 44);
           }
         } else {
-          RegularKey(e.key.charCodeAt(0));
+          const code = e.key.charCodeAt(0);
+          if (e.key.length == 1 && code >= 32 && code <= 126) {
+            RegularKey(code);
+          }
         }
       }, false);
       canvas.addEventListener('mousemove', function(e) {
