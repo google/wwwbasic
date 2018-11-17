@@ -2854,13 +2854,13 @@
           } else {
             RegularKey(9);
           }
-        } else if (e.keyCode == 8 || e.keyCode == 27) {
-          // BACKSPACE, ESCAPE
+        } else if (e.keyCode == 8 || e.keyCode == 13 || e.keyCode == 27) {
+          // BACKSPACE, ENTER, ESCAPE
           RegularKey(e.keyCode);
         } else if (e.keyCode == 45 || e.keyCode == 46) {
           // INS, DEL
           RegularKey(e.keyCode - 45 + 82);
-        } else if (e.ctrlKey && e.keyCode >= 65 && e.keyCode <=90) {
+        } else if (e.ctrlKey && e.keyCode >= 65 && e.keyCode <= 90) {
           // Ctrl-A to Ctrl-Z
           RegularKey(e.keyCode - 65 + 1);
         } else if (e.keyCode == 33) {
