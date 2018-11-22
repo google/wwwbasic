@@ -124,12 +124,13 @@ PRINT b
 
 basic_test.BASIC_TEST('Subroutines', 'Depth', `
 a = stackdepth()
-SUB Foo
+SUB Foo(a$)
+  b$ = a$
   print stackdepth() - a
 END SUB
 SUB Bar
   print stackdepth() - a
-  Foo
+  Foo "hi"
 END SUB
 print stackdepth() - a
 Bar
@@ -139,10 +140,10 @@ print stackdepth() - a
 `, `
 0
 24
-48
+64
 0
 24
-48
+64
 0
 `);
 

@@ -1061,6 +1061,7 @@
       FunctionExit();
       ops[function_define_pos] += 'ip = ' + ops.length + ';\n';
       vars = global_vars;
+      Align(8);
       functions[function_name].allocation = allocated;
       function_name = null;
       allocated = function_old_allocated;
