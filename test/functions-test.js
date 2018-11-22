@@ -58,7 +58,8 @@ FUNCTION Foo(x)
   Foo = Bar(x) * 5
 END FUNCTION
 
-PRINT Foo(1)
+a = 1
+PRINT Foo(a)
 `, `
 30
 `);
@@ -139,5 +140,56 @@ END FUNCTION
 PRINT Plus1(3) + Plus1(4) + Plus1(6)
 `, `
 16
+`);
+
+basic_test.BASIC_TEST('Functions', 'TreeSize', `
+FUNCTION TreeSize(n)
+  IF n = 1 THEN
+    TreeSize = 1
+  ELSE
+    TreeSize = TreeSize(n - 1) + TreeSize(n - 1) + 1
+  END IF
+END FUNCTION
+PRINT TreeSize(5)
+`, `
+31
+`);
+
+basic_test.BASIC_TEST('Subroutines', 'Depth', `
+a = stackdepth()
+b = basedepth()
+
+FUNCTION Foo(a$)
+  b$ = a$
+  print "Foo sp: "; stackdepth() - a
+  print "Foo bp: "; basedepth() - b
+  Foo = 1
+END FUNCTION
+
+FUNCTION Bar()
+  print "Bar sp: "; stackdepth() - a
+  print "Bar bp: "; basedepth() - b
+  Bar = Foo("hi")
+  print "Bar sp: "; stackdepth() - a
+  print "Bar bp: "; basedepth() - b
+END FUNCTION
+
+print "Root sp: "; stackdepth() - a
+print "Root bp: "; basedepth() - b
+PRINT Bar()
+print "Root sp: "; stackdepth() - a
+print "Root bp: "; basedepth() - b
+`, `
+Root sp: 0
+Root bp: 0
+Bar sp: 32
+Bar bp: 8
+Foo sp: 72
+Foo bp: 40
+Bar sp: 32
+Bar bp: 8
+1
+Root sp: 0
+Root bp: 0
 `);
 

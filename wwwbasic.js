@@ -474,12 +474,21 @@
           if (vars[vname] === undefined) {
             Throw('Undefined variable name');
           }
-          return vars[vname].offset;
+          if (vars[vname].global) {
+            return vars[vname].offset;
+          } else {
+            return '(bp + ' + vars[vname].offset + ')';
+          }
         }
         if (name == 'stackdepth') {
           Skip('(');
           Skip(')');
           return 'sp';
+        }
+        if (name == 'basedepth') {
+          Skip('(');
+          Skip(')');
+          return 'bp';
         }
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
             name == 'chr$' || name == 'sqr' ||
@@ -1108,22 +1117,23 @@
       if (options.is_call || (!options.is_subroutine && has_parens)) {
         Skip(')');
       }
-      curop += 'bp = sp;\n';
       // Blank return value.
       if (!options.is_subroutine) {
-        curop += IndexVariable(name, true, func) + ' = 0;\n';
+        curop += IndexVariable(name, true, func) + ' = 123;\n';
       }
+      curop += 'bp = sp;\n';
       curop += 'sp += functions["' + name + '"].allocation;\n';
       curop += 'i[sp>>2] = ip; sp += 8;\n';
       curop += 'ip = functions["' + name + '"].ip;\n';
       NewOp();
       // TODO: Types?
       curop += 'sp -= functions["' + name + '"].allocation;\n';
-      var temp = temp_count;
+      curop += 'bp = i[(sp-8)>>2];\n';
+      var temp = '#temp' + temp_count;
       if (!options.is_subroutine) {
         ++temp_count;
-        var_decls += 'var temp' + temp + ';\n';
-        curop += 'temp' + temp +
+        DimScalarVariable(temp, func.vars[name].type_name, []);
+        curop += IndexVariable(temp, true) +
           ' = ' + IndexVariable(name, false, func) + ';\n';
       }
       for (var i = 0; i < args.length; ++i) {
@@ -1132,9 +1142,9 @@
             IndexVariable(func.parameters[i], false, func) + ';\n';
         }
       }
-      curop += 'sp -= 8; bp = i[sp>>2];\n';
+      curop += 'sp -= 8;\n';
       if (!options.is_subroutine) {
-        return 'temp' + temp;
+        return IndexVariable(temp, false);
       }
     }
 

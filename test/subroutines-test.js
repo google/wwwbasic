@@ -124,26 +124,37 @@ PRINT b
 
 basic_test.BASIC_TEST('Subroutines', 'Depth', `
 a = stackdepth()
+b = basedepth()
+
 SUB Foo(a$)
   b$ = a$
-  print stackdepth() - a
+  print "Foo sp: "; stackdepth() - a
+  print "Foo bp: "; basedepth() - b
 END SUB
+
 SUB Bar
-  print stackdepth() - a
+  print "Bar sp: "; stackdepth() - a
+  print "Bar bp: "; basedepth() - b
   Foo "hi"
+  print "Bar sp: "; stackdepth() - a
+  print "Bar bp: "; basedepth() - b
 END SUB
-print stackdepth() - a
+
+print "Root sp: "; stackdepth() - a
+print "Root bp: "; basedepth() - b
 Bar
-print stackdepth() - a
-Bar
-print stackdepth() - a
+print "Root sp: "; stackdepth() - a
+print "Root bp: "; basedepth() - b
 `, `
-0
-24
-64
-0
-24
-64
-0
+Root sp: 0
+Root bp: 0
+Bar sp: 24
+Bar bp: 8
+Foo sp: 64
+Foo bp: 32
+Bar sp: 24
+Bar bp: 8
+Root sp: 0
+Root bp: 0
 `);
 
