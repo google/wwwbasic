@@ -1233,7 +1233,8 @@
       }
       var fg = fg_color;
       var bg = bg_color;
-      var chpos = ch.charCodeAt(0) * font_height * 8;
+      var chcode = (ch.charCodeAt(0) & 0xff) >>> 0;
+      var chpos = chcode * font_height * 8;
       for (var y = 0; y < font_height; ++y) {
         var pos = text_x * 8 + (y + text_y * font_height) * display.width;
         for (var x = 0; x < 8; ++x) {
@@ -3150,22 +3151,22 @@
     '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u0020';
 
   var FONT8 =
-    '          XXX     XXX                                           ' +
+    'x     x   XXX     XXX   xx   xx x     x                         ' +
     '         X   X   XXXXX                                          ' +
-    '        X X X X XX X XX                                         ' +
+    '        X X X X XX X XX            x                            ' +
     '        X     X XXXXXXX                                         ' +
     '        X XXX X XX   XX                                         ' +
     '         X   X   XXXXX                                          ' +
-    '          XXX     XXX                                           ' +
+    'x     x   XXX     XXX   xx   xx x     x                         ' +
     '                                                                ' +
 
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
     '                                                                ' +
 
     'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
@@ -3266,6 +3267,7 @@
     '        XX   XX XX   XX XX      XX   XX XX        XX     XXXXXX ' +
     '         XXXXXX XXXXXX   XXXXX   XXXXXX  XXXXX    XX         XX ' +
     '                                                         XXXXX  ' +
+
     'XX        XX       XX   XX        XXX                           ' +
     'XX                      XX   XX    XX                           ' +
     'XXXXXX   XXX      XXXX  XX  XX     XX   XXXXXX  XXXXXX   XXXXX  ' +
@@ -3274,6 +3276,7 @@
     'XX   XX   XX        XX  XX   XX    XX   XX X XX XX   XX XX   XX ' +
     'XX   XX  XXXX       XX  XX   XX   XXXX  XX X XX XX   XX  XXXXX  ' +
     '                  XXX                                           ' +
+
     '                                                                ' +
     '                                  XX                            ' +
     'XXXXXX   XXXXX  XX XXX   XXXXXX   XX    XX   XX XX   XX XX   XX ' +
@@ -3282,6 +3285,7 @@
     'XXXXXX   XXXXX  XX           XX   XX XX XX   XX  XX XX  XX X XX ' +
     'XX          XX  XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
     'XX          XX                                                  ' +
+
     '                             XX   XX    XX                 X    ' +
     '                           XX     XX      XX     XXX XX   XXX   ' +
     'XX   XX XX   XX XXXXXXX    XX     XX      XX    XX XXX   XX XX  ' +
@@ -3290,6 +3294,7 @@
     ' XX XX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
     'XX   XX      XX XXXXXXX      XX   XX    XX              XXXXXXX ' +
     '         XXXXX                                                  ' +
+
     ' XXXXXX                                                  XXXXXX ' +
     'XX      XX   XX                                         XX      ' +
     'XX               XXXX    XXXXXX  XXXXXX  XXXXX   XXXXXX XX      ' +
@@ -3298,6 +3303,7 @@
     'XX      XX   XX XX      XX   XX XX   XX XX   XX XX   XX XX      ' +
     ' XXXXXX  XXXXXX  XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
     '                                                                ' +
+
     '                          XX      XX      XX      XXX     XXX   ' +
     '                          XX      XX      XX     XX XX   XX XX  ' +
     ' XXXX    XXXX    XXXX                           XX   XX XX   XX ' +
@@ -3306,6 +3312,7 @@
     'XX      XX      XX        XX      XX      XX    XX   XX XX   XX ' +
     ' XXXXX   XXXXX   XXXXX   XXXX    XXXX    XXXX   XX   XX XX   XX ' +
     '                                                                ' +
+
     'XXXXXXX XXXXXXX XXXXXXX                                         ' +
     'XX      XX      XX                                              ' +
     'XX      XX      XX                                              ' +
@@ -3314,6 +3321,7 @@
     'XX      XX      XX      XX   XX XX   XX XX   XX XX   XX XX   XX ' +
     'XXXXXXX XXXXXXX XXXXXXX  XXXXX   XXXXX   XXXXX   XXXXXX  XXXXXX ' +
     '                                                                ' +
+
     '         XXXXX  XX   XX  XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
     '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
@@ -3322,6 +3330,7 @@
     ' XXXXXX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
     '     XX  XXXXX   XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
     ' XXXXX                                                          ' +
+
     '          XX                                                    ' +
     '          XX                                                    ' +
     ' XXXXXX          XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
@@ -3330,6 +3339,7 @@
     'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
     ' XXXXXX  XXXX    XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
     '                                                                ' +
+
     '   XX                   X       X          XX                   ' +
     '                        X  X    X  X              XX XX XX XX   ' +
     '   XX                     X       X        XX    XX XX   XX XX  ' +
@@ -3338,6 +3348,7 @@
     'XX   XX XX           XX     X       X      XX     XX XX XX XX   ' +
     ' XXXXX                     XXXX    XXXX    XX                   ' +
     '                                                                ' +
+
     'X   X    X X X X XXX XXX   X       X       X      X X           ' +
     '  X   X X X X X XX XXX X   X       X       X      X X           ' +
     'X   X    X X X X XXX XXX   X       X    XXXX      X X           ' +
@@ -3346,6 +3357,7 @@
     '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
     'X   X    X X X X XXX XXX   X       X       X      X X     X X   ' +
     '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
+
     '          X X     X X             X X     X X      X            ' +
     '          X X     X X             X X     X X      X            ' +
     'XXXX    XXX X     X X   XXXXX   XXX X     X X   XXXX            ' +
@@ -3354,6 +3366,7 @@
     '   X      X X     X X     X X                              X    ' +
     '   X      X X     X X     X X                              X    ' +
     '   X      X X     X X     X X                              X    ' +
+
     '   X       X               X               X       X      X X   ' +
     '   X       X               X               X       X      X X   ' +
     '   X       X               X               X       XXXXX  X X   ' +
@@ -3362,6 +3375,7 @@
     '                   X       X               X       X      X X   ' +
     '                   X       X               X       X      X X   ' +
     '                   X       X               X       X      X X   ' +
+
     '  X X             X X             X X             X X      X    ' +
     '  X X             X X             X X             X X      X    ' +
     '  X XXXX  XXXXXXXXX XXXXXXXXXXXX  X XXXXXXXXXXXXXXX XXXXXXXXXXXX' +
@@ -3370,6 +3384,7 @@
     '          X X             X X     X X             X X           ' +
     '          X X             X X     X X             X X           ' +
     '          X X             X X     X X             X X           ' +
+
     '  X X                     X X      X                      X X   ' +
     '  X X                     X X      X                      X X   ' +
     '  X X   XXXXXXXX          X X      XXXXX   XXXXX          X X   ' +
@@ -3378,6 +3393,7 @@
     '           X      X X                      X      X X     X X   ' +
     '           X      X X                      X      X X     X X   ' +
     '           X      X X                      X      X X     X X   ' +
+
     '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
     '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
     'XXXXXXXX   X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
@@ -3386,6 +3402,7 @@
     '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
     '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
     '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+
     '          XXX    XXXXXX          XXXXXX                         ' +
     ' XX   X  X   X   X               X                              ' +
     'X  X X   X  X    X                X                             ' +
@@ -3394,29 +3411,32 @@
     ' XX   X  X    X  X        X  X   X      X    X                  ' +
     '        X XXXX   X        X  X   XXXXXX  XXXX                   ' +
     '                                                                ' +
+
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
     '                                                                ' +
+
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
     '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
-    '                                                                ' +
+
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XX   XX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XX   XX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
+    'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
     '                                                                ' +
     '';
 })();
