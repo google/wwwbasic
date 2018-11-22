@@ -66,13 +66,13 @@ DrawSlide:
 
 CheckForInput:
   key$ = INKEY$
-  IF key$="ArrowLeft" THEN
+  IF key$ = CHR$(0) + CHR$(75) THEN
     IF currentSlide > 0 THEN
       currentSlide = currentSlide - 1
       GOTO DrawSlide
     END IF
   END IF
-  IF key$="ArrowRight" THEN
+  IF key$ = CHR$(0) + CHR$(77) THEN
     IF currentSlide < numberOfSlides - 1 THEN
       currentSlide = currentSlide + 1
       GOTO DrawSlide
