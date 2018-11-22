@@ -148,6 +148,7 @@
     var ip = 0;
     var function_define_pos = 0;
     var function_old_allocated = 0;
+    var function_name = null;
 
     // Call stack
     var stack = 0;
@@ -960,7 +961,7 @@
         vars: vars,
         parameters: parameters,
         ip: ops.length,
-        allocation: 0,
+        allocation: -1,
         is_subroutine: options.is_subroutine || false,
         is_declaration: options.is_declaration || false,
       };
@@ -996,6 +997,7 @@
       } else {
         function_old_allocated = old_allocated;
         function_define_pos = pos;
+        function_name = name;
         functions[name] = nfunc;
       }
       if (tok == 'as') {
@@ -1027,6 +1029,8 @@
       FunctionExit();
       ops[function_define_pos] += 'ip = ' + ops.length + ';\n';
       vars = global_vars;
+      functions[function_name].allocation = allocated;
+      function_name = null;
       allocated = function_old_allocated;
     }
 
@@ -1405,6 +1409,10 @@
     function Locate(x, y) {
       text_x = x - 1;
       text_y = y - 1;
+      // Hack to yield more often (for NIBBLES.BAS)
+      if (x == 1 && y == 1) {
+        yielding = 1;
+      }
     }
 
     function Box(x1, y1, x2, y2, c) {

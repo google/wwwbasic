@@ -93,6 +93,22 @@ PRINT Factorial(a)
 24
 `);
 
+basic_test.BASIC_TEST('Functions', 'RecursiveExplicitWithLocal', `
+FUNCTION Factorial(n AS INTEGER) AS INTEGER
+  IF n = 0 OR n = 1 THEN
+    Factorial = 1
+  ELSE
+    temp = n * Factorial(n - 1)
+    Factorial = temp
+  END IF
+END FUNCTION
+
+a = 4
+PRINT Factorial(a)
+`, `
+24
+`);
+
 basic_test.BASIC_TEST('Functions', 'Predeclare', `
 DECLARE FUNCTION Adder(x AS INTEGER, y AS INTEGER) AS INTEGER
 PRINT Adder(1, 2)

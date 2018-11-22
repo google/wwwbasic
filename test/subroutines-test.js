@@ -39,9 +39,10 @@ END SUB
 456
 `);
 
-basic_test.BASIC_TEST('Subroutines', 'NoArgsNested', `
+basic_test.BASIC_TEST('Subroutines', 'NoArgsNestedWithLocal', `
 DECLARE SUB DumpIt()
 SUB DumpIt()
+  x = 1
   PRINT "hello there"
 END SUB
 SUB DoIt2()
