@@ -1435,8 +1435,33 @@
     }
 
     function PrintUsing(format, items) {
+      var parts = [];
+      var p = '';
+      var has_num = false;
+      for (var i = 0; i < format.length; ++i) {
+        if (format[i] == '#' || format[i] == ',' || format[i] == '.') {
+          has_num = true;
+        } else {
+          if (has_num) {
+            parts.push(p)
+            p = '';
+            has_num = false;
+          }
+        }
+        p += format[i];
+      }
+      if (p != '') {
+        if (has_num) {
+          parts.push(p);
+        } else {
+          parts[parts.length - 1] += p;
+        }
+      }
+      var values = [];
       for (var i = 0; i < items.length; i += 2) {
-        items[i] = Using(format, items[i]);
+        if (parts.length * 2 > i) {
+          items[i] = Using(parts[(i / 2) | 0], items[i]);
+        }
       }
       Print(items);
     }

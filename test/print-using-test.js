@@ -58,3 +58,11 @@ PRINT USING "abc ##,### def"; 123456
 abc ****** def
 `);
 
+basic_test.BASIC_TEST('PrintUsing', 'Multiple', `
+PRINT USING "abc ##,### def ##,### ghi"; 123456; 23456
+PRINT USING "abc #,### def ##,### ghi"; 1456; 23456
+`, `
+abc ****** def 23,456 ghi
+abc 1,456 def 23,456 ghi
+`);
+
