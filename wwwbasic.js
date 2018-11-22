@@ -499,7 +499,7 @@
           case 'tan': return 'Math.tan(' + e + ')';
           case 'atn': return 'Math.atan(' + e + ')';
           case 'exp': return 'Math.exp(' + e + ')';
-          case 'str$': return '(' + e + ').toString()';
+          case 'str$': return 'ToString(' + e + ')';
           case 'val': return 'parseInt(' + e + ')';
           case 'peek': return 'Peek(' + e + ').toString()';
           case 'len': return '((' + e + ').length)';
@@ -1139,6 +1139,14 @@
         ret += cch;
       }
       return ret;
+    }
+
+    function ToString(s) {
+      if (s < 0) {
+        return s.toString();
+      } else {
+        return ' ' + s.toString();
+      }
     }
 
     function Peek(addr) {

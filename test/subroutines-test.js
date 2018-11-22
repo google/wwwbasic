@@ -61,3 +61,34 @@ hello there
 c
 `);
 
+basic_test.BASIC_TEST('Subroutines', 'StringArg1', `
+SUB MyPrint(msg$)
+  PRINT "|"; msg$; "|"
+END SUB
+level = 5
+MyPrint "Hello there " + STR$(level) + " It"
+`, `
+|Hello there  5 It|
+`);
+
+basic_test.BASIC_TEST('Subroutines', 'StringArg2', `
+SUB MyPrint(spaces, msg$)
+  PRINT SPACE$(spaces); msg$
+END SUB
+myPrint 2, "Hello there"
+`, `
+  Hello there
+`);
+
+basic_test.BASIC_TEST('Subroutines', 'NestedWithStrings', `
+SUB Func1(a$)
+  PRINT a$
+END SUB
+SUB Func2(t, a$)
+  Func1 STR$(t) + a$
+END SUB
+Func2 2, "hi"
+`, `
+ 2hi
+`);
+

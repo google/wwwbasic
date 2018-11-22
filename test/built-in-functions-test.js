@@ -113,7 +113,13 @@ PRINT LOG(EXP(11))
 basic_test.BASIC_TEST('BuiltInFunctions', 'Str$', `
 PRINT STR$(123) + "aa"
 `, `
-123aa
+ 123aa
+`);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'Str$Neg', `
+PRINT STR$(-123) + "aa"
+`, `
+-123aa
 `);
 
 basic_test.BASIC_TEST('BuiltInFunctions', 'Atan2', `
