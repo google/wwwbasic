@@ -28,6 +28,7 @@ const EXCLUDED_FILENAMES = [
   'CONTRIBUTING.md',
   'LICENSE',
   'README.md',
+  'keyboard.md',
 ];
 
 const COPYRIGHT_JS =

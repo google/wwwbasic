@@ -191,7 +191,7 @@
     var pen_x = 0;
     var pen_y = 0;
 
-    var toklist = [
+    const toklist = [
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
       '+=', '-=', '*=', '/=', '\\=', '^=', '&=',
       '+', '-', '*', '/', '\\', '^', '&', '.',
@@ -2866,14 +2866,28 @@
     }
 
     function RegularKey(n) {
-       keys.push(String.fromCharCode(n));
+      keys.push(String.fromCharCode(n));
     }
 
     function ExtendedKey(n) {
-       keys.push(String.fromCharCode(0) + String.fromCharCode(n));
+      keys.push(String.fromCharCode(0) + String.fromCharCode(n));
     }
 
     function InitEvents() {
+      const SIMPLE_KEYMAP = {
+        // BACKSPACE, ENTER, ESCAPE
+        8: { regular: 8 }, 13: { regular: 13 }, 27: { regular: 27 },
+        // INS, DEL
+        45: { regular: 82 }, 46: { regular: 83 },
+        // LEFT, RIGHT
+        37: { extended: 75 }, 39: { extended: 77 },
+        // UP, DOWN
+        38: { extended: 72 }, 40: { extended: 80 },
+        // PGUP, PGDN
+        33: { extended: 73 }, 34: { extended: 81 },
+        // HOME, END
+        36: { extended: 71 }, 35: { extended: 79 },
+      };
       if (!canvas) {
         return;
       }
@@ -2900,31 +2914,15 @@
           } else {
             RegularKey(9);
           }
-        } else if (e.keyCode == 8 || e.keyCode == 13 || e.keyCode == 27) {
-          // BACKSPACE, ENTER, ESCAPE
-          RegularKey(e.keyCode);
-        } else if (e.keyCode == 45 || e.keyCode == 46) {
-          // INS, DEL
-          RegularKey(e.keyCode - 45 + 82);
+        } else if (SIMPLE_KEYMAP[e.keyCode]) {
+          if (SIMPLE_KEYMAP[e.keyCode].regular) {
+            RegularKey(SIMPLE_KEYMAP[e.keyCode].regular);
+          } else {
+            ExtendedKey(SIMPLE_KEYMAP[e.keyCode].extended);
+          }
         } else if (e.ctrlKey && e.keyCode >= 65 && e.keyCode <= 90) {
           // Ctrl-A to Ctrl-Z
           RegularKey(e.keyCode - 65 + 1);
-        } else if (e.keyCode == 33) {
-          ExtendedKey(73);  // PGUP
-        } else if (e.keyCode == 34) {
-          ExtendedKey(81);  // PGDN
-        } else if (e.keyCode == 35) {
-          ExtendedKey(79);  // END
-        } else if (e.keyCode == 36) {
-          ExtendedKey(71);  // HOME
-        } else if (e.keyCode == 37) {
-          ExtendedKey(75);  // LEFT
-        } else if (e.keyCode == 38) {
-          ExtendedKey(72);  // UP
-        } else if (e.keyCode == 39) {
-          ExtendedKey(77);  // RIGHT
-        } else if (e.keyCode == 40) {
-          ExtendedKey(80);  // RIGHT
         } else if (e.altKey) {
           const ch = String.fromCharCode(e.keyCode);
           const row1 = '1234567890-='.indexOf(ch);

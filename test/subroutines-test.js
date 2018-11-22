@@ -39,3 +39,24 @@ END SUB
 456
 `);
 
+basic_test.BASIC_TEST('Subroutines', 'NoArgsNested', `
+DECLARE SUB DumpIt()
+SUB DumpIt()
+  PRINT "hello there"
+END SUB
+SUB DoIt2()
+  PRINT "a"
+  DumpIt
+  PRINT "b"
+  DumpIt
+  PRINT "c"
+END SUB
+DoIt2
+`, `
+a
+hello there
+b
+hello there
+c
+`);
+
