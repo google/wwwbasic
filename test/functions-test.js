@@ -119,3 +119,16 @@ END FUNCTION
 3
 `);
 
+basic_test.BASIC_TEST('Functions', 'ByRef', `
+FUNCTION Changer(x as INTEGER)
+  x = 2
+  Changer = 3
+END FUNCTION
+a = 1
+PRINT Changer(a)
+PRINT a
+`, `
+3
+2
+`);
+

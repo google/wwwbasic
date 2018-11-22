@@ -208,10 +208,12 @@
     }
 
     var tok = null;
+    var tok_count = 0;
     var line = canvas ? 0 : 1;
 
     function Next() {
       tok = '';
+      tok_count++;
       for (;;) {
         while (code.substr(0, 1) == ' ' ||
                code.substr(0, 1) == '\t') {
@@ -1072,16 +1074,25 @@
       if (options.is_call || (!options.is_subroutine && has_parens)) {
         Skip('(');
       }
+      var args = [];
       for (var i = 0; i < func.parameters.length; ++i) {
         if (func.vars[func.parameters[i]].dimensions == -1) {
           var vname = tok;
           Next();
           Skip('(');
           Skip(')');
+          args.push(null);
         } else {
+          var old_tok_count = tok_count;
+          var old_tok = tok;
           var e = Expression();
           curop += IndexVariable(func.parameters[i], true, func) +
             ' = ' + e + ';\n';
+          if (tok_count - old_tok_count == 1) {
+            args.push(old_tok);
+          } else {
+            args.push(null);
+          }
         }
         if (i != func.parameters.length - 1) {
           Skip(',');
@@ -1106,6 +1117,12 @@
         ++temp_count;
         curop += 'var temp' + temp +
           ' = ' + IndexVariable(name, false, func) + ';\n';
+      }
+      for (var i = 0; i < args.length; ++i) {
+        if (args[i]) {
+          curop += IndexVariable(args[i], true) + ' = ' +
+            IndexVariable(func.parameters[i], false, func) + ';\n';
+        }
       }
       curop += 'sp -= 8; bp = i[sp>>2];\n';
       if (!options.is_subroutine) {

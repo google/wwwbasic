@@ -106,3 +106,19 @@ Func2 3, "hi" + STR$(5) + "there"
  3hi 5there
 `);
 
+basic_test.BASIC_TEST('Subroutines', 'ByRef', `
+SUB MySwap(x as INTEGER, y as INTEGER)
+  t = x
+  x = y
+  y = t
+END SUB
+a = 2
+b = 3
+MySwap a, b
+PRINT a
+PRINT b
+`, `
+3
+2
+`);
+
