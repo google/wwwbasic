@@ -476,6 +476,11 @@
           }
           return vars[vname].offset;
         }
+        if (name == 'stackdepth') {
+          Skip('(');
+          Skip(')');
+          return 'sp';
+        }
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
             name == 'chr$' || name == 'sqr' ||
             name == 'int' || name == 'cint' || name == 'asc' ||
@@ -510,6 +515,7 @@
           case 'rtrim$': return '((' + e + ').trimEnd())';
           case 'space$': return 'StringRep((' + e + '), " ")';
           case 'tab': return 'StringRep((' + e + '), "\t")';
+          case 'stackdepth': return 'sp';
           }
           Throw('This cannot happen');
         }

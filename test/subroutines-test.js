@@ -122,3 +122,27 @@ PRINT b
 2
 `);
 
+basic_test.BASIC_TEST('Subroutines', 'Depth', `
+a = stackdepth()
+SUB Foo
+  print stackdepth() - a
+END SUB
+SUB Bar
+  print stackdepth() - a
+  Foo
+END SUB
+print stackdepth() - a
+Bar
+print stackdepth() - a
+Bar
+print stackdepth() - a
+`, `
+0
+24
+48
+0
+24
+48
+0
+`);
+
