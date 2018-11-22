@@ -60,6 +60,29 @@ LOOP UNTIL i = 0
 1
 `);
 
+basic_test.BASIC_TEST('DoLoopWhile', 'LoopSideBySide', `
+i = 6
+DO
+  PRINT i
+  i = i - 1
+LOOP UNTIL i = 0
+DO
+  PRINT i
+  i = i + 1
+LOOP UNTIL i = 4
+`, `
+6
+5
+4
+3
+2
+1
+0
+1
+2
+3
+`);
+
 basic_test.BASIC_TEST('DoLoopWhile', 'JustDoLoop', `
 i = 6
 DO

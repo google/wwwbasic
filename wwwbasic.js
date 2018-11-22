@@ -1987,6 +1987,7 @@
         } else {
           curop += 'if (!(' + e + ')) { ip = ' + f[1] + '; }\n';
         }
+        NewOp();
       } else if (tok == 'while') {
         Skip('while');
         var e = Expression();
