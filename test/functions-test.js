@@ -132,3 +132,12 @@ PRINT a
 2
 `);
 
+basic_test.BASIC_TEST('Functions', 'Multi', `
+FUNCTION Plus1(x as INTEGER)
+  Plus1 = x + 1
+END FUNCTION
+PRINT Plus1(3) + Plus1(4) + Plus1(6)
+`, `
+16
+`);
+

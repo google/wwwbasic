@@ -1122,7 +1122,8 @@
       var temp = temp_count;
       if (!options.is_subroutine) {
         ++temp_count;
-        curop += 'var temp' + temp +
+        var_decls += 'var temp' + temp + ';\n';
+        curop += 'temp' + temp +
           ' = ' + IndexVariable(name, false, func) + ';\n';
       }
       for (var i = 0; i < args.length; ++i) {
