@@ -1088,7 +1088,7 @@
           var e = Expression();
           curop += IndexVariable(func.parameters[i], true, func) +
             ' = ' + e + ';\n';
-          if (tok_count - old_tok_count == 1) {
+          if (vars[old_tok] && tok_count - old_tok_count == 1) {
             args.push(old_tok);
           } else {
             args.push(null);
