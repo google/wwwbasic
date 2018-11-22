@@ -92,3 +92,17 @@ Func2 2, "hi"
  2hi
 `);
 
+basic_test.BASIC_TEST('Subroutines', 'NestedWithStringsAndDecl', `
+DECLARE SUB Func1 (text$)
+DECLARE SUB Func2 (t, text$)
+SUB Func1(text$)
+  PRINT text$
+END SUB
+SUB Func2(t, text$)
+  Func1 STR$(t) + text$
+END SUB
+Func2 3, "hi" + STR$(5) + "there"
+`, `
+ 3hi 5there
+`);
+

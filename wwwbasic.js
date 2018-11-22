@@ -137,9 +137,10 @@
     var global_vars = {};
     var vars = global_vars;
     var allocated = 0;
-    var str_count = 0;
     var const_count = 0;
     var temp_count = 0;
+    var inside_type = false;
+    var inside_function = false;
     var var_decls = '';
     var data = [];
     var data_pos = 0;
@@ -714,25 +715,26 @@
         Throw('Unknown type');
       }
       var size = info.size;
-      var offset;
-      if (type_name == 'string') {
-        offset = str_count++;
-      } else {
-        offset = Allocate(size);
-      }
+      var offset = Allocate(size);
       vars[name] = {
         offset: offset,
         dimensions: 0,
         type_name: type_name,
         global: vars === global_vars,
       };
-      if (vars[name].global) {
+      if (inside_type) {
+        var_decls += '//   field ' + name + ' is at ' + offset + '\n';
+      } else if (vars[name].global) {
         var_decls += '// ' + name + ' is at ' + offset + '\n';
       } else {
-        var_decls += '// ' + name + ' is at (bp + ' + offset + ')\n';
+        if (inside_function) {
+          curop += '//   ' + name + ' is at (bp + ' + offset + ')\n';
+        } else {
+          var_decls += '//   ' + name + ' is at (bp + ' + offset + ')\n';
+        }
       }
       if (defaults.length > 0) {
-        curop += IndexVariable(name) + ' = ' + defaults[0] + ';\n';
+        curop += IndexVariable(name, true) + ' = ' + defaults[0] + ';\n';
       }
     }
 
@@ -880,7 +882,7 @@
       }
     }
 
-    function IndexVariable(name, argument_to_function) {
+    function IndexVariable(name, assignable, argument_to_function) {
       var v = MaybeImplicitDimVariable(name, argument_to_function);
       var offset = v.offset;
       if (!v.global) {
@@ -940,7 +942,11 @@
       if (!info) {
         Throw('Expected simple type');
       }
-      return info.view + '[' + offset + '>>' + info.shift + ']';
+      var vname = info.view + '[' + offset + '>>' + info.shift + ']';
+      if (info.view == 'str' && assignable === undefined) {
+        vname = '((' + vname + ')||"")';
+      }
+      return vname;
     }
 
     function FunctionDefine(options) {
@@ -956,6 +962,7 @@
       var pos = ops.length - 1;
       var parameters = [];
       var old_allocated = allocated;
+      allocated = 0;
       vars = {};
       var nfunc = {
         vars: vars,
@@ -965,6 +972,22 @@
         is_subroutine: options.is_subroutine || false,
         is_declaration: options.is_declaration || false,
       };
+      if (nfunc.is_declaration) {
+        if (nfunc.is_subroutine) {
+          var_decls += '// SUB ' + name + '\n';
+        } else {
+          var_decls += '// FUNCTION ' + name + '\n';
+        }
+      } else {
+        if (nfunc.is_subroutine) {
+          curop += '// SUB ' + name + '\n';
+        } else {
+          curop += '// FUNCTION ' + name + '\n';
+        }
+      }
+      if (!nfunc.is_declaration) {
+        inside_function = true;
+      }
       DimScalarVariable(name, ImplicitType(name), []);
       // In case return value gets redefined.
       Align(8);
@@ -1026,6 +1049,7 @@
       if (vars === global_vars) {
         Throw('SUB/FUNCTION END only allowed at end of SUB/FUNCTION.');
       }
+      inside_function = false;
       FunctionExit();
       ops[function_define_pos] += 'ip = ' + ops.length + ';\n';
       vars = global_vars;
@@ -1056,7 +1080,7 @@
           Skip(')');
         } else {
           var e = Expression();
-          curop += IndexVariable(func.parameters[i], func) +
+          curop += IndexVariable(func.parameters[i], true, func) +
             ' = ' + e + ';\n';
         }
         if (i != func.parameters.length - 1) {
@@ -1069,7 +1093,7 @@
       curop += 'bp = sp;\n';
       // Blank return value.
       if (!options.is_subroutine) {
-        curop += IndexVariable(name, func) + ' = 0;\n';
+        curop += IndexVariable(name, true, func) + ' = 0;\n';
       }
       curop += 'sp += functions["' + name + '"].allocation;\n';
       curop += 'i[sp>>2] = ip; sp += 8;\n';
@@ -1077,10 +1101,11 @@
       NewOp();
       // TODO: Types?
       curop += 'sp -= functions["' + name + '"].allocation;\n';
-      var temp = temp_count++;
+      var temp = temp_count;
       if (!options.is_subroutine) {
+        ++temp_count;
         curop += 'var temp' + temp +
-          ' = ' + IndexVariable(name, func) + ';\n';
+          ' = ' + IndexVariable(name, false, func) + ';\n';
       }
       curop += 'sp -= 8; bp = i[sp>>2];\n';
       if (!options.is_subroutine) {
@@ -1776,7 +1801,7 @@
     function GetVar() {
       var name = tok;
       Next();
-      return IndexVariable(name);
+      return IndexVariable(name, true);
     }
 
     var DEFAULT_TYPES = {
@@ -2012,6 +2037,8 @@
           vars: vars,
           size: 0,
         };
+        inside_type = true;
+        var_decls += '// TYPE ' + type_name + '\n';
         SkipEndOfStatement();
         while (tok != 'end') {
           while (!EndOfStatement()) {
@@ -2025,6 +2052,7 @@
         }
         Skip('end');
         Skip('type');
+        inside_type = false;
         types[type_name].size = allocated;
         vars = global_vars;
         allocated = old_allocated;
@@ -2142,7 +2170,7 @@
           var pos = FunctionDefine({is_subroutine: false});
           Skip('=');
           var e = Expression();
-          curop += IndexVariable(fname) + ' = ' + e + ';\n';
+          curop += IndexVariable(fname, true) + ' = ' + e + ';\n';
           FunctionEnd(pos);
         } else {
           Throw('Expected SEG/FNxxx');
@@ -2280,7 +2308,7 @@
       } else if (tok == 'for') {
         Skip('for');
         var name = tok;
-        var v = IndexVariable(name);
+        var v = IndexVariable(name, true);
         Next();
         Skip('=');
         var start = Expression();
@@ -2751,7 +2779,7 @@
           name = tok;
           Next();
         }
-        var vname = IndexVariable(name);
+        var vname = IndexVariable(name, true);
         if (tok == '=' || tok == '+=' || tok == '-=' ||
             tok == '*=' || tok == '/=' || tok == '\\=' ||
             tok == '^=' || tok == '&=') {
@@ -2813,14 +2841,13 @@
       sp = stack;
       bp = sp;
 
-
       var total = '';
       total += 'var buffer = new ArrayBuffer(' +
           allocated + ' + ' + DYNAMIC_HEAP_SIZE + ');\n';
       for (var i in SIMPLE_TYPE_INFO) {
         var info = SIMPLE_TYPE_INFO[i];
         if (i == 'string') {
-          total += 'var str = new Array(' + str_count + ');\n';
+          total += 'var str = [];\n';
         } else {
           total += 'var ' + info.view +
             ' = new ' + info.array + '(buffer);\n';
