@@ -135,3 +135,66 @@ done
 hi
 `);
 
+basic_test.BASIC_TEST('Array', 'InSubArg', `
+TYPE Stuff
+  x as INTEGER
+  y as INTEGER
+  z as INTEGER
+END TYPE
+
+DIM foo1(1 to 80, 1 to 50) AS Stuff
+DIM foo2(1 to 80, 1 to 50) AS Stuff
+
+SUB Bar(foo() as Stuff, a, b, c)
+FOR i = 1 to 80
+  FOR j = 1 to 50
+    foo(i, j).x = a
+    foo(i, j).y = b
+    foo(i, j).z = c
+  NEXT j
+NEXT i
+PRINT "done"
+END SUB
+
+FUNCTION Check(foo() as Stuff, a, b, c)
+FOR i = 1 to 80
+  FOR j = 1 to 50
+    IF foo(i, j).x <> a OR foo(i, j).y <> b OR foo(i, j).z <> c THEN
+      Check = 0
+      EXIT FUNCTION
+    END IF
+  NEXT j
+NEXT i
+Check = -1
+END FUNCTION
+
+SUB Baz
+Bar foo1(), 1, 2, 3
+Bar foo2(), 5, 6, 7
+PRINT Check(foo1(), 1, 2, 3)
+PRINT Check(foo1(), 2, 3, 4)
+PRINT Check(foo1(), 1, 2, 3)
+foo1(1, 1).z = 10
+PRINT Check(foo1(), 1, 2, 3)
+Bar foo2(), 5, 6, 7
+Bar foo1(), 1, 2, 3
+PRINT Check(foo1(), 1, 2, 3)
+PRINT Check(foo2(), 5, 6, 7)
+END SUB
+
+Baz
+PRINT "hi"
+`, `
+done
+done
+-1
+0
+-1
+0
+done
+done
+-1
+-1
+hi
+`);
+

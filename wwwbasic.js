@@ -432,6 +432,23 @@
       }
     }
 
+    function VarPtr(vname) {
+      var vinfo;
+      if (vars[vname] !== undefined) {
+        vinfo = vars[vname];
+      } else if (global_vars[vname] !== undefined) {
+        vinfo = global_vars[vname];
+      }
+      if (vinfo === undefined) {
+        Throw('Undefined variable name');
+      }
+      if (vinfo.global) {
+        return vinfo.offset;
+      } else {
+        return '(bp + ' + vinfo.offset + ')';
+      }
+    }
+
     function AddLabel(name) {
       if (labels[name] !== undefined) {
         Throw('Label ' + name + ' defined twice');
@@ -471,14 +488,7 @@
           var vname = tok;
           Next();
           Skip(')');
-          if (vars[vname] === undefined) {
-            Throw('Undefined variable name');
-          }
-          if (vars[vname].global) {
-            return vars[vname].offset;
-          } else {
-            return '(bp + ' + vars[vname].offset + ')';
-          }
+          return VarPtr(vname);
         }
         if (name == 'stackdepth') {
           Skip('(');
@@ -776,7 +786,8 @@
     }
 
     function ArrayPart(offset, i) {
-      return SIMPLE_TYPE_INFO['long'].view + '[' + ((offset >> 2) + i) + ']';
+      return SIMPLE_TYPE_INFO['long'].view +
+        '[((' + offset + '>>2)+' + i + ')]';
     }
 
     function ReserveArrayCell(name) {
@@ -924,6 +935,10 @@
           }
           Skip(')');
           var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
+          // Extra indirection for array parameter access.
+          if (v.dimensions === -1) {
+            offset = 'i[' + offset + ']';
+          }
           var noffset = '(';
           noffset += ArrayPart(offset, 0) + ' + (';
           if (v.dimensions !== -1 && dims.length != v.dimensions) {
@@ -1098,6 +1113,8 @@
           Skip('(');
           Skip(')');
           args.push(null);
+          curop += 'i[sp + ' + func.vars[func.parameters[i]].offset + '] = ' +
+            VarPtr(vname) + ';\n';
         } else {
           var old_tok_count = tok_count;
           var old_tok = tok;
