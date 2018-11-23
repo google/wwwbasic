@@ -82,3 +82,24 @@ PRINT x \\ y
 2
 `);
 
+basic_test.BASIC_TEST('BasicOps', 'Not', `
+DEFINT A-Z
+CONST TRUE = -1
+CONST FALSE = NOT TRUE
+foo = TRUE
+bar = FALSE
+PRINT foo = TRUE
+PRINT foo = FALSE
+PRINT bar = TRUE
+PRINT bar = FALSE
+PRINT TRUE
+PRINT FALSE
+`, `
+-1
+0
+0
+-1
+-1
+0
+`);
+
