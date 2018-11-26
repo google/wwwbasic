@@ -266,6 +266,9 @@
           }
           tok = n[1];
           code = code.substr(tok.length);
+          if (tok[tok.length - 1] == '#') {
+            tok = tok.substr(0, tok.length - 1);
+          }
           return;
         }
         for (var i = 0; i < toklist.length; ++i) {
@@ -791,7 +794,8 @@
     }
 
     function ReserveArrayCell(name) {
-      if (vars[name] === undefined) {
+      if (vars[name] === undefined &&
+          global_vars[name] == undefined) {
         var offset = Allocate(4 + MAX_DIMENSIONS * 4 * 2);
         vars[name] = {
           offset: offset,
@@ -802,7 +806,10 @@
         var_decls += '// ' + name + ' is at ' + ArrayPart(offset, 0) +
           ' (cell-addr: ' + offset + ')\n';
       }
-      return vars[name];
+      if (vars[name] !== undefined) {
+        return vars[name];
+      }
+      return global_vars[name];
     }
 
     function DimVariable(default_tname, redim) {
@@ -1624,14 +1631,14 @@
     }
 
     function Circle(x, y, r, c, start, end, aspect, fill) {
+      x += 0.5;
+      y += 0.5;
       var pen_color = FixupColor(c);
       var complete = false;
       if (start < 0) { start = -start; complete = true; }
       if (end < 0) { end = -end; complete = true; }
       if (end < start) {
-        var t = start;
-        start = end;
-        end = start;
+        end += Math.PI * 2;
       }
       var rx, ry;
       if (aspect == null) {
@@ -1651,7 +1658,7 @@
       }
       for (var ang = start; ang <= end; ang += 0.03) {
         var xx = x + Math.cos(ang) * rx;
-        var yy = y + Math.sin(ang) * ry;
+        var yy = y - Math.sin(ang) * ry;
         if (ang == start) { oxx = xx; oyy = yy; }
         RawLine(oxx, oyy, xx, yy, pen_color);
         oxx = xx;
