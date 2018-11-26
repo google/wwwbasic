@@ -23,6 +23,18 @@ FOR i = 1 to 40
     CIRCLE (i * 30, j * 30), 10, i * 6 * 65536 + j * 6 * 256,,,,F
   NEXT j
 NEXT i
+WHILE INKEY$="" : WEND
+SCREEN 2
+CIRCLE(100, 100), 40, 1
+CIRCLE(200, 100), 40, 1, , , 1
+CIRCLE(300, 100), 40, 1, , , 2
+CIRCLE(400, 100), 40, 1, , , .5
+CIRCLE(500, 100), 40, 1, , , , F
+WHILE INKEY$="" : WEND
+SCREEN 1
+CIRCLE(50, 100), 20, 1, 1, 6
+CIRCLE(100, 100), 20, 2, -2, -6
+CIRCLE(150, 100), 20, 3, , , , F
 
 </script>
 

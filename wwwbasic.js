@@ -1625,18 +1625,43 @@
 
     function Circle(x, y, r, c, start, end, aspect, fill) {
       var pen_color = FixupColor(c);
-      // TODO: Handle aspect.
-      if (fill) {
-        for (var i = -r; i <= r; ++i) {
-          var dx = Math.sqrt(r * r - i * i);
-          Box(x - dx, y + i, x + dx, y + i, pen_color);
-        }
+      var complete = false;
+      if (start < 0) { start = -start; complete = true; }
+      if (end < 0) { end = -end; complete = true; }
+      if (end < start) {
+        var t = start;
+        start = end;
+        end = start;
+      }
+      var rx, ry;
+      if (aspect == null) {
+        rx = r;
+        ry = r / screen_aspect;
+      } else if (aspect > 1) {
+        rx = r / aspect;
+        ry = r;
       } else {
-        for (var i = -r; i <= r; ++i) {
-          var dx = Math.sqrt(r * r - i * i);
-          Box(x - dx, y + i, x - dx, y + i, pen_color);
-          Box(x + dx, y + i, x + dx, y + i, pen_color);
-        }
+        rx = r;
+        ry = r * aspect;
+      }
+      var oxx = x + Math.cos(start) * rx;
+      var oyy = y + Math.sin(start) * ry;
+      if (complete) {
+        RawLine(x, y, oxx, oyy, pen_color);
+      }
+      for (var ang = start; ang <= end; ang += 0.03) {
+        var xx = x + Math.cos(ang) * rx;
+        var yy = y + Math.sin(ang) * ry;
+        if (ang == start) { oxx = xx; oyy = yy; }
+        RawLine(oxx, oyy, xx, yy, pen_color);
+        oxx = xx;
+        oyy = yy;
+      }
+      if (complete) {
+        RawLine(x, y, xx, yy, pen_color);
+      }
+      if (fill && start == 0 && end == Math.PI * 2) {
+        Paint(x, y, c, c);
       }
     }
 
@@ -2457,7 +2482,7 @@
         var c = Expression();
         var start = 0;
         var end = Math.PI * 2;
-        var aspect = 1;
+        var aspect = 'null';
         var fill = 0;
         if (tok == ',') {
           Skip(',');
