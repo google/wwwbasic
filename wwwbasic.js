@@ -812,7 +812,7 @@
       return global_vars[name];
     }
 
-    function DimVariable(default_tname, redim) {
+    function DimVariable(default_tname, redim, is_declare) {
       var name = tok;
       Next();
       // Pick default.
@@ -885,29 +885,35 @@
           parts.push('((' + dimensions[i][1] + ')-(' +
             dimensions[i][0] + ')+1)');
         }
-        curop += 'if (' + ArrayPart(offset, 0) + ' === 0) {\n';
-        curop += '  ' + ArrayPart(offset, 0) + ' = Allocate(' +
-          [info.size].concat(parts).join('*') + ');\n';
-        for (var i = 0; i < dimensions.length; i++) {
-          curop += '  ' + ArrayPart(offset, i * 2 + 1) + ' = ' +
-            dimensions[i][0] + ';\n';
-          curop += '  ' + ArrayPart(offset, i * 2 + 2) + ' = ' +
-            [info.size].concat(parts).slice(0, i + 1).join('*') + ';\n';
+        if (!is_declare) {
+          if (!vars[name].global) {
+            offset = '(bp+' + offset + ')';
+          }
+          curop += '// Allocate ' + name + '\n';
+          curop += 'if (' + ArrayPart(offset, 0) + ' === 0) {\n';
+          curop += '  ' + ArrayPart(offset, 0) + ' = Allocate(' +
+            [info.size].concat(parts).join('*') + ');\n';
+          for (var i = 0; i < dimensions.length; i++) {
+            curop += '  ' + ArrayPart(offset, i * 2 + 1) + ' = ' +
+              dimensions[i][0] + ';\n';
+            curop += '  ' + ArrayPart(offset, i * 2 + 2) + ' = ' +
+              [info.size].concat(parts).slice(0, i + 1).join('*') + ';\n';
+          }
+          if (defaults.length > 0) {
+            if (dimensions.length > 1) {
+              Throw('Only 1-d array defaults supported');
+            }
+            if (!SIMPLE_TYPE_INFO[type_name]) {
+              Throw('Only simple type array defaults supported');
+            }
+            for (var i = 0; i < defaults.length; i++) {
+              curop += '  ' + info.view + '[' +
+                ' + (' + ArrayPart(offset, 0) + ' >> ' + info.shift + ') + '
+                + i + '] = (' + defaults[i] + ');\n';
+            }
+          }
+          curop += '}\n';
         }
-        if (defaults.length > 0) {
-          if (dimensions.length > 1) {
-            Throw('Only 1-d array defaults supported');
-          }
-          if (!SIMPLE_TYPE_INFO[type_name]) {
-            Throw('Only simple type array defaults supported');
-          }
-          for (var i = 0; i < defaults.length; i++) {
-            curop += '  ' + info.view + '[' +
-              ' + (' + ArrayPart(offset, 0) + ' >> ' + info.shift + ') + '
-              + i + '] = (' + defaults[i] + ');\n';
-          }
-        }
-        curop += '}\n';
         vars[name] = {
           offset: offset,
           dimensions: dimensions.length > 0 ? dimensions.length : -1,
@@ -1034,11 +1040,11 @@
         Skip('(');
         if (tok != ')') {
           parameters.push(tok);
-          DimVariable(null);
+          DimVariable(null, undefined, true);
           while (tok == ',') {
             Skip(',');
             parameters.push(tok);
-            DimVariable(null);
+            DimVariable(null, undefined, true);
           }
         }
         Skip(')');
@@ -1652,7 +1658,7 @@
         ry = r * aspect;
       }
       var oxx = x + Math.cos(start) * rx;
-      var oyy = y + Math.sin(start) * ry;
+      var oyy = y - Math.sin(start) * ry;
       if (complete) {
         RawLine(x, y, oxx, oyy, pen_color);
       }
