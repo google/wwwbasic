@@ -803,7 +803,11 @@
           type_name: null,
           global: vars === global_vars,
         };
-        var_decls += '// ' + name + ' is at ' + ArrayPart(offset, 0) +
+        var boffset = offset;
+        if (!vars[name].global) {
+          boffset = '(bp+' + boffset + ')';
+        }
+        var_decls += '// ' + name + ' is at ' + ArrayPart(boffset, 0) +
           ' (cell-addr: ' + offset + ')\n';
       }
       if (vars[name] !== undefined) {
@@ -1748,6 +1752,11 @@
           for (var x = x1; x <= x2; ++x) {
             var v = s[srcpos] | (s[srcpos + 1] << 8) | (s[srcpos + 2] << 16);
             srcpos += 3;
+            // TODO: Optimize
+            if (x < 0 || x >= display.width || y < 0 || y >= display.height) {
+              dstpos++;
+              continue;
+            }
             if (mode == 'xor') {
               dst[dstpos++] = (dst[dstpos] ^ v) | BLACK;
             } else if (mode == 'preset') {
@@ -1785,7 +1794,12 @@
               cc |= old;
             }
             var px = color_map[cc] | 0;
-            dst[dstpos++] = px;
+            // TODO: Optimize
+            if (y >=0 && y < display.height && x >= 0 && x < display.width) {
+              dst[dstpos++] = px;
+            } else {
+              dstpos++;
+            }
             if (shift == 0) {
               shift = 8;
             }
