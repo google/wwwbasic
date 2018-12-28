@@ -17,11 +17,11 @@ limitations under the License.
 <script src="../wwwbasic.js"></script>
 <script type="text/basic">
 
-DECLARE FUNCTION GetLengthOfNumber(n)
+DECLARE FUNCTION GetBase3LengthOfNumber(n)
 
 PRINT 2; " ";
 FOR i = 3 TO 3000 STEP 2
-  numLength = GetLengthOfNumber(i) + 1
+  numLength = GetBase3LengthOfNumber(i) + 1
   FOR j = 3 TO i / numLength STEP 2
     IF i MOD j = 0 THEN GOTO NotPrime
   NEXT j
@@ -30,13 +30,13 @@ FOR i = 3 TO 3000 STEP 2
 NEXT i
 END
 
-FUNCTION GetLengthOfNumber(n)
+FUNCTION GetBase3LengthOfNumber(n)
   digits = 1
-  WHILE digits > 9
+  WHILE digits > 2
     digits = digits + 1
-    n = n / 10
+    n = n / 3
   WEND
-  GetLengthOfNumber = digits
+  GetBase3LengthOfNumber = digits
 END FUNCTION
 
 </script>

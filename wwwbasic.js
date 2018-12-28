@@ -1795,7 +1795,7 @@
             }
             var px = color_map[cc] | 0;
             // TODO: Optimize
-            if (y >=0 && y < display.height && x >= 0 && x < display.width) {
+            if (y >= 0 && y < display.height && x >= 0 && x < display.width) {
               dst[dstpos++] = px;
             } else {
               dstpos++;
