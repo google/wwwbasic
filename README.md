@@ -70,6 +70,8 @@ It can be run with: `./run-tests.sh`.
   ([source](examples/hello_world.html)) - Hello.
 * [Lines](https://google.github.io/wwwbasic/examples/lines.html)
   ([source](examples/lines.html)) - Some lines...
+* [Polar Grapher](https://google.github.io/wwwbasic/examples/polargrapher.html)
+  ([source](examples/polargrapher.html)) - Draws a polar graph using trig functions.
 * [Primes](https://google.github.io/wwwbasic/examples/primes.html)
   ([source](examples/primes.html)) - Primes <3000.
 * [Slides](https://google.github.io/wwwbasic/examples/slides.html)

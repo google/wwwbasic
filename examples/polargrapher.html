@@ -1,0 +1,71 @@
+<!--
+Copyright 2018 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!DOCTYPE html>
+<script src="../wwwbasic.js"></script>
+<script type="text/basic">
+  DECLARE FUNCTION TRANSFORMX(x,y,theta,xorg)
+  DECLARE FUNCTION TRANSFORMY(x,y,theta,yorg)
+  DECLARE FUNCTION POLARFUNCTION(theta)
+  DECLARE FUNCTION RANDOM1TO(num)
+
+  SCREEN 8
+  scaler = 2000 'number of rays to project(higher=better resolution)
+  tau = 6.28318530718
+  increment = tau/scaler 'subdivisions of angles
+  screenheight = 200
+  screenwidth = 640
+  initxorigin = screenwidth/2 'origin definition
+  inityorigin = screenheight/2 'origin definition
+  distortionfixer = (screenwidth/screenheight)/2 'distorts x-axis to make even plane
+  revolutions = 2 'number of revolutions around origin
+  graphcolor = RANDOM1TO(15) 'random color of graph (1 to 15)
+
+  FOR i = 1 to revolutions * scaler
+      angle = increment*i
+      x = TRANSFORMX(POLARFUNCTION(angle),0,angle,initxorigin)
+      y = TRANSFORMY(-POLARFUNCTION(angle),0,angle,inityorigin) ' function negated due
+      LINE (x, y)-(x, y), graphcolor                            ' to coordinate system
+  NEXT i
+
+  'Here is the linear algebra that gives these functions:
+
+  'Rotation Matrix (https://en.wikipedia.org/wiki/Rotation_matrix)
+  '      vvv
+  '[ cos Θ   -sin Θ] [ x ]   [ x origin on screen ]   [ x ]
+  '[               ] [   ] + [                    ] = [   ] rotated Θ radians
+  '[ sin Θ    cos Θ] [ y ]   [ y origin on screen ]   [ y ] around the given origin
+
+  FUNCTION TRANSFORMX(x,y,theta,xorg)
+  TRANSFORMX = (x * COS(theta) - y * SIN(theta))*distortionfixer + xorg
+  END FUNCTION
+
+  FUNCTION TRANSFORMY(x,y,theta,yorg)
+  TRANSFORMY = (x*SIN(theta) + y*COS(theta))/distortionfixer + yorg
+  END FUNCTION
+
+  FUNCTION POLARFUNCTION(theta)
+    'Try uncommenting these one at a time for more cool graphs
+    'POLARFUNCTION = 20*(2*theta/tau)
+    'POLARFUNCTION = 80 * SIN(2.5*theta)
+    'POLARFUNCTION = 80*SQR(SIN(2*theta))
+    'POLARFUNCTION = 80*(SIN(theta) + (SIN(2.5*theta))^3)
+    POLARFUNCTION = 80*((COS(5*theta))^2 + SIN(3*theta) + 0.3)
+  END FUNCTION
+
+  FUNCTION RANDOM1TO(num) 'returns a random number between 1 to num, inclusive
+      RANDOM1TO = INT(RND()*num) + 1
+  END FUNCTION
+</script>
