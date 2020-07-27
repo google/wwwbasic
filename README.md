@@ -53,7 +53,7 @@ It supports a range of features including:
 
 ## Test Suite
 
-wwwBASIC has a "Work-in-progress" test suite.
+wwwBASIC has a "work in progress" test suite.
 It can be run with: `./run-tests.sh`.
 
 ## Examples
