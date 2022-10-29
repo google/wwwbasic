@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/google/wwwbasic.svg?branch=master)](https://travis-ci.org/google/wwwbasic) [![NPM Package](https://img.shields.io/npm/v/wwwbasic.svg)](https://www.npmjs.com/package/wwwbasic)
+[![Build Status](https://travis-ci.com/google/wwwbasic.svg?branch=master)](https://travis-ci.com/google/wwwbasic) [![NPM Package](https://img.shields.io/npm/v/wwwbasic.svg)](https://www.npmjs.com/package/wwwbasic)
 
 # wwwBASIC
 
