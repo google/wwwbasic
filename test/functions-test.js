@@ -25,6 +25,18 @@ PRINT FNdist(a, b)
 5
 `);
 
+basic_test.BASIC_TEST('Functions', 'ClassicArgless', `
+a$ = "hello"
+b$ = "..."
+DEF fnfoo$ = a$ + b$
+print fnfoo$
+a$ = "there"
+print fnfoo$
+`, `
+hello...
+there...
+`);
+
 basic_test.BASIC_TEST('Functions', 'NewStyle', `
 FUNCTION Dist(x, y)
   Dist = SQR(x^2 + y^2)
