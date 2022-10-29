@@ -159,3 +159,27 @@ PRINT INSTR("hello", "mo")
 2
 0
 `);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'Fix', `
+PRINT FIX(45.67)
+PRINT FIX(-2.89)
+`, `
+45
+-2
+`);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'Int', `
+PRINT INT(45.67)
+PRINT INT(-2.89)
+`, `
+45
+-3
+`);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'CInt', `
+PRINT CINT(45.67)
+PRINT CINT(-2.89)
+`, `
+46
+-3
+`);

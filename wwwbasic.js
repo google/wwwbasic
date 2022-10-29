@@ -505,7 +505,8 @@
         }
         if (name == 'log' || name == 'ucase$' || name == 'lcase$' ||
             name == 'chr$' || name == 'sqr' ||
-            name == 'int' || name == 'cint' || name == 'asc' ||
+            name == 'int' || name == 'cint' || name == 'fix' ||
+            name == 'asc' ||
             name == 'abs' || name == 'len' || name == 'val' ||
             name == 'cos' || name == 'sin' || name == 'tan' || name == 'atn' ||
             name == 'exp' || name == 'str$' || name == 'peek' ||
@@ -522,7 +523,8 @@
           case 'asc': return '(' + e + ').charCodeAt(0)';
           case 'sqr': return 'Math.sqrt(' + e + ')';
           case 'int': return 'Math.floor(' + e + ')';
-          case 'cint': return 'Math.floor(' + e + ')';
+          case 'cint': return 'Math.round(' + e + ')';
+          case 'fix': return 'Math.trunc(' + e + ')';
           case 'abs': return 'Math.abs(' + e + ')';
           case 'cos': return 'Math.cos(' + e + ')';
           case 'sin': return 'Math.sin(' + e + ')';
