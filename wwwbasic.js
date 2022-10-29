@@ -1507,6 +1507,11 @@
       Print(items);
     }
 
+    function MidReplace(a, n, m, v) {
+      var k = Math.min(m, v.length);
+      return a.substr(0, n - 1) + v.substr(0, k) + a.substr(n - 1 + k);
+    }
+
     function ColorFlip(c) {
       return BLACK |
         ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) | (c & 0x00ff00);
@@ -2484,6 +2489,24 @@
         curop += 'ip = ' + f[2] + ';\n';
         NewOp();
         ops[f[2]] += ops.length + '; }\n';
+      } else if (tok == 'mid$') {
+        Skip('mid$');
+        Skip('(');
+        var a = GetVar();
+        Skip(',');
+        var x = Expression();
+        var y = '(' + a + '.length)';
+        if (tok == ')') {
+          Skip(')');
+        } else {
+          Skip(',');
+          y = Expression();
+          Skip(')');
+        }
+        Skip('=');
+        var z = Expression();
+        curop += a + ' = MidReplace(' + a + ', ' + x + ', ' +
+                 y + ', ' + z + ');\n'
       } else if (tok == 'paint') {
         Skip('paint');
         Skip('(');

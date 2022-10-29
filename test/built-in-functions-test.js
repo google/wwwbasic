@@ -140,6 +140,29 @@ CDEFG
 BC
 `);
 
+basic_test.BASIC_TEST('BuiltInFunctions', 'Mid$Statement', `
+A$="hello"
+MID$(A$, 2, 2) = "xyz"
+PRINT A$
+MID$(A$, 3) = "a"
+PRINT A$
+`, `
+hxylo
+hxalo
+`);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'Mid$StatementArray', `
+DIM A$(10)
+A$(2)="hello"
+MID$(A$(2), 2, 2) = "xyz"
+PRINT A$(2)
+MID$(A$(2), 3) = "a"
+PRINT A$(2)
+`, `
+hxylo
+hxalo
+`);
+
 basic_test.BASIC_TEST('BuiltInFunctions', 'Left$', `
 PRINT LEFT$("ABCDEFG", 3)
 `, `
