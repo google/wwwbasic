@@ -558,7 +558,7 @@
           } else if (name == 'right$') {
             return 'Right((' + a + '), (' + b + '))';
           } else if (name == 'instr') {
-            return '((' + a + ').search(' + b + ') + 1)';
+            return '((' + a + ').indexOf(' + b + ') + 1)';
           } else if (name == 'point') {
             return 'Point((' + a + '), (' + b + '))';
           } else {

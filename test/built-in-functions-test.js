@@ -151,3 +151,11 @@ PRINT RIGHT$("ABCDEFG", 3)
 `, `
 EFG
 `);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'Instr', `
+PRINT INSTR("hello", "el")
+PRINT INSTR("hello", "mo")
+`, `
+2
+0
+`);
