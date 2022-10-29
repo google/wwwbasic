@@ -128,3 +128,26 @@ PRINT ATAN2(0, 1)
 0
 `);
 
+basic_test.BASIC_TEST('BuiltInFunctions', 'Mid$', `
+PRINT MID$("ABCDEFG", 2, 3)
+PRINT MID$("ABCDEFG", 1, 3)
+PRINT MID$("ABCDEFG", 3)
+PRINT MID$("ABCDEFG", 2, 2)
+`, `
+BCD
+ABC
+CDEFG
+BC
+`);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'Left$', `
+PRINT LEFT$("ABCDEFG", 3)
+`, `
+ABC
+`);
+
+basic_test.BASIC_TEST('BuiltInFunctions', 'Right$', `
+PRINT RIGHT$("ABCDEFG", 3)
+`, `
+EFG
+`);

@@ -570,10 +570,15 @@
           var a = Expression();
           Skip(',');
           var b = Expression();
-          Skip(',');
-          var c = Expression();
-          Skip(')');
-          return '((' + a + ').substr((' + b + ') - 1, (' + c + ')))';
+          if (tok == ')') {
+            Skip(')');
+            return '((' + a + ').substr((' + b + ') - 1))';
+          } else {
+            Skip(',');
+            var c = Expression();
+            Skip(')');
+            return '((' + a + ').substr((' + b + ') - 1, (' + c + ')))';
+          }
         }
         if (name == 'inkey$') {
           return 'Inkey()';
