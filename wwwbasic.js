@@ -2741,7 +2741,7 @@
         var b = GetVar();
         curop += 'var t = ' + a + ';\n';
         curop += a + ' = ' + b + ';\n';
-        curop += b + ' = ' + a + ';\n';
+        curop += b + ' = t;\n';
       } else if (tok == 'data') {
         ConsumeData();
       } else if (tok == 'read') {
