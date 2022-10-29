@@ -1,2 +1,3 @@
 .DS_Store
-third_party/install_linter
+third_party/install_linter/package-lock.json
+third_party/install_linter/node_modules

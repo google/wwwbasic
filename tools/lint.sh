@@ -24,15 +24,8 @@ ESLINT=${LINTER_DIR}/node_modules/.bin/eslint
 
 # Install or update eslint as needed.
 OLD_PWD=$(pwd)
-if [ -f ${ESLINT} ]; then
-  cd ${LINTER_DIR}
-  npm update
-else
-  mkdir -p ${LINTER_DIR}
-  cd ${LINTER_DIR}
-  npm init -y
-  npm install eslint --save-dev
-fi
+cd ${LINTER_DIR}
+npm update
 cd ${OLD_PWD}
 
 # Lint it.
