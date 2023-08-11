@@ -94,7 +94,6 @@ module.exports = {
     'global-require': 'error',
     'guard-for-in': 'off',
     'handle-callback-err': 'error',
-    'id-blacklist': 'error',
     'id-length': 'off',
     'id-match': 'error',
     'implicit-arrow-linebreak': 'error',
