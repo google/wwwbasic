@@ -61,6 +61,10 @@
     var function_old_allocated = 0;
     var function_name = null;
 
+    // Error handler state.
+    var error_handler = Throw;
+    var error_resume_point = null;
+
     // Yield State
     var yielding = 0;
     var quitting = 0;
@@ -153,7 +157,7 @@
         if (tok == '' && /[.0-9][#]?/.test(code.substr(0, 1))) {
           var n = code.match(/^([0-9]*([.][0-9]*)?([eE][+-]?[0-9]+)?[#]?)/);
           if (n === null) {
-            Throw('Bad number');
+            Error('Bad number');
           }
           tok = n[1];
           code = code.substr(tok.length);
@@ -181,7 +185,7 @@
               code = code.substr(1);
               var n = code.match(/^([0-9a-fA-F]+)/);
               if (n === null) {
-                Throw('Bad hex number');
+                Error('Bad hex number');
               }
               tok = '0x' + n[1];
               code = code.substr(n[1].length);
@@ -221,7 +225,7 @@
           } else {
             quote = true;
             if (item.search(/[^ \t]/) != -1) {
-              Throw('Data statement extra text: "' + item + '"');
+              Error('Data statement extra text: "' + item + '"');
             }
             item = '';
           }
@@ -232,7 +236,7 @@
             } else {
               had_quote = false;
               if (item.search(/[^ \t]/) != -1) {
-                Throw('Data statement extra text: "' + item + '"');
+                Error('Data statement extra text: "' + item + '"');
               }
             }
             item = '';
@@ -247,13 +251,46 @@
       Next();
     }
 
+    function Error(msg, lineno) {
+      if (lineno === undefined) {
+        lineno = line;
+      }
+      error_resume_point = ip - 1;
+      error_handler(msg + ' at line ' + lineno);
+    }
+
+    function ErrorGoto(target) {
+      return function() {
+        ip = target;
+      };
+    }
+
+    function Resume0() {
+      ip = error_resume_point;
+      error_resume_point = null;
+    }
+
+    function ResumeNext() {
+      ip = error_resume_point + 1;
+      error_resume_point = null;
+    }
+
+    function Resume(target) {
+      if (error_resume_point === null) {
+        // Bypass error handler.
+        Throw('RESUME without error');
+      }
+      error_resume_point = null;
+      ip = target;
+    }
+
     function Throw(msg) {
-      throw msg + ' at line ' + line;
+      throw msg;
     }
 
     function Skip(t) {
       if (tok != t) {
-        Throw('Expected "' + t + '" found "' + tok + '"');
+        Error('Expected "' + t + '" found "' + tok + '"');
       }
       Next();
     }
@@ -264,7 +301,7 @@
 
     function SkipEndOfStatement() {
       if (!EndOfStatement()) {
-        Throw('Expected : or EOL');
+        Error('Expected : or EOL');
       }
       Next();
     }
@@ -286,7 +323,7 @@
     function Else() {
       var f = flow.pop();
       if (f[0] != 'if') {
-        Throw('ELSE unmatched to IF');
+        Error('ELSE unmatched to IF');
       }
       NewOp();
       var pos = ops.length - 1;
@@ -299,7 +336,7 @@
     function ElseIf(e) {
       var f = flow.pop();
       if (f[0] != 'if') {
-        Throw('ELSEIF unmatched to IF');
+        Error('ELSEIF unmatched to IF');
       }
       NewOp();
       var pos = ops.length - 1;
@@ -319,7 +356,7 @@
       } else if (f[0] == 'if') {
         ops[f[1]] += ops.length + '; }\n';
       } else {
-        Throw('Unmatch end if');
+        Error('Unmatch end if');
       }
       for (var i = 0; i < f[2].length; ++i) {
         ops[f[2][i]] += ops.length + ';\n';
@@ -334,7 +371,7 @@
         vinfo = global_vars[vname];
       }
       if (vinfo === undefined) {
-        Throw('Undefined variable name');
+        Error('Undefined variable name');
       }
       if (vinfo.global) {
         return vinfo.offset;
@@ -345,7 +382,7 @@
 
     function AddLabel(name) {
       if (labels[name] !== undefined) {
-        Throw('Label ' + name + ' defined twice');
+        Error('Label ' + name + ' defined twice');
       }
       NewOp();
       curop += '// LABEL ' + name + ':\n';
@@ -432,7 +469,7 @@
           case 'tab': return 'StringRep((' + e + '), "\t")';
           case 'stackdepth': return 'sp';
           }
-          Throw('This cannot happen');
+          Error('This cannot happen');
         }
         if (name == 'atan2' || name == 'string$' ||
             name == 'left$' || name == 'right$' ||
@@ -612,12 +649,12 @@
       } else if (types[tok] !== undefined) {
         var type_name = tok;
         if (types[type_name] === undefined) {
-          Throw('Undefined type');
+          Error('Undefined type');
         }
         Next();
         return type_name;
       }
-      Throw('Undefined type "' + tok + '"');
+      Error('Undefined type "' + tok + '"');
     }
 
     function ImplicitType(name) {
@@ -640,7 +677,7 @@
     function DimScalarVariable(name, type_name, defaults) {
       var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
       if (info === undefined) {
-        Throw('Unknown type');
+        Error('Unknown type');
       }
       var size = info.size;
       var offset = Allocate(size);
@@ -679,7 +716,7 @@
         return global_vars[name];
       }
       if (option_explicit) {
-        Throw('Undeclared variable ' + name);
+        Error('Undeclared variable ' + name);
       }
       var type_name = ImplicitType(name);
       DimScalarVariable(name, type_name, []);
@@ -772,13 +809,13 @@
         if (redim) {
           return;
         }
-        Throw('Variable ' + name + ' defined twice');
+        Error('Variable ' + name + ' defined twice');
       }
       if (is_scalar) {
         DimScalarVariable(name, type_name, defaults);
       } else {
         if (dimensions.length > MAX_DIMENSIONS) {
-          Throw('Too many dimensions');
+          Error('Too many dimensions');
         }
         var offset = ReserveArrayCell(name).offset;
         var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
@@ -803,10 +840,10 @@
           }
           if (defaults.length > 0) {
             if (dimensions.length > 1) {
-              Throw('Only 1-d array defaults supported');
+              Error('Only 1-d array defaults supported');
             }
             if (!SIMPLE_TYPE_INFO[type_name]) {
-              Throw('Only simple type array defaults supported');
+              Error('Only simple type array defaults supported');
             }
             for (var i = 0; i < defaults.length; i++) {
               curop += '  ' + info.view + '[' +
@@ -857,7 +894,7 @@
           var noffset = '(';
           noffset += ArrayPart(offset, 0) + ' + (';
           if (v.dimensions !== -1 && dims.length != v.dimensions) {
-            Throw('Array dimension expected ' + v.dimensions +
+            Error('Array dimension expected ' + v.dimensions +
                   ' but found ' + dims.length + ', array named: ' + name);
           }
           for (var i = 0; i < dims.length; ++i) {
@@ -874,11 +911,11 @@
           Skip('.');
           v = types[type_name];
           if (v === undefined) {
-            Throw('Not a struct type');
+            Error('Not a struct type');
           }
           var field = v.vars[tok];
           if (field === undefined) {
-            Throw('Invalid field name');
+            Error('Invalid field name');
           }
           Next();
           offset = '(' + offset + ' + ' + field.offset + ')';
@@ -887,7 +924,7 @@
       }
       var info = SIMPLE_TYPE_INFO[type_name];
       if (!info) {
-        Throw('Expected simple type');
+        Error('Expected simple type');
       }
       var vname = info.view + '[' + offset + '>>' + info.shift + ']';
       if (info.view == 'str' && assignable === undefined) {
@@ -900,10 +937,10 @@
       var name = tok;
       Next();
       if (vars !== global_vars) {
-        Throw('Nested SUB/FUNCTION not allowed');
+        Error('Nested SUB/FUNCTION not allowed');
       }
       if (functions[name] !== undefined && !functions[name].is_declaration) {
-        Throw('SUB/FUNCTION already defined: ' + name);
+        Error('SUB/FUNCTION already defined: ' + name);
       }
       NewOp();
       var pos = ops.length - 1;
@@ -961,7 +998,7 @@
         } else {
           // TODO: Check for declaration mismatch in type.
           if (functions[name].parameters.length != nfunc.parameter.length) {
-            Throw('DECLARE and definition parameters do not match');
+            Error('DECLARE and definition parameters do not match');
           }
         }
       } else {
@@ -974,7 +1011,7 @@
         Skip('as');
         var type_name = TypeName();
         if (!SIMPLE_TYPE_INFO[type_name]) {
-          Throw('Expected basic type');
+          Error('Expected basic type');
         }
         functions[name].type_name = type_name;
       }
@@ -986,7 +1023,7 @@
 
     function FunctionExit() {
       if (vars === global_vars) {
-        Throw('SUB/FUNCTION EXIT only allowed inside SUB/FUNCTION.');
+        Error('SUB/FUNCTION EXIT only allowed inside SUB/FUNCTION.');
       }
       curop += 'sp -= 8; ip = i[sp>>2];\n';
       NewOp();
@@ -994,7 +1031,7 @@
 
     function FunctionEnd() {
       if (vars === global_vars) {
-        Throw('SUB/FUNCTION END only allowed at end of SUB/FUNCTION.');
+        Error('SUB/FUNCTION END only allowed at end of SUB/FUNCTION.');
       }
       inside_function = false;
       FunctionExit();
@@ -1010,9 +1047,9 @@
       var func = functions[name];
       if (options.is_subroutine !== func.is_subroutine) {
         if (options.is_subroutine) {
-          Throw('Expected valid subroutine name, found: ' + name);
+          Error('Expected valid subroutine name, found: ' + name);
         } else {
-          Throw('Expected valid function name, found: ' + name);
+          Error('Expected valid function name, found: ' + name);
         }
       }
       curop += 'i[sp>>2] = bp; sp += 8;\n';
@@ -1163,7 +1200,7 @@
           }
           var f = flow.pop();
           if (f[0] != 'if') {
-            Throw('If in mixed style');
+            Error('If in mixed style');
           }
           flow.push(f);
           NewOp();
@@ -1210,7 +1247,7 @@
         } else if (EndOfStatement()) {
           var f = flow.pop();
           if (f[0] != 'while' && f[0] != 'do') {
-            Throw('LOOP does not match DO / WHILE');
+            Error('LOOP does not match DO / WHILE');
           }
           curop += 'ip = ' + f[1] + ';\n';
           NewOp();
@@ -1219,12 +1256,12 @@
           }
           return;
         } else {
-          Throw('Expected while/until');
+          Error('Expected while/until');
         }
         var e = Expression();
         var f = flow.pop();
         if (f[0] != 'do') {
-          Throw('LOOP does not match DO');
+          Error('LOOP does not match DO');
         }
         if (is_while) {
           curop += 'if (' + e + ') { ip = ' + f[1] + '; }\n';
@@ -1243,7 +1280,7 @@
         Skip('wend');
         var f = flow.pop();
         if (f[0] != 'while') {
-          Throw('Wend does not match while');
+          Error('Wend does not match while');
         }
         curop += 'ip = ' + f[1] + ';\n';
         NewOp();
@@ -1257,7 +1294,7 @@
           Skip('function');
           FunctionExit();
         } else {
-          Throw('Expected sub/function');
+          Error('Expected sub/function');
         }
       } else if (tok == 'end') {
         Skip('end');
@@ -1269,7 +1306,7 @@
           NewOp();
           var f = flow.pop();
           if (f[0] != 'select') {
-            Throw('end select outside select');
+            Error('end select outside select');
           }
           var disp = 'var t = (' + f[1] + ');\n';
           disp += 'if (false) {}\n';
@@ -1327,7 +1364,7 @@
           Skip('function');
           FunctionDefine({is_subroutine: false, is_declaration: true});
         } else {
-          Throw('Unexpected declaration');
+          Error('Unexpected declaration');
         }
       } else if (tok == 'type') {
         var old_allocated = allocated;
@@ -1336,7 +1373,7 @@
         var type_name = tok;
         Next();
         if (types[type_name] !== undefined) {
-          Throw('Duplicate type definition');
+          Error('Duplicate type definition');
         }
         types[type_name] = {
           vars: vars,
@@ -1369,7 +1406,7 @@
           Next();
           var v = vars[name];
           if (v !== undefined) {
-            Throw('Constant ' + name + ' defined twice');
+            Error('Constant ' + name + ' defined twice');
           }
           var offset = Allocate(8);
           vars[name] = {
@@ -1405,55 +1442,80 @@
           Skip(',');
           DimVariable(tname, op == 'redim');
         }
+      } else if (tok == 'error') {
+        Skip('error');
+        var e = Expression();
+        curop += 'Error("Error " + ' + e + ', ' + line + ');\n';
+        NewOp();
       } else if (tok == 'on') {
         Skip('on');
-        var name = Expression();
         if (tok == 'error') {
           Skip('error');
-          // TODO: Implement.
-        } else if (tok == 'goto' || tok == 'gosub') {
-          var isGosub = (tok == 'gosub');
-          Next();
-          if (EndOfStatement()) {
-            Throw('Expected labels.');
+          if (tok == 'goto') {
+            Skip('goto');
+            if (tok == '0') {
+              curop += 'error_handler = Throw;\n';
+              Next();
+              NewOp();
+            } else {
+              curop += 'error_handler = ErrorGoto(labels["' + tok + '"]);\n';
+              Next();
+              NewOp();
+            }
+          } else if (tok == 'resume') {
+            Skip('resume');
+            Skip('next');
+            curop += 'error_handler = (function() {});\n';
+            NewOp();
+          } else {
+            Error('Expected goto / resume next.');
           }
-          if (isGosub) {
-            curop += 'i[sp>>2] = ip; sp += 8;\n';
-          }
-          curop += 'ip = labels[[';
-          while (!(EndOfStatement())) {
-            curop += '\'' + String(tok) + '\'';
+        } else {
+          var name = Expression();
+          if (tok == 'goto' || tok == 'gosub') {
+            var isGosub = (tok == 'gosub');
             Next();
             if (EndOfStatement()) {
-              if (isGosub) {
-                curop += '][((' + name + ')|0) - 1]];\n';
-                curop += 'if(ip == undefined){ sp -= 8; ip = i[sp>>2]; }\n';
-              } else {
-                curop += '][((' + name + ')|0) - 1]] || ip;\n';
-              }
-            } else {
-              curop += tok;
-              Skip(',');
+              Error('Expected labels.');
             }
+            if (isGosub) {
+              curop += 'i[sp>>2] = ip; sp += 8;\n';
+            }
+            curop += 'ip = labels[[';
+            while (!(EndOfStatement())) {
+              curop += '"' + tok + '"';
+              Next();
+              if (EndOfStatement()) {
+                if (isGosub) {
+                  curop += '][((' + name + ')|0) - 1]];\n';
+                  curop += 'if(ip == undefined){ sp -= 8; ip = i[sp>>2]; }\n';
+                } else {
+                  curop += '][((' + name + ')|0) - 1]] || ip;\n';
+                }
+              } else {
+                curop += tok;
+                Skip(',');
+              }
+            }
+          } else {
+            Error('Expected GOTO or GOSUB. Found ' + tok);
           }
           NewOp();
-        } else {
-          Throw('Expected GOTO/GOSUB or ERROR. Found ' + tok);
         }
       } else if (tok == 'resume') {
         Skip('resume');
         if (tok == 'next') {
           Skip('next');
-          // TODO: Implement.
+          curop += 'ResumeNext();\n';
+          NewOp();
         } else if (tok == '0') {
           Skip('0');
-          // TODO: Implement.
-        } else if (!EndOfStatement()) {
-          var name = tok;
-          Next();
-          // TODO: Implement.
+          curop += 'Resume0();\n';
+          NewOp();
         } else {
-          // TODO: Implement.
+          curop += 'Resume(labels["' + String(tok) + '"]);\n';
+          Next();
+          NewOp();
         }
       } else if (tok == 'sub') {
         Skip('sub');
@@ -1478,7 +1540,7 @@
           curop += IndexVariable(fname, true) + ' = ' + e + ';\n';
           FunctionEnd(pos);
         } else {
-          Throw('Expected SEG/FNxxx');
+          Error('Expected SEG/FNxxx');
         }
       } else if (tok == 'open') {
         Skip('open');
@@ -1489,7 +1551,7 @@
         } else if (tok == 'output') {
           Skip('output');
         } else {
-          Throw('Expected input/output');
+          Error('Expected input/output');
         }
         Skip('as');
         Next();
@@ -1521,7 +1583,7 @@
           Skip('screen');
           // TODO: Implement.
         } else {
-          Throw('Expected PRINT/SCREEN');
+          Error('Expected PRINT/SCREEN');
         }
       } else if (tok == 'randomize') {
         Skip('randomize');
@@ -1540,7 +1602,7 @@
         } else if (tok == 'off') {
           Skip('off');
         } else {
-          Throw('Expected on/off');
+          Error('Expected on/off');
         }
         // Implement this?
       } else if (tok == 'sound') {
@@ -1578,11 +1640,11 @@
           } else if (tok == '1') {
             option_base = 1;
           } else {
-            Throw('Unexpected option base "' + tok + '"');
+            Error('Unexpected option base "' + tok + '"');
           }
           Next();
         } else {
-          Throw('Unexpected option "' + tok + '"');
+          Error('Unexpected option "' + tok + '"');
         }
       } else if (tok == 'defdbl' || tok == 'defsng' || tok == 'deflng' ||
                  tok == 'defint' || tok == 'defstr') {
@@ -1597,7 +1659,7 @@
           if (!start.match(/^[a-z]$/) ||
               !end.match(/^[a-z]$/) ||
               start.charCodeAt(0) > end.charCodeAt(0)) {
-            Throw('Invalid variable range');
+            Error('Invalid variable range');
           }
           var i = start;
           do {
@@ -1636,14 +1698,14 @@
         Skip('next');
         var f = flow.pop();
         if (f[0] != 'for') {
-          Throw('Expected NEXT');
+          Error('Expected NEXT');
         }
         if (!EndOfStatement()) {
           var name = tok;
           // TODO: Shouldn't this fail?
           /*
           if (name != f[1]) {
-            Throw('Expected ' + f[1]);
+            Error('Expected ' + f[1]);
           }
           */
           Next();
@@ -1728,7 +1790,7 @@
             fill = 1;
             Next();
           } else {
-            Throw('Expected F got ' + tok);
+            Error('Expected F got ' + tok);
           }
         }
         curop += 'Circle((' +
@@ -1807,7 +1869,7 @@
             } else if (tok == 'bf') {
               fill = 2;
             } else {
-              Throw('Unexpected ' + tok);
+              Error('Unexpected ' + tok);
             }
             Next();
           }
@@ -1852,7 +1914,7 @@
             mode = tok;
             Next();
           } else {
-            Throw('Invalid put mode');
+            Error('Invalid put mode');
           }
         }
         curop += 'PutImage(' + x + ', ' + y + ', buffer, ' +
@@ -1939,10 +2001,10 @@
         ConsumeData();
       } else if (tok == 'read') {
         Skip('read');
-        curop += GetVar() + ' = data[data_pos++];\n';
+        curop += GetVar() + ' = Read();\n';
         while (tok == ',') {
           Skip(',');
-          curop += GetVar() + ' = data[data_pos++];\n';
+          curop += GetVar() + ' = Read();\n';
         }
       } else if (tok == 'restore') {
         Skip('restore');
@@ -2029,7 +2091,7 @@
         Skip('case');
         var f = flow.pop();
         if (f[0] != 'select') {
-          Throw('Case outside select');
+          Error('Case outside select');
         }
         NewOp();
         f[4].push(ops.length - 1);
@@ -2120,7 +2182,7 @@
           }
           curop += vname + ' ' + op + ' (' + e + ');\n';
         } else {
-          Throw('Expected "=" or "x=" found "' + tok + '"');
+          Error('Expected "=" or "x=" found "' + tok + '"');
         }
       }
     }
@@ -2149,7 +2211,7 @@
       // Check for matching flow control.
       if (flow.length != 0) {
         var f = flow.pop();
-        Throw('Unmatched ' + f[0]);
+        Error('Unmatched ' + f[0]);
       }
 
       // Implicit End.
@@ -2202,6 +2264,13 @@
 
     function Right(s, n) {
       return s.substr(s.length - n);
+    }
+
+    function Read() {
+      if (data_pos >= data.length) {
+        Error('Out of data');
+      }
+      return data[data_pos++];
     }
 
     function Print(items) {
@@ -2610,7 +2679,7 @@
       };
       var m = modes[mode];
       if (m === undefined) {
-        Throw('Invalid mode ' + mode);
+        Error('Invalid mode ' + mode);
       }
       SetupDisplay(m[0], m[1], m[2], m[3]);
       color_map = m[4];
@@ -3099,7 +3168,7 @@
             draw_state.nomove = true;
           }
         } else {
-          Throw('Bad drop op: ' + cmds);
+          Error('Bad drop op: ' + cmds);
         }
         cmds = cmds.substr(m[0].length);
       }
