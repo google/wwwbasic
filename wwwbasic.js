@@ -18,8 +18,6 @@
   var DYNAMIC_HEAP_SIZE = 1024 * 1024 * 16;
   var STACK_SIZE = 64 * 1024;
   var MAX_DIMENSIONS = 7;
-  var BLACK = 0xff000000;
-  var WHITE = 0xffffffff;
 
   var SIMPLE_TYPE_INFO = {
     'byte': {array: 'Uint8Array', size: 1, shift: 0, view: 'b'},
@@ -38,40 +36,7 @@
     return String.fromCharCode(ch.charCodeAt(0) + 1);
   }
 
-  function Interpret(code, canvas, from_tag) {
-    // Display Info (in browser only).
-    var screen_mode = 0;
-    var screen_bpp = 4;
-    var text_width = 80;
-    var text_height = 60;
-    var font_height = 16;
-    var screen_aspect = 1;
-    var font_data;
-    var ctx;
-    var display;
-    var display_data;
-    var scale_canvas;
-
-    function SetupDisplay(width, height, aspect, fheight) {
-      if (!canvas) {
-        return;
-      }
-      ctx = canvas.getContext('2d', { alpha: false });
-      display = ctx.createImageData(width, height);
-      display_data = new Uint32Array(display.data.buffer);
-      if (!scale_canvas) {
-        scale_canvas = document.createElement('canvas');
-      }
-      scale_canvas.width = width;
-      scale_canvas.height = height;
-      text_width = Math.floor(width / 8);
-      text_height = Math.floor(height / fheight);
-      screen_aspect = aspect;
-      font_height = fheight;
-      var sctx = scale_canvas.getContext('2d', { alpha: false});
-      font_data = CreateFont(sctx, font_height);
-    }
-
+  function Interpret(code, from_tag, bindings) {
     var debugging_mode = typeof debug == 'boolean' && debug;
     // Parsing and Run State.
     var labels = {};
@@ -96,19 +61,15 @@
     var function_old_allocated = 0;
     var function_name = null;
 
+    // Yield State
+    var yielding = 0;
+    var quitting = 0;
+    var delay = 0;
+
     // Call stack
     var stack = 0;
     var sp = 0;
     var bp = 0;
-
-    // Input State
-    var keys = [];
-    var input_string = '';
-    var mouse_x = 0;
-    var mouse_y = 0;
-    var mouse_buttons = 0;
-    var mouse_wheel = 0;
-    var mouse_clip = 0;
 
     // Language Options
     var option_base = 0;
@@ -122,21 +83,6 @@
       letter_default[i] = 'single';
       i = NextChar(i);
     } while (i != 'z');
-
-    // Yield State
-    var yielding = 0;
-    var quitting = 0;
-    var delay = 0;
-
-    // Drawing and Console State
-    var color_map;
-    var reverse_color_map;
-    var fg_color = WHITE;
-    var bg_color = BLACK;
-    var text_x = 0;
-    var text_y = 0;
-    var pen_x = 0;
-    var pen_y = 0;
 
     const toklist = [
       ':', ';', ',', '(', ')', '{', '}', '[', ']',
@@ -154,7 +100,7 @@
 
     var tok = null;
     var tok_count = 0;
-    var line = canvas ? 0 : 1;
+    var line = bindings.Locate ? 0 : 1;
 
     function Next() {
       tok = '';
@@ -1134,45 +1080,6 @@
       }
     }
 
-    function End() {
-      yielding = 1;
-      quitting = 1;
-      if (canvas) {
-        console.log('=== BASIC END ===');
-      } else {
-        if (output_buffer != '') {
-          PutCh(null);
-        }
-      }
-    }
-
-    function Sleep(t) {
-      yielding = 1;
-      delay = t;
-    }
-
-    function Inkey() {
-      yielding = 1;
-      if (keys.length > 0) {
-        return keys.shift();
-      } else {
-        return '';
-      }
-    }
-
-    function Yield() {
-      yielding = 1;
-    }
-
-    function Right(s, n) {
-      return s.substr(s.length - n);
-    }
-
-    function Point(x, y) {
-      // TODO: Implement.
-      return 0;
-    }
-
     function StringRep(n, ch) {
       var ret = '';
       var cch;
@@ -1192,695 +1099,6 @@
         return s.toString();
       } else {
         return ' ' + s.toString();
-      }
-    }
-
-    function Peek(addr) {
-      return 0;
-    }
-
-    function RGB(r, g, b) {
-      return BLACK | r | (g << 8) | (b << 16);
-    }
-
-    function Screen(mode) {
-      if (!canvas) {
-        return;
-      }
-      // TODO: Handle color right in CGA, EGA, VGA modes.
-      var L = 0x55, M = 0xAA, H = 0xFF;
-      var monochrome = [BLACK, WHITE];
-      var rgba = [
-        RGB(0, 0, 0), RGB(0, 0, M), RGB(0, M, 0), RGB(0, M, M),
-        RGB(M, 0, 0), RGB(M, 0, M), RGB(M, L, 0), RGB(M, M, M),
-        RGB(L, L, L), RGB(L, L, H), RGB(L, H, L), RGB(L, H, H),
-        RGB(H, L, L), RGB(H, L, H), RGB(H, H, L), RGB(H, H, H),
-      ];
-      var screen1 = [
-        BLACK, RGB(0, M, M), RGB(M, 0, M), RGB(M, M, M),
-      ];
-      var modes = {
-        0: [640, 200, 2.4, 8, rgba, 4],
-        1: [320, 200, 1.2, 8, screen1, 2],
-        2: [640, 200, 2.4, 8, monochrome, 1],
-        7: [320, 200, 1.2, 8, rgba, 4],
-        8: [640, 200, 2.4, 8, rgba, 4],
-        9: [640, 350, 480 / 350, 14, rgba, 4],
-        11: [640, 480, 1, 16, monochrome, 2],
-        12: [640, 480, 1, 16, rgba, 4],
-        13: [320, 200, 1.2, 8, undefined, 24],
-        14: [320, 240, 1, 16, undefined, 24],
-        15: [400, 300, 1, 16, undefined, 24],
-        16: [512, 384, 1, 16, undefined, 24],
-        17: [640, 400, 1.2, 16, undefined, 24],
-        18: [640, 480, 1, 16, undefined, 24],
-        19: [800, 600, 1, 16, undefined, 24],
-        20: [1024, 768, 1, 16, undefined, 24],
-        21: [1280, 1024, 1, 16, undefined, 24],
-      };
-      var m = modes[mode];
-      if (m === undefined) {
-        Throw('Invalid mode ' + mode);
-      }
-      SetupDisplay(m[0], m[1], m[2], m[3]);
-      color_map = m[4];
-      screen_bpp = m[5];
-      reverse_color_map = {};
-      if (color_map !== undefined) {
-        for (var i = 0; i < color_map.length; ++i) {
-          reverse_color_map[color_map[i]] = i;
-        }
-        fg_color = color_map[color_map.length - 1];
-        bg_color = color_map[0];
-      } else {
-        fg_color = WHITE;
-        bg_color = BLACK;
-      }
-      screen_mode = mode;
-      pen_x = display.width / 2;
-      pen_y = display.height / 2;
-      Cls(0);
-    }
-
-    function Width(w) {
-      if (screen_mode == 0 && (w == 80 || w == 40)) {
-        SetupDisplay(w * 8, display.height, w == 80 ? 2.4 : 1.2, font_height);
-      }
-    }
-
-    var output_buffer = '';
-
-    function PutCh(ch) {
-      if (!canvas) {
-        if (ch == null) {
-          console.log(output_buffer);
-          output_buffer = '';
-        } else {
-          output_buffer += ch;
-        }
-        return;
-      }
-      if (ch == null) {
-        text_x = 0;
-        text_y++;
-        return;
-      }
-      var fg = fg_color;
-      var bg = bg_color;
-      var chcode = (ch.charCodeAt(0) & 0xff) >>> 0;
-      var chpos = chcode * font_height * 8;
-      for (var y = 0; y < font_height; ++y) {
-        var pos = text_x * 8 + (y + text_y * font_height) * display.width;
-        for (var x = 0; x < 8; ++x) {
-          display_data[pos++] = font_data[chpos++] ? fg : bg;
-        }
-      }
-      text_x++;
-      if (text_x >= text_width) {
-        text_y++;
-        text_x = 0;
-      }
-      if (text_y >= text_height) {
-        text_y = 0;
-      }
-    }
-
-    function LineInput() {
-      while (keys.length > 0) {
-        const key = keys.shift();
-        if (key == String.fromCharCode(13)) {
-          --text_x;
-          PutCh(' ');
-          PutCh(null);
-          return;
-        }
-        if (key == String.fromCharCode(8) && input_string.length > 0) {
-          input_string = input_string.substr(0, input_string.length - 1);
-          --text_x;
-          PutCh(' ');
-          text_x -= 2;
-          PutCh(String.fromCharCode(219));
-        }
-        if (key.charCodeAt(0) >= 32 && key.charCodeAt(0) <= 126) {
-          --text_x;
-          PutCh(key);
-          PutCh(String.fromCharCode(219));
-          input_string += key;
-        }
-      }
-      yielding = 1;
-      --ip;
-    }
-
-    function Print(items) {
-      if (items.length == 0) {
-        PutCh(null);
-        return;
-      }
-      for (var i = 0; i < items.length; i += 2) {
-        var text;
-        if (items[i] === undefined) {
-          text = '';
-        } else {
-          text = items[i].toString();
-        }
-        for (var j = 0; j < text.length; j++) {
-          PutCh(text[j]);
-        }
-        if (items[i + 1] == ',') {
-          PutCh(' ');
-          PutCh(' ');
-          PutCh(' ');
-        }
-        if (items[i + 1] != ';' && items[i + 1] != ',') {
-          PutCh(null);
-        }
-      }
-    }
-
-    function Using(format, value) {
-      var sgn = value < 0 ? -1 : (value > 0 ? 1 : 0);
-      value = Math.abs(value);
-      var before = 0;
-      var after = 0;
-      var found_point = false;
-      for (var i = 0; i < format.length; ++i) {
-        if (format[i] == '.') {
-          found_point = true;
-        } else if (format[i] == '#') {
-          if (found_point) {
-            ++after;
-          } else {
-            ++before;
-          }
-        }
-      }
-      var t = value;
-      var fail = Math.floor(t * Math.pow(10, -before)) > 0;
-      value = value * Math.pow(10, after);
-      var ret = '';
-      var done = false;
-      for (var i = format.length - 1; i >= 0; --i) {
-        if (format[i] == '#') {
-          if (fail) {
-            ret = '*' + ret;
-          } else if (done) {
-            ret = ' ' + ret;
-          } else {
-            ret = Math.floor(value % 10) + ret;
-            value = Math.floor(value / 10);
-            if (value == 0) {
-              done = true;
-            }
-          }
-        } else if (format[i] == '+' || format[i] == '-') {
-          if (fail) {
-            ret = '*' + ret;
-          } else if (sgn < 0) {
-            ret = '-' + ret;
-          } else if (sgn > 0) {
-            if (format[i] == '+') {
-              ret = '+' + ret;
-            }
-          } else {
-            ret = ' ' + ret;
-          }
-        } else if (format[i] == ',') {
-          if (fail) {
-            ret = '*' + ret;
-          } else if (done) {
-            ret = ' ' + ret;
-          } else {
-            ret = ',' + ret;
-          }
-        } else {
-          ret = format[i] + ret;
-        }
-      }
-      return ret;
-    }
-
-    function PrintUsing(format, items) {
-      var parts = [];
-      var p = '';
-      var has_num = false;
-      for (var i = 0; i < format.length; ++i) {
-        if (format[i] == '#' || format[i] == ',' || format[i] == '.') {
-          has_num = true;
-        } else {
-          if (has_num) {
-            parts.push(p)
-            p = '';
-            has_num = false;
-          }
-        }
-        p += format[i];
-      }
-      if (p != '') {
-        if (has_num) {
-          parts.push(p);
-        } else {
-          parts[parts.length - 1] += p;
-        }
-      }
-      var values = [];
-      for (var i = 0; i < items.length; i += 2) {
-        if (parts.length * 2 > i) {
-          items[i] = Using(parts[(i / 2) | 0], items[i]);
-        }
-      }
-      Print(items);
-    }
-
-    function MidReplace(a, n, m, v) {
-      var k = Math.min(m, v.length);
-      return a.substr(0, n - 1) + v.substr(0, k) + a.substr(n - 1 + k);
-    }
-
-    function ColorFlip(c) {
-      return BLACK |
-        ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) | (c & 0x00ff00);
-    }
-
-    function FixupColor(c) {
-      if (c === undefined) {
-        if (color_map) {
-          return color_map[color_map.length - 1];
-        } else {
-          return WHITE;
-        }
-      }
-      c = c | 0;
-      if (color_map !== undefined) {
-        return color_map[c] || BLACK;
-      } else {
-        return ColorFlip(c);
-      }
-    }
-
-    function Color(fg, bg) {
-      if (screen_mode == 0 || screen_mode > 2) {
-        if (fg != undefined) fg_color = FixupColor(fg);
-      } else {
-        fg_color = FixupColor(undefined);
-      }
-      if (screen_mode > 0) {
-        bg_color = BLACK;
-      } else {
-        if (bg != undefined) bg_color = FixupColor(bg);
-      }
-    }
-
-    function Locate(x, y) {
-      text_x = x - 1;
-      text_y = y - 1;
-      // Hack to yield more often (for NIBBLES.BAS)
-      if (x == 1 && y == 1) {
-        yielding = 1;
-      }
-    }
-
-    function Box(x1, y1, x2, y2, c) {
-      x1 = x1 | 0;
-      y1 = y1 | 0;
-      x2 = x2 | 0;
-      y2 = y2 | 0;
-      c = c | 0;
-      if (x1 > x2) {
-        var t = x2;
-        x2 = x1;
-        x1 = t;
-      }
-      if (y1 > y2) {
-        var t = y2;
-        y2 = y1;
-        y1 = t;
-      }
-      if (x1 >= display.width ||
-          y1 >= display.height ||
-          x2 < 0 || y2 < 0) {
-        return;
-      }
-      if (x1 < 0) x1 = 0;
-      if (x2 > display.width - 1) x2 = display.width - 1;
-      if (y1 < 0) y1 = 0;
-      if (y2 > display.height - 1) y2 = display.height - 1;
-      for (var y = y1; y <= y2; ++y) {
-        var pos = x1 + y * display.width;
-        for (var x = x1; x <= x2; ++x) {
-          display_data[pos++] = c;
-        }
-      }
-    }
-
-    function RawLine(x1, y1, x2, y2, c) {
-      x1 = x1 | 0;
-      y1 = y1 | 0;
-      x2 = x2 | 0;
-      y2 = y2 | 0;
-      if (x1 == x2 || y1 == y2) {
-        Box(x1, y1, x2, y2, c);
-        return;
-      }
-      if (Math.abs(x1 - x2) > Math.abs(y1 - y2)) {
-        if (x1 > x2) {
-          var tmp;
-          tmp = x1; x1 = x2; x2 = tmp;
-          tmp = y1; y1 = y2; y2 = tmp;
-        }
-        for (var x = x1; x <= x2; ++x) {
-          var t = (x - x1) / (x2 - x1);
-          var y = y1 + Math.floor(t * (y2 - y1));
-          Box(x, y, x, y, c);
-        }
-      } else {
-        if (y1 > y2) {
-          var tmp;
-          tmp = x1; x1 = x2; x2 = tmp;
-          tmp = y1; y1 = y2; y2 = tmp;
-        }
-        for (var y = y1; y <= y2; ++y) {
-          var t = (y - y1) / (y2 - y1);
-          var x = x1 + Math.floor(t * (x2 - x1));
-          Box(x, y, x, y, c);
-        }
-      }
-    }
-
-    function Line(x1, y1, x2, y2, c, fill) {
-      var pen_color = FixupColor(c);
-      if (fill == 0) {
-        // Should be line.
-        RawLine(x1, y1, x2, y2, pen_color);
-      } else if (fill == 1) {
-        Box(x1, y1, x2, y1, pen_color);
-        Box(x1, y2, x2, y2, pen_color);
-        Box(x1, y1, x1, y2, pen_color);
-        Box(x2, y1, x2, y2, pen_color);
-      } else {
-        Box(x1, y1, x2, y2, pen_color);
-      }
-    }
-    var last = 0;
-
-    function Cls(mode) {
-      // TODO: Handle mode.
-      Box(0, 0, display.width, display.height, bg_color);
-      text_x = 0;
-      text_y = 0;
-    }
-
-    function Pset(x, y, c) {
-      var pen_color = FixupColor(c);
-      display_data[x + y * display.width] = pen_color;
-      pen_x = x;
-      pen_y = y;
-    }
-
-    function Circle(x, y, r, c, start, end, aspect, fill) {
-      x += 0.5;
-      y += 0.5;
-      var pen_color = FixupColor(c);
-      var complete = false;
-      if (start < 0) { start = -start; complete = true; }
-      if (end < 0) { end = -end; complete = true; }
-      if (end < start) {
-        end += Math.PI * 2;
-      }
-      var rx, ry;
-      if (aspect == null) {
-        rx = r;
-        ry = r / screen_aspect;
-      } else if (aspect > 1) {
-        rx = r / aspect;
-        ry = r;
-      } else {
-        rx = r;
-        ry = r * aspect;
-      }
-      var oxx = x + Math.cos(start) * rx;
-      var oyy = y - Math.sin(start) * ry;
-      if (complete) {
-        RawLine(x, y, oxx, oyy, pen_color);
-      }
-      for (var ang = start; ang <= end; ang += 0.03) {
-        var xx = x + Math.cos(ang) * rx;
-        var yy = y - Math.sin(ang) * ry;
-        if (ang == start) { oxx = xx; oyy = yy; }
-        RawLine(oxx, oyy, xx, yy, pen_color);
-        oxx = xx;
-        oyy = yy;
-      }
-      if (complete) {
-        RawLine(x, y, xx, yy, pen_color);
-      }
-      if (fill && start == 0 && end == Math.PI * 2) {
-        Paint(x, y, c, c);
-      }
-    }
-
-    function GetImage(x1, y1, x2, y2, buffer, offset) {
-      x1 = x1 | 0;
-      y1 = y1 | 0;
-      x2 = x2 | 0;
-      y2 = y2 | 0;
-      var d16 = new Uint16Array(buffer);
-      if (screen_bpp <= 2) {
-        d16[(offset >> 1) + 0] = (x2 - x1 + 1) * screen_bpp;
-      } else {
-        d16[(offset >> 1) + 0] = (x2 - x1 + 1);
-      }
-      d16[(offset >> 1) + 1] = y2 - y1 + 1;
-      var d = new Uint8Array(buffer);
-      var src = display_data;
-      if (screen_bpp > 8) {
-        var dstpos = offset + 4;
-        for (var y = y1; y <= y2; ++y) {
-          var srcpos = x1 + y * display.width;
-          for (var x = x1; x <= x2; ++x) {
-            var v = src[srcpos++];
-            d[dstpos++] = v;
-            d[dstpos++] = (v >> 8);
-            d[dstpos++] = (v >> 16);
-          }
-        }
-      } else {
-        var dstpos = offset + 4;
-        var shift = 8;
-        var v = 0;
-        for (var y = y1; y <= y2; ++y) {
-          var srcpos = x1 + y * display.width;
-          for (var x = x1; x <= x2; ++x) {
-            shift -= screen_bpp;
-            var cc = reverse_color_map[src[srcpos++] | BLACK] | 0;
-            v |= (cc << shift);
-            if (shift == 0) {
-              d[dstpos++] = v;
-              v = 0;
-              shift = 8;
-            }
-          }
-          if (shift != 8) {
-            d[dstpos++] = v;
-            v = 0;
-            shift = 8;
-          }
-        }
-      }
-    }
-
-    function PutImage(x1, y1, buffer, offset, mode) {
-      x1 = x1 | 0;
-      y1 = y1 | 0;
-      var s16 = new Uint16Array(buffer);
-      var x2;
-      if (screen_bpp <= 2) {
-        x2 = x1 + (s16[(offset >> 1) + 0] / screen_bpp) - 1;
-      } else {
-        x2 = x1 + s16[(offset >> 1)] - 1;
-      }
-      var y2 = y1 + s16[(offset >> 1) + 1] - 1;
-      var s = new Uint8Array(buffer);
-      var dst = display_data;
-      if (screen_bpp > 8) {
-        var srcpos = offset + 4;
-        for (var y = y1; y <= y2; ++y) {
-          var dstpos = x1 + y * display.width;
-          for (var x = x1; x <= x2; ++x) {
-            var v = s[srcpos] | (s[srcpos + 1] << 8) | (s[srcpos + 2] << 16);
-            srcpos += 3;
-            // TODO: Optimize
-            if (x < 0 || x >= display.width || y < 0 || y >= display.height) {
-              dstpos++;
-              continue;
-            }
-            if (mode == 'xor') {
-              dst[dstpos++] = (dst[dstpos] ^ v) | BLACK;
-            } else if (mode == 'preset') {
-              dst[dstpos++] = (~v) | BLACK;
-            } else if (mode == 'and') {
-              dst[dstpos++] = (dst[dstpos] & v) | BLACK;
-            } else if (mode == 'or') {
-              dst[dstpos++] = (dst[dstpos] | v) | BLACK;
-            } else {
-              dst[dstpos++] = v | BLACK;
-            }
-          }
-        }
-      } else {
-        var srcpos = offset + 4;
-        var mask = (1 << screen_bpp) - 1;
-        for (var y = y1; y <= y2; ++y) {
-          var dstpos = x1 + y * display.width;
-          var v = 0;
-          var shift = 8;
-          for (var x = x1; x <= x2; ++x) {
-            if (shift == 8) {
-              v = s[srcpos++];
-            }
-            shift -= screen_bpp;
-            var cc = (v >> shift) & mask;
-            var old = reverse_color_map[dst[dstpos] | BLACK] | 0;
-            if (mode == 'xor') {
-              cc ^= old;
-            } else if (mode == 'preset') {
-              cc = cc ^ mask;
-            } else if (mode == 'and') {
-              cc &= old;
-            } else if (mode == 'or') {
-              cc |= old;
-            }
-            var px = color_map[cc] | 0;
-            // TODO: Optimize
-            if (y >= 0 && y < display.height && x >= 0 && x < display.width) {
-              dst[dstpos++] = px;
-            } else {
-              dstpos++;
-            }
-            if (shift == 0) {
-              shift = 8;
-            }
-          }
-        }
-      }
-    }
-
-    var draw_state = {
-      noplot: false,
-      nomove: false,
-      angle: 0,
-      turn_angle: 0,
-      color: undefined,
-      scale: 1,
-    };
-
-    function StepUnscaled(dx, dy) {
-      if (!draw_state.noplot) {
-        Line(pen_x, pen_y, pen_x + dx, pen_y + dy, draw_state.color, 0);
-      }
-      if (!draw_state.nomove) {
-        pen_x += dx;
-        pen_y += dy;
-      }
-      draw_state.noplot = false;
-      draw_state.nomove = false;
-    }
-
-    function Step(dx, dy) {
-      StepUnscaled(dx * draw_state.scale, dy * draw_state.scale);
-    }
-
-    function Draw(cmds) {
-      cmds = cmds.toLowerCase();
-      var m;
-      while (cmds.length) {
-        if (m = cmds.match(/^(u|d|l|r|e|f|g|h|a|ta|c|s)([0-9]+)?/)) {
-          var op = m[1];
-          var n = m[2] == '' ? 1 : parseInt(m[2]);
-          if (op == 'c') {
-            draw_state.color = n;
-          } else if (op == 'a') {
-            draw_state.angle = n;
-            // TODO: Implement.
-          } else if (op == 'ta') {
-            draw_state.turn_angle = n;
-            // TODO: Implement.
-          } else if (op == 's') {
-            draw_state.scale = n / 4;
-          } else if (op == 'u') {
-            Step(0, -n);
-          } else if (op == 'd') {
-            Step(0, n);
-          } else if (op == 'l') {
-            Step(-n, 0);
-          } else if (op == 'r') {
-            Step(n, 0);
-          } else if (op == 'e') {
-            Step(n, -n);
-          } else if (op == 'f') {
-            Step(n, n);
-          } else if (op == 'g') {
-            Step(-n, n);
-          } else if (op == 'h') {
-            Step(-n, -n);
-          }
-        } else if (m = cmds.match(/^(m)([+-]?)([0-9]+)[,]([+-]?[0-9]+)/)) {
-          var op = m[1];
-          var sx = m[2];
-          var x = parseInt(m[3]);
-          var y = parseInt(m[4]);
-          if (sx) {
-            x = parseInt(sx + '1') * x;
-            Step(x, y);
-          } else {
-            StepUnscaled(x - pen_x, y - pen_y);
-          }
-        } else if (m = cmds.match(/^(p)([0-9]+),([0-9]+1)/)) {
-          var op = m[1];
-          var x = parseInt(m[2]);
-          var y = parseInt(m[3]);
-          // TODO: Implement.
-        } else if (m = cmds.match(/^(b|n)/)) {
-          var op = m[1];
-          if (op == 'b') {
-            draw_state.noplot = true;
-          } else if (op == 'n') {
-            draw_state.nomove = true;
-          }
-        } else {
-          Throw('Bad drop op: ' + cmds);
-        }
-        cmds = cmds.substr(m[0].length);
-      }
-    }
-
-    function Paint(x, y, paint, border) {
-      paint = FixupColor(paint);
-      if (border === undefined) {
-        border = paint;
-      } else {
-        border = FixupColor(border) & 0xffffff;
-      }
-      var fpaint = paint & 0xffffff;
-      var data = display_data;
-      var pending = [];
-      pending.push([Math.floor(x), Math.floor(y)]);
-      while (pending.length) {
-        var p = pending.pop();
-        if (p[0] < 0 || p[0] >= display.width ||
-            p[1] < 0 || p[1] >= display.height) {
-          continue;
-        }
-        var pos = p[0] + p[1] * display.width;
-        if ((data[pos] & 0xffffff) == border ||
-            (data[pos] & 0xffffff) == fpaint) {
-          continue;
-        }
-        data[pos] = paint;
-        pending.push([p[0] - 1, p[1]]);
-        pending.push([p[0] + 1, p[1]]);
-        pending.push([p[0], p[1] - 1]);
-        pending.push([p[0], p[1] + 1]);
       }
     }
 
@@ -2552,16 +1770,16 @@
           }
           curop += 'Print([' + prompt + ', ";"]);\n';
           curop += 'PutCh(String.fromCharCode(219));\n';
-          curop += 'input_string = ""\n';
+          curop += 'LineClear();\n';
           NewOp();
-          curop += 'LineInput();\n';
+          curop += 'ip += LineInput();\n';
           NewOp();
           var a = GetVar();
-          curop += a + ' = input_string;\n';
+          curop += a + ' = LineValue();\n';
           return;
         }
-        var x1 = pen_x;
-        var y1 = pen_y;
+        var x1 = null;
+        var y1 = null;
         if (tok == '(') {
           Skip('(');
           x1 = Expression();
@@ -2756,13 +1974,13 @@
         }
         curop += 'Print([' + prompt + ', ";"]);\n';
         curop += 'PutCh(String.fromCharCode(219));\n';
-        curop += 'input_string = ""\n';
+        curop += 'LineClear();\n';
         NewOp();
-        curop += 'LineInput();\n';
+        curop += 'ip += LineInput();\n';
         NewOp();
         var n = 0;
         while (!EndOfStatement()) {
-          curop += GetVar() + ' = input_string.split(",")[' + n++ + '];\n';
+          curop += GetVar() + ' = LineValue().split(",")[' + n++ + '];\n';
           if (tok != ',') {
             break;
           }
@@ -2839,24 +2057,25 @@
         Skip('getmouse');
         curop += 'Yield();';
         NewOp();
-        curop += GetVar() + ' = mouse_x;\n';
+        curop += 'var t = GetMouse();\n';
+        curop += GetVar() + ' = t[0];\n';
         Skip(',');
-        curop += GetVar() + ' = mouse_y;\n';
+        curop += GetVar() + ' = t[1];\n';
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
-            curop += GetVar() + ' = mouse_wheel;\n';
+            curop += GetVar() + ' = t[2];\n';
           }
         }
         if (tok == ',') {
           Skip(',');
           if (tok != ',') {
-            curop += GetVar() + ' = mouse_buttons;\n';
+            curop += GetVar() + ' = t[3];\n';
           }
         }
         if (tok == ',') {
           Skip(',');
-          curop += GetVar() + ' = mouse_clip;\n';
+          curop += GetVar() + ' = t[4];\n';
         }
       } else if (tok == '') {
         return;
@@ -2947,6 +2166,10 @@
       bp = sp;
 
       var total = '';
+      total += '(function(bindings) {\n';
+      for (var i in bindings) {
+        total += 'var ' + i + ' = bindings["' + i + '"];\n';
+      }
       total += 'var buffer = new ArrayBuffer(' +
           allocated + ' + ' + DYNAMIC_HEAP_SIZE + ');\n';
       for (var i in SIMPLE_TYPE_INFO) {
@@ -2965,11 +2188,952 @@
       }
       total += '  ops[j] = eval("(function() {\\n" + ops[j] + "})\\n");\n';
       total += '}\n';
+      total += '})';
       if (debugging_mode) {
         console.info(total);
       }
-      eval(total);
+      eval(total)(bindings);
     }
+
+    function MidReplace(a, n, m, v) {
+      var k = Math.min(m, v.length);
+      return a.substr(0, n - 1) + v.substr(0, k) + a.substr(n - 1 + k);
+    }
+
+    function Right(s, n) {
+      return s.substr(s.length - n);
+    }
+
+    function Print(items) {
+      if (items.length == 0) {
+        bindings.PutCh(null);
+        return;
+      }
+      for (var i = 0; i < items.length; i += 2) {
+        var text;
+        if (items[i] === undefined) {
+          text = '';
+        } else {
+          text = items[i].toString();
+        }
+        for (var j = 0; j < text.length; j++) {
+          bindings.PutCh(text[j]);
+        }
+        if (items[i + 1] == ',') {
+          PutCh(' ');
+          PutCh(' ');
+          PutCh(' ');
+        }
+        if (items[i + 1] != ';' && items[i + 1] != ',') {
+          bindings.PutCh(null);
+        }
+      }
+    }
+
+    function Using(format, value) {
+      var sgn = value < 0 ? -1 : (value > 0 ? 1 : 0);
+      value = Math.abs(value);
+      var before = 0;
+      var after = 0;
+      var found_point = false;
+      for (var i = 0; i < format.length; ++i) {
+        if (format[i] == '.') {
+          found_point = true;
+        } else if (format[i] == '#') {
+          if (found_point) {
+            ++after;
+          } else {
+            ++before;
+          }
+        }
+      }
+      var t = value;
+      var fail = Math.floor(t * Math.pow(10, -before)) > 0;
+      value = value * Math.pow(10, after);
+      var ret = '';
+      var done = false;
+      for (var i = format.length - 1; i >= 0; --i) {
+        if (format[i] == '#') {
+          if (fail) {
+            ret = '*' + ret;
+          } else if (done) {
+            ret = ' ' + ret;
+          } else {
+            ret = Math.floor(value % 10) + ret;
+            value = Math.floor(value / 10);
+            if (value == 0) {
+              done = true;
+            }
+          }
+        } else if (format[i] == '+' || format[i] == '-') {
+          if (fail) {
+            ret = '*' + ret;
+          } else if (sgn < 0) {
+            ret = '-' + ret;
+          } else if (sgn > 0) {
+            if (format[i] == '+') {
+              ret = '+' + ret;
+            }
+          } else {
+            ret = ' ' + ret;
+          }
+        } else if (format[i] == ',') {
+          if (fail) {
+            ret = '*' + ret;
+          } else if (done) {
+            ret = ' ' + ret;
+          } else {
+            ret = ',' + ret;
+          }
+        } else {
+          ret = format[i] + ret;
+        }
+      }
+      return ret;
+    }
+
+    function PrintUsing(format, items) {
+      var parts = [];
+      var p = '';
+      var has_num = false;
+      for (var i = 0; i < format.length; ++i) {
+        if (format[i] == '#' || format[i] == ',' || format[i] == '.') {
+          has_num = true;
+        } else {
+          if (has_num) {
+            parts.push(p)
+            p = '';
+            has_num = false;
+          }
+        }
+        p += format[i];
+      }
+      if (p != '') {
+        if (has_num) {
+          parts.push(p);
+        } else {
+          parts[parts.length - 1] += p;
+        }
+      }
+      var values = [];
+      for (var i = 0; i < items.length; i += 2) {
+        if (parts.length * 2 > i) {
+          items[i] = Using(parts[(i / 2) | 0], items[i]);
+        }
+      }
+      Print(items);
+    }
+
+    function Sleep(t) {
+      yielding = 1;
+      delay = t;
+    }
+
+    function Yield() {
+      yielding = 1;
+    }
+
+    function End() {
+      yielding = 1;
+      quitting = 1;
+      bindings.Halt();
+    }
+
+    function Run(pace) {
+      for (;;) {
+        var speed = pace !== undefined ? pace() : 100000;
+        for (var i = 0; i < speed; ++i) {
+          ops[ip++]();
+          if (yielding) {
+            yielding = 0;
+            if (quitting) {
+              return;
+            }
+            break;
+          }
+        }
+        setTimeout(function() { Run(pace); }, delay);
+        delay = 0;
+        break;
+      }
+    }
+
+    bindings.Yield = Yield;
+    var compiled_ok = false;
+    try {
+      Compile();
+      compiled_ok = true;
+    } catch (e) {
+      if (bindings.Locate) {
+        bindings.Locate(1, 1);
+        bindings.Color(15);
+        Print([e.toString(), ';']);
+      } else {
+        console.error(e.toString());
+      }
+      if (e.stack !== undefined) {
+        console.info(e.stack);
+      }
+    }
+    if (compiled_ok) {
+      Run(bindings.Pace);
+    }
+  }
+
+  function SetupCanvas(tag, full_window) {
+    if (full_window) {
+      document.body.style.width = '100%';
+      document.body.style.height = '100%';
+      document.body.style.margin = '0';
+      document.body.style.border = '0';
+      document.body.style.overflow = 'hidden';
+      document.body.style.display = 'block';
+    }
+    var canvas = document.createElement('canvas');
+    canvas.width = 800;
+    canvas.height = 600;
+    if (full_window) {
+      document.body.appendChild(canvas);
+    } else {
+      tag.insertAdjacentElement('beforebegin', canvas);
+    }
+    var context = canvas.getContext('2d');
+    context.fillStyle = 'black';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'white';
+    context.strokeStyle = 'white';
+    return canvas;
+  }
+
+  var timer_halted = 0;
+  var timer_offset = 0;
+
+  function GetTimer() {
+    var t = new Date().getTime() / 1000;
+    return t + timer_offset;
+  }
+
+  function Init() {
+    var tags = document.getElementsByTagName('script');
+    var count = 0;
+    for (var t = 0; t < tags.length; ++t) {
+      if (tags[t].type != 'text/basic') {
+        continue;
+      }
+      ++count;
+    }
+    var full_window = count == 1 && document.body.innerText == '';
+    for (var t = 0; t < tags.length; ++t) {
+      if (tags[t].type != 'text/basic') {
+        continue;
+      }
+      var tag = tags[t];
+      var canvas = SetupCanvas(tag, full_window);
+      var bindings = GraphicsBindings(canvas, true);
+      if (tags[t].src) {
+        var request = new XMLHttpRequest();
+        request.addEventListener('load', function(e) {
+          Interpret(request.responseText, true, bindings);
+        }, false);
+        request.open('GET', tag.src);
+        request.send();
+      } else {
+        Interpret(tag.text, true, bindings);
+      }
+    }
+  }
+
+  function Main() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener('load', Init);
+      window.addEventListener('focusout', function() {
+        timer_halted = GetTimer();
+      });
+      window.addEventListener('focusin', function() {
+        timer_offset = timer_halted - (new Date().getTime() / 1000);
+      });
+      window.Basic = function(code, canvas) {
+        Interpret(code, false, GraphicsBindings(canvas, false));
+      };
+    } else {
+      exports.Basic = function(code) {
+        Interpret(code, false, ConsoleBindings());
+      };
+    }
+  }
+
+  Main();
+
+  function ConsoleBindings() {
+    var bindings = {};
+
+    var output_buffer = '';
+
+    // TODO: Cleanup, this should be hidden.
+    bindings.PutCh = function(ch) {
+      if (ch == null) {
+        console.log(output_buffer);
+        output_buffer = '';
+      } else {
+        output_buffer += ch;
+      }
+    }
+
+    bindings.Halt = function() {
+      if (output_buffer != '') {
+        bindings.PutCh(null);
+      }
+    };
+
+    return bindings;
+  }
+
+  function GraphicsBindings(canvas, from_tag) {
+    var bindings = {};
+
+    const BLACK = 0xff000000;
+    const WHITE = 0xffffffff;
+
+    // Display Info (in browser only).
+    var screen_mode = 0;
+    var screen_bpp = 4;
+    var text_width = 80;
+    var text_height = 60;
+    var font_height = 16;
+    var screen_aspect = 1;
+    var font_data;
+    var ctx;
+    var display;
+    var display_data;
+    var scale_canvas;
+
+    function SetupDisplay(width, height, aspect, fheight) {
+      if (!canvas) {
+        return;
+      }
+      ctx = canvas.getContext('2d', { alpha: false });
+      display = ctx.createImageData(width, height);
+      display_data = new Uint32Array(display.data.buffer);
+      if (!scale_canvas) {
+        scale_canvas = document.createElement('canvas');
+      }
+      scale_canvas.width = width;
+      scale_canvas.height = height;
+      text_width = Math.floor(width / 8);
+      text_height = Math.floor(height / fheight);
+      screen_aspect = aspect;
+      font_height = fheight;
+      var sctx = scale_canvas.getContext('2d', { alpha: false});
+      font_data = CreateFont(sctx, font_height);
+    }
+
+    // Drawing and Console State
+    var color_map;
+    var reverse_color_map;
+    var fg_color = WHITE;
+    var bg_color = BLACK;
+    var text_x = 0;
+    var text_y = 0;
+    var pen_x = 0;
+    var pen_y = 0;
+
+    // Input State
+    var keys = [];
+    var input_string = '';
+    var mouse_x = 0;
+    var mouse_y = 0;
+    var mouse_buttons = 0;
+    var mouse_wheel = 0;
+    var mouse_clip = 0;
+
+    // TODO: Cleanup
+    bindings.GetMouse = function() {
+      return [mouse_x, mouse_y, mouse_wheel, mouse_buttons, mouse_clip];
+    };
+
+    bindings.Inkey = function() {
+      bindings.Yield();
+      if (keys.length > 0) {
+        return keys.shift();
+      } else {
+        return '';
+      }
+    };
+
+    bindings.Point = function(x, y) {
+      // TODO: Implement.
+      return 0;
+    };
+
+    bindings.Peek = function(addr) {
+      return 0;
+    };
+
+    function RGB(r, g, b) {
+      return BLACK | r | (g << 8) | (b << 16);
+    }
+
+    bindings.Screen = function(mode) {
+      if (!canvas) {
+        return;
+      }
+      // TODO: Handle color right in CGA, EGA, VGA modes.
+      var L = 0x55, M = 0xAA, H = 0xFF;
+      var monochrome = [BLACK, WHITE];
+      var rgba = [
+        RGB(0, 0, 0), RGB(0, 0, M), RGB(0, M, 0), RGB(0, M, M),
+        RGB(M, 0, 0), RGB(M, 0, M), RGB(M, L, 0), RGB(M, M, M),
+        RGB(L, L, L), RGB(L, L, H), RGB(L, H, L), RGB(L, H, H),
+        RGB(H, L, L), RGB(H, L, H), RGB(H, H, L), RGB(H, H, H),
+      ];
+      var screen1 = [
+        BLACK, RGB(0, M, M), RGB(M, 0, M), RGB(M, M, M),
+      ];
+      var modes = {
+        0: [640, 200, 2.4, 8, rgba, 4],
+        1: [320, 200, 1.2, 8, screen1, 2],
+        2: [640, 200, 2.4, 8, monochrome, 1],
+        7: [320, 200, 1.2, 8, rgba, 4],
+        8: [640, 200, 2.4, 8, rgba, 4],
+        9: [640, 350, 480 / 350, 14, rgba, 4],
+        11: [640, 480, 1, 16, monochrome, 2],
+        12: [640, 480, 1, 16, rgba, 4],
+        13: [320, 200, 1.2, 8, undefined, 24],
+        14: [320, 240, 1, 16, undefined, 24],
+        15: [400, 300, 1, 16, undefined, 24],
+        16: [512, 384, 1, 16, undefined, 24],
+        17: [640, 400, 1.2, 16, undefined, 24],
+        18: [640, 480, 1, 16, undefined, 24],
+        19: [800, 600, 1, 16, undefined, 24],
+        20: [1024, 768, 1, 16, undefined, 24],
+        21: [1280, 1024, 1, 16, undefined, 24],
+      };
+      var m = modes[mode];
+      if (m === undefined) {
+        Throw('Invalid mode ' + mode);
+      }
+      SetupDisplay(m[0], m[1], m[2], m[3]);
+      color_map = m[4];
+      screen_bpp = m[5];
+      reverse_color_map = {};
+      if (color_map !== undefined) {
+        for (var i = 0; i < color_map.length; ++i) {
+          reverse_color_map[color_map[i]] = i;
+        }
+        fg_color = color_map[color_map.length - 1];
+        bg_color = color_map[0];
+      } else {
+        fg_color = WHITE;
+        bg_color = BLACK;
+      }
+      screen_mode = mode;
+      pen_x = display.width / 2;
+      pen_y = display.height / 2;
+      bindings.Cls(0);
+    }
+
+    bindings.Width = function(w) {
+      if (screen_mode == 0 && (w == 80 || w == 40)) {
+        SetupDisplay(w * 8, display.height, w == 80 ? 2.4 : 1.2, font_height);
+      }
+    };
+
+    bindings.Halt = function() {
+      console.log('=== BASIC END ===');
+    };
+
+    // TODO: Cleanup, this should be hidden.
+    bindings.PutCh = function(ch) {
+      if (ch == null) {
+        text_x = 0;
+        text_y++;
+        return;
+      }
+      var fg = fg_color;
+      var bg = bg_color;
+      var chcode = (ch.charCodeAt(0) & 0xff) >>> 0;
+      var chpos = chcode * font_height * 8;
+      for (var y = 0; y < font_height; ++y) {
+        var pos = text_x * 8 + (y + text_y * font_height) * display.width;
+        for (var x = 0; x < 8; ++x) {
+          display_data[pos++] = font_data[chpos++] ? fg : bg;
+        }
+      }
+      text_x++;
+      if (text_x >= text_width) {
+        text_y++;
+        text_x = 0;
+      }
+      if (text_y >= text_height) {
+        text_y = 0;
+      }
+    };
+
+    bindings.LineClear = function() {
+      input_string = '';
+    };
+
+    bindings.LineValue = function() {
+      return input_string;
+    };
+
+    bindings.LineInput = function() {
+      while (keys.length > 0) {
+        const key = keys.shift();
+        if (key == String.fromCharCode(13)) {
+          --text_x;
+          bindings.PutCh(' ');
+          bindings.PutCh(null);
+          return 0;
+        }
+        if (key == String.fromCharCode(8) && input_string.length > 0) {
+          input_string = input_string.substr(0, input_string.length - 1);
+          --text_x;
+          bindings.PutCh(' ');
+          text_x -= 2;
+          bindings.PutCh(String.fromCharCode(219));
+        }
+        if (key.charCodeAt(0) >= 32 && key.charCodeAt(0) <= 126) {
+          --text_x;
+          bindings.PutCh(key);
+          bindings.PutCh(String.fromCharCode(219));
+          input_string += key;
+        }
+      }
+      bindings.Yield();
+      return -1;
+    };
+
+    function ColorFlip(c) {
+      return BLACK |
+        ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) | (c & 0x00ff00);
+    }
+
+    function FixupColor(c) {
+      if (c === undefined) {
+        if (color_map) {
+          return color_map[color_map.length - 1];
+        } else {
+          return WHITE;
+        }
+      }
+      c = c | 0;
+      if (color_map !== undefined) {
+        return color_map[c] || BLACK;
+      } else {
+        return ColorFlip(c);
+      }
+    }
+
+    bindings.Color = function(fg, bg) {
+      if (screen_mode == 0 || screen_mode > 2) {
+        if (fg != undefined) fg_color = FixupColor(fg);
+      } else {
+        fg_color = FixupColor(undefined);
+      }
+      if (screen_mode > 0) {
+        bg_color = BLACK;
+      } else {
+        if (bg != undefined) bg_color = FixupColor(bg);
+      }
+    };
+
+    bindings.Locate = function(x, y) {
+      text_x = x - 1;
+      text_y = y - 1;
+      // Hack to yield more often (for NIBBLES.BAS)
+      if (x == 1 && y == 1) {
+        bindings.Yield();
+      }
+    };
+
+    function Box(x1, y1, x2, y2, c) {
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      x2 = x2 | 0;
+      y2 = y2 | 0;
+      c = c | 0;
+      if (x1 > x2) {
+        var t = x2;
+        x2 = x1;
+        x1 = t;
+      }
+      if (y1 > y2) {
+        var t = y2;
+        y2 = y1;
+        y1 = t;
+      }
+      if (x1 >= display.width ||
+          y1 >= display.height ||
+          x2 < 0 || y2 < 0) {
+        return;
+      }
+      if (x1 < 0) x1 = 0;
+      if (x2 > display.width - 1) x2 = display.width - 1;
+      if (y1 < 0) y1 = 0;
+      if (y2 > display.height - 1) y2 = display.height - 1;
+      for (var y = y1; y <= y2; ++y) {
+        var pos = x1 + y * display.width;
+        for (var x = x1; x <= x2; ++x) {
+          display_data[pos++] = c;
+        }
+      }
+    }
+
+    function RawLine(x1, y1, x2, y2, c) {
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      x2 = x2 | 0;
+      y2 = y2 | 0;
+      if (x1 == x2 || y1 == y2) {
+        Box(x1, y1, x2, y2, c);
+        return;
+      }
+      if (Math.abs(x1 - x2) > Math.abs(y1 - y2)) {
+        if (x1 > x2) {
+          var tmp;
+          tmp = x1; x1 = x2; x2 = tmp;
+          tmp = y1; y1 = y2; y2 = tmp;
+        }
+        for (var x = x1; x <= x2; ++x) {
+          var t = (x - x1) / (x2 - x1);
+          var y = y1 + Math.floor(t * (y2 - y1));
+          Box(x, y, x, y, c);
+        }
+      } else {
+        if (y1 > y2) {
+          var tmp;
+          tmp = x1; x1 = x2; x2 = tmp;
+          tmp = y1; y1 = y2; y2 = tmp;
+        }
+        for (var y = y1; y <= y2; ++y) {
+          var t = (y - y1) / (y2 - y1);
+          var x = x1 + Math.floor(t * (x2 - x1));
+          Box(x, y, x, y, c);
+        }
+      }
+    }
+
+    bindings.Line = function(x1, y1, x2, y2, c, fill) {
+      if (x1 === null) {
+        x1 = pen_x;
+        y1 = pen_y;
+      }
+      var pen_color = FixupColor(c);
+      if (fill == 0) {
+        // Should be line.
+        RawLine(x1, y1, x2, y2, pen_color);
+      } else if (fill == 1) {
+        Box(x1, y1, x2, y1, pen_color);
+        Box(x1, y2, x2, y2, pen_color);
+        Box(x1, y1, x1, y2, pen_color);
+        Box(x2, y1, x2, y2, pen_color);
+      } else {
+        Box(x1, y1, x2, y2, pen_color);
+      }
+    };
+
+    bindings.Cls = function(mode) {
+      // TODO: Handle mode.
+      Box(0, 0, display.width, display.height, bg_color);
+      text_x = 0;
+      text_y = 0;
+    };
+
+    bindings.Pset = function(x, y, c) {
+      var pen_color = FixupColor(c);
+      display_data[x + y * display.width] = pen_color;
+      pen_x = x;
+      pen_y = y;
+    }
+
+    bindings.Circle = function(x, y, r, c, start, end, aspect, fill) {
+      x += 0.5;
+      y += 0.5;
+      var pen_color = FixupColor(c);
+      var complete = false;
+      if (start < 0) { start = -start; complete = true; }
+      if (end < 0) { end = -end; complete = true; }
+      if (end < start) {
+        end += Math.PI * 2;
+      }
+      var rx, ry;
+      if (aspect == null) {
+        rx = r;
+        ry = r / screen_aspect;
+      } else if (aspect > 1) {
+        rx = r / aspect;
+        ry = r;
+      } else {
+        rx = r;
+        ry = r * aspect;
+      }
+      var oxx = x + Math.cos(start) * rx;
+      var oyy = y - Math.sin(start) * ry;
+      if (complete) {
+        RawLine(x, y, oxx, oyy, pen_color);
+      }
+      for (var ang = start; ang <= end; ang += 0.03) {
+        var xx = x + Math.cos(ang) * rx;
+        var yy = y - Math.sin(ang) * ry;
+        if (ang == start) { oxx = xx; oyy = yy; }
+        RawLine(oxx, oyy, xx, yy, pen_color);
+        oxx = xx;
+        oyy = yy;
+      }
+      if (complete) {
+        RawLine(x, y, xx, yy, pen_color);
+      }
+      if (fill && start == 0 && end == Math.PI * 2) {
+        bindings.Paint(x, y, c, c);
+      }
+    };
+
+    bindings.GetImage = function(x1, y1, x2, y2, buffer, offset) {
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      x2 = x2 | 0;
+      y2 = y2 | 0;
+      var d16 = new Uint16Array(buffer);
+      if (screen_bpp <= 2) {
+        d16[(offset >> 1) + 0] = (x2 - x1 + 1) * screen_bpp;
+      } else {
+        d16[(offset >> 1) + 0] = (x2 - x1 + 1);
+      }
+      d16[(offset >> 1) + 1] = y2 - y1 + 1;
+      var d = new Uint8Array(buffer);
+      var src = display_data;
+      if (screen_bpp > 8) {
+        var dstpos = offset + 4;
+        for (var y = y1; y <= y2; ++y) {
+          var srcpos = x1 + y * display.width;
+          for (var x = x1; x <= x2; ++x) {
+            var v = src[srcpos++];
+            d[dstpos++] = v;
+            d[dstpos++] = (v >> 8);
+            d[dstpos++] = (v >> 16);
+          }
+        }
+      } else {
+        var dstpos = offset + 4;
+        var shift = 8;
+        var v = 0;
+        for (var y = y1; y <= y2; ++y) {
+          var srcpos = x1 + y * display.width;
+          for (var x = x1; x <= x2; ++x) {
+            shift -= screen_bpp;
+            var cc = reverse_color_map[src[srcpos++] | BLACK] | 0;
+            v |= (cc << shift);
+            if (shift == 0) {
+              d[dstpos++] = v;
+              v = 0;
+              shift = 8;
+            }
+          }
+          if (shift != 8) {
+            d[dstpos++] = v;
+            v = 0;
+            shift = 8;
+          }
+        }
+      }
+    };
+
+    bindings.PutImage = function(x1, y1, buffer, offset, mode) {
+      x1 = x1 | 0;
+      y1 = y1 | 0;
+      var s16 = new Uint16Array(buffer);
+      var x2;
+      if (screen_bpp <= 2) {
+        x2 = x1 + (s16[(offset >> 1) + 0] / screen_bpp) - 1;
+      } else {
+        x2 = x1 + s16[(offset >> 1)] - 1;
+      }
+      var y2 = y1 + s16[(offset >> 1) + 1] - 1;
+      var s = new Uint8Array(buffer);
+      var dst = display_data;
+      if (screen_bpp > 8) {
+        var srcpos = offset + 4;
+        for (var y = y1; y <= y2; ++y) {
+          var dstpos = x1 + y * display.width;
+          for (var x = x1; x <= x2; ++x) {
+            var v = s[srcpos] | (s[srcpos + 1] << 8) | (s[srcpos + 2] << 16);
+            srcpos += 3;
+            // TODO: Optimize
+            if (x < 0 || x >= display.width || y < 0 || y >= display.height) {
+              dstpos++;
+              continue;
+            }
+            if (mode == 'xor') {
+              dst[dstpos++] = (dst[dstpos] ^ v) | BLACK;
+            } else if (mode == 'preset') {
+              dst[dstpos++] = (~v) | BLACK;
+            } else if (mode == 'and') {
+              dst[dstpos++] = (dst[dstpos] & v) | BLACK;
+            } else if (mode == 'or') {
+              dst[dstpos++] = (dst[dstpos] | v) | BLACK;
+            } else {
+              dst[dstpos++] = v | BLACK;
+            }
+          }
+        }
+      } else {
+        var srcpos = offset + 4;
+        var mask = (1 << screen_bpp) - 1;
+        for (var y = y1; y <= y2; ++y) {
+          var dstpos = x1 + y * display.width;
+          var v = 0;
+          var shift = 8;
+          for (var x = x1; x <= x2; ++x) {
+            if (shift == 8) {
+              v = s[srcpos++];
+            }
+            shift -= screen_bpp;
+            var cc = (v >> shift) & mask;
+            var old = reverse_color_map[dst[dstpos] | BLACK] | 0;
+            if (mode == 'xor') {
+              cc ^= old;
+            } else if (mode == 'preset') {
+              cc = cc ^ mask;
+            } else if (mode == 'and') {
+              cc &= old;
+            } else if (mode == 'or') {
+              cc |= old;
+            }
+            var px = color_map[cc] | 0;
+            // TODO: Optimize
+            if (y >= 0 && y < display.height && x >= 0 && x < display.width) {
+              dst[dstpos++] = px;
+            } else {
+              dstpos++;
+            }
+            if (shift == 0) {
+              shift = 8;
+            }
+          }
+        }
+      }
+    };
+
+    var draw_state = {
+      noplot: false,
+      nomove: false,
+      angle: 0,
+      turn_angle: 0,
+      color: undefined,
+      scale: 1,
+    };
+
+    function StepUnscaled(dx, dy) {
+      if (!draw_state.noplot) {
+        bindings.Line(
+          pen_x, pen_y, pen_x + dx, pen_y + dy, draw_state.color, 0);
+      }
+      if (!draw_state.nomove) {
+        pen_x += dx;
+        pen_y += dy;
+      }
+      draw_state.noplot = false;
+      draw_state.nomove = false;
+    }
+
+    function Step(dx, dy) {
+      StepUnscaled(dx * draw_state.scale, dy * draw_state.scale);
+    }
+
+    bindings.Draw = function(cmds) {
+      cmds = cmds.toLowerCase();
+      var m;
+      while (cmds.length) {
+        if (m = cmds.match(/^(u|d|l|r|e|f|g|h|a|ta|c|s)([0-9]+)?/)) {
+          var op = m[1];
+          var n = m[2] == '' ? 1 : parseInt(m[2]);
+          if (op == 'c') {
+            draw_state.color = n;
+          } else if (op == 'a') {
+            draw_state.angle = n;
+            // TODO: Implement.
+          } else if (op == 'ta') {
+            draw_state.turn_angle = n;
+            // TODO: Implement.
+          } else if (op == 's') {
+            draw_state.scale = n / 4;
+          } else if (op == 'u') {
+            Step(0, -n);
+          } else if (op == 'd') {
+            Step(0, n);
+          } else if (op == 'l') {
+            Step(-n, 0);
+          } else if (op == 'r') {
+            Step(n, 0);
+          } else if (op == 'e') {
+            Step(n, -n);
+          } else if (op == 'f') {
+            Step(n, n);
+          } else if (op == 'g') {
+            Step(-n, n);
+          } else if (op == 'h') {
+            Step(-n, -n);
+          }
+        } else if (m = cmds.match(/^(m)([+-]?)([0-9]+)[,]([+-]?[0-9]+)/)) {
+          var op = m[1];
+          var sx = m[2];
+          var x = parseInt(m[3]);
+          var y = parseInt(m[4]);
+          if (sx) {
+            x = parseInt(sx + '1') * x;
+            Step(x, y);
+          } else {
+            StepUnscaled(x - pen_x, y - pen_y);
+          }
+        } else if (m = cmds.match(/^(p)([0-9]+),([0-9]+1)/)) {
+          var op = m[1];
+          var x = parseInt(m[2]);
+          var y = parseInt(m[3]);
+          // TODO: Implement.
+        } else if (m = cmds.match(/^(b|n)/)) {
+          var op = m[1];
+          if (op == 'b') {
+            draw_state.noplot = true;
+          } else if (op == 'n') {
+            draw_state.nomove = true;
+          }
+        } else {
+          Throw('Bad drop op: ' + cmds);
+        }
+        cmds = cmds.substr(m[0].length);
+      }
+    };
+
+    bindings.Paint = function(x, y, paint, border) {
+      paint = FixupColor(paint);
+      if (border === undefined) {
+        border = paint;
+      } else {
+        border = FixupColor(border) & 0xffffff;
+      }
+      var fpaint = paint & 0xffffff;
+      var data = display_data;
+      var pending = [];
+      pending.push([Math.floor(x), Math.floor(y)]);
+      while (pending.length) {
+        var p = pending.pop();
+        if (p[0] < 0 || p[0] >= display.width ||
+            p[1] < 0 || p[1] >= display.height) {
+          continue;
+        }
+        var pos = p[0] + p[1] * display.width;
+        if ((data[pos] & 0xffffff) == border ||
+            (data[pos] & 0xffffff) == fpaint) {
+          continue;
+        }
+        data[pos] = paint;
+        pending.push([p[0] - 1, p[1]]);
+        pending.push([p[0] + 1, p[1]]);
+        pending.push([p[0], p[1] - 1]);
+        pending.push([p[0], p[1] + 1]);
+      }
+    };
 
     var viewport_x, viewport_y;
     var viewport_w, viewport_h;
@@ -3126,511 +3290,393 @@
       // TODO: Implement Mouse Clip!
     }
 
-    function Pace() {
+    bindings.Pace = function() {
       if (screen_mode > 0 && screen_mode <= 2) {
         return 1;
       } else {
         return 100000;
       }
-    }
+    };
 
-    function Run(pace) {
-      for (;;) {
-        var speed = pace !== undefined ? pace() : 100000;
-        for (var i = 0; i < speed; ++i) {
-          ops[ip++]();
-          if (yielding) {
-            yielding = 0;
-            if (quitting) {
-              return;
-            }
-            break;
+    function CreateFont(ctx, height) {
+      function RenderFont(ctx, height) {
+        const CHARSET =
+          '\u0020\u263a\u263b\u2665\u2666\u2663\u2660\u2022' +
+          '\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c' +
+          '\u25ba\u25c4\u2195\u203c\u00b6\u00a7\u25ac\u21a8' +
+          '\u2191\u2193\u2192\u2190\u221f\u2194\u25b2\u25bc' +
+          '\u0020\u0021\u0022\u0023\u0024\u0025\u0026\u0027' +
+          '\u0028\u0029\u002a\u002b\u002c\u002d\u002e\u002f' +
+          '\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037' +
+          '\u0038\u0039\u003a\u003b\u003c\u003d\u003e\u003f' +
+          '\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047' +
+          '\u0048\u0049\u004a\u004b\u004c\u004d\u004e\u004f' +
+          '\u0050\u0051\u0052\u0053\u0054\u0055\u0056\u0057' +
+          '\u0058\u0059\u005a\u005b\u005c\u005d\u005e\u005f' +
+          '\u0060\u0061\u0062\u0063\u0064\u0065\u0066\u0067' +
+          '\u0068\u0069\u006a\u006b\u006c\u006d\u006e\u006f' +
+          '\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077' +
+          '\u0078\u0079\u007a\u007b\u007c\u007d\u007e\u2302' +
+          '\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7' +
+          '\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5' +
+          '\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9' +
+          '\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192' +
+          '\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba' +
+          '\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
+          '\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556' +
+          '\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510' +
+          '\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f' +
+          '\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567' +
+          '\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b' +
+          '\u256a\u2518\u250c\u2588\u0020\u258c\u2590\u2580' +
+          '\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4' +
+          '\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229' +
+          '\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248' +
+          '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u0020';
+        var data = new Uint8Array(256 * 8 * height);
+        var pos = 0;
+        for (var i = 0; i < 256; ++i) {
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, 16, 32);
+          ctx.textBaseline = 'top';
+          ctx.font = 'bold 16px monospace';
+          ctx.save();
+          ctx.scale(1, height / 16);
+          ctx.fillStyle = '#fff';
+          ctx.fillText(CHARSET.charAt(i), 0, 0);
+          ctx.restore();
+          var pix = ctx.getImageData(0, 0, 8, height);
+          var pdata = pix.data;
+          for (var j = 0; j < pdata.length; j += 4) {
+            var level = pdata[j] * 0.1140 +
+              pdata[j + 1] * 0.5870 +
+              pdata[j + 2] * 0.2989;
+            data[pos++] = level > 128 ? 255 : 0;
           }
         }
-        setTimeout(function() { Run(pace); }, delay);
-        delay = 0;
-        break;
+        return data;
+      }
+
+      function LoadFont(s, dup) {
+        var data = new Uint8Array(s.length * dup);
+        var pos = 0;
+        for (var i = 0; i < 256; ++i) {
+          var row = Math.floor(i / 8);
+          var col = i % 8;
+          for (var y = 0; y < 8; ++y) {
+            for (var d = 0; d < dup; ++d) {
+              for (var x = 0; x < 8; ++x) {
+                data[pos++] = s[x + y * 8 * 8 + col * 8 + row * 64 * 8]
+                  != ' ' ? 255 : 0;
+              }
+            }
+          }
+        }
+        return data;
+      }
+
+      var FONT8 =
+        'x     x   XXX     XXX   xx   xx x     x                         ' +
+        '         X   X   XXXXX                                          ' +
+        '        X X X X XX X XX            x                            ' +
+        '        X     X XXXXXXX                                         ' +
+        '        X XXX X XX   XX                                         ' +
+        '         X   X   XXXXX                                          ' +
+        'x     x   XXX     XXX   xx   xx x     x                         ' +
+        '                                                                ' +
+
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '                                                                ' +
+
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '                                                                ' +
+
+        '   X       X                    XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '  XXX      X        X     X     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        ' XXXXX     X        XX   XX     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '   X       X    XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '   X     XXXXX      XX   XX     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '   X      XXX       X     X     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '   X       X                    XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '                                                                ' +
+
+        '           XX    XX XX   XX XX   XX XX  XX       XXX       XX   ' +
+        '           XX    XX XX   XX XX  XXXXXXX XX  XX  XX XX      XX   ' +
+        '           XX           XXXXXXX XX         XX    XXX            ' +
+        '           XX            XX XX   XXXXX    XX    XXXX XX         ' +
+        '           XX           XXXXXXX      XX  XX     XX XXX          ' +
+        '                         XX XX  XXXXXXX XX  XX  XX XXX          ' +
+        '           XX            XX XX   XX XX      XX   XXX XX         ' +
+        '                                                                ' +
+
+        '   XX     XX                                                    ' +
+        '  XX       XX   XX X XX   XX                                 XX ' +
+        ' XX         XX    XXX     XX                                XX  ' +
+        ' XX         XX  XXXXXXX XXXXXX           XXXXX             XX   ' +
+        ' XX         XX    XXX     XX                              XX    ' +
+        '  XX       XX   XX X XX   XX       XX                    XX     ' +
+        '   XX     XX                       XX              XX   XX      ' +
+        '                                  XX               XX           ' +
+
+        ' XXXXX     XX    XXXXX   XXXXX  XX  XX  XXXXXXX  XXXXX  XXXXXXX ' +
+        'XX  XXX   XXX   XX   XX XX   XX XX  XX  XX      XX   XX      XX ' +
+        'XX XXXX  XXXX        XX      XX XX  XX  XX      XX          XX  ' +
+        'XXXX XX    XX      XXX    XXXX  XXXXXXX  XXXXX  XXXXXX     XX   ' +
+        'XX   XX    XX    XXX         XX     XX       XX XX   XX   XX    ' +
+        'XX   XX    XX   XX      XX   XX     XX  XX   XX XX   XX   XX    ' +
+        ' XXXXX  XXXXXXX XXXXXXX  XXXXX      XX   XXXXX   XXXXX    XX    ' +
+        '                                                                ' +
+
+        ' XXXXX   XXXXX                                           XXXXX  ' +
+        'XX   XX XX   XX    XX      XX       XXX         XXX     XX   XX ' +
+        'XX   XX XX   XX    XX      XX     XXX   XXXXXXX   XXX   XX   XX ' +
+        ' XXXXX   XXXXXX                 XXX                 XXX     XX  ' +
+        'XX   XX      XX    XX      XX     XXX   XXXXXXX   XXX      XX   ' +
+        'XX   XX XX   XX    XX      XX       XXX         XXX             ' +
+        ' XXXXX   XXXXX            XX                               XX   ' +
+        '                                                                ' +
+
+        ' XXXXX    XXX   XXXXXX   XXXXXX XXXXXX  XXXXXXX XXXXXXX  XXXXX  ' +
+        'XX  XXX  XX XX  XX   XX XX      XX   XX XX      XX      XX   XX ' +
+        'XX XXXX XX   XX XX   XX XX      XX   XX XX      XX      XX      ' +
+        'XX XXXX XXXXXXX XXXXXX  XX      XX   XX XXXXX   XXXXX   XX XXXX ' +
+        'XX  XXX XX   XX XX   XX XX      XX   XX XX      XX      XX   XX ' +
+        'XX      XX   XX XX   XX XX      XX   XX XX      XX      XX   XX ' +
+        ' XXXXX  XX   XX XXXXXX   XXXXXX XXXXXX  XXXXXXX XX       XXXXX  ' +
+        '                                                                ' +
+
+        'XX   XX XXXXXXX      XX XX   XX XX      XX   XX XX   XX  XXXXX  ' +
+        'XX   XX   XXX        XX XX  XX  XX      XXX XXX XXX  XX XX   XX ' +
+        'XX   XX   XXX        XX XX XX   XX      XXXXXXX XXXX XX XX   XX ' +
+        'XXXXXXX   XXX        XX XXXX    XX      XX X XX XXXXXXX XX   XX ' +
+        'XX   XX   XXX   XX   XX XX XX   XX      XX   XX XX XXXX XX   XX ' +
+        'XX   XX   XXX   XX   XX XX  XX  XX      XX   XX XX  XXX XX   XX ' +
+        'XX   XX XXXXXXX  XXXXX  XX   XX XXXXXXX XX   XX XX   XX  XXXXX  ' +
+        '                                                                ' +
+
+        'XXXXXX   XXXXX  XXXXXX   XXXXX  XXXXXXX XX   XX XX   XX XX   XX ' +
+        'XX   XX XX   XX XX   XX XX   XX   XXX   XX   XX XX   XX XX   XX ' +
+        'XX   XX XX   XX XX   XX XX        XXX   XX   XX XX   XX XX   XX ' +
+        'XXXXXX  XX   XX XXXXXX   XXXXX    XXX   XX   XX XX   XX XX   XX ' +
+        'XX      XXXX XX XX   XX      XX   XXX   XX   XX XX   XX XX X XX ' +
+        'XX      XX XXX  XX   XX XX   XX   XXX   XX   XX  XX XX  XX X XX ' +
+        'XX       XXX XX XX   XX  XXXXX    XXX    XXXXX    XXX    XX XX  ' +
+        '                                                                ' +
+
+        'XX   XX XX   XX XXXXXXX  XXXXX           XXXXX     XX           ' +
+        'XX   XX XX   XX      XX  XX     XX          XX    XXXX          ' +
+        ' XX XX   XX XX      XX   XX      XX         XX   XX  XX         ' +
+        '  XXX     XXX     XXX    XX       XX        XX                  ' +
+        ' XX XX    XXX    XX      XX        XX       XX                  ' +
+        'XX   XX   XXX   XX       XX         XX      XX                  ' +
+        'XX   XX   XXX   XXXXXXX  XXXXX       XX  XXXXX                  ' +
+        '                                                        XXXXXXX ' +
+
+        '  XX            XX                   XX            XXXX         ' +
+        '   XX           XX                   XX           XX            ' +
+        '         XXXXXX XX       XXXXX       XX  XXXX     XX     XXXXX  ' +
+        '        XX   XX XXXXXX  XX       XXXXXX XX  XX  XXXXXXX XX   XX ' +
+        '        XX   XX XX   XX XX      XX   XX XXXXXX    XX    XX   XX ' +
+        '        XX   XX XX   XX XX      XX   XX XX        XX     XXXXXX ' +
+        '         XXXXXX XXXXXX   XXXXX   XXXXXX  XXXXX    XX         XX ' +
+        '                                                         XXXXX  ' +
+
+        'XX        XX       XX   XX        XXX                           ' +
+        'XX                      XX   XX    XX                           ' +
+        'XXXXXX   XXX      XXXX  XX  XX     XX   XXXXXX  XXXXXX   XXXXX  ' +
+        'XX   XX   XX        XX  XXXXX      XX   XX X XX XX   XX XX   XX ' +
+        'XX   XX   XX        XX  XX  XX     XX   XX X XX XX   XX XX   XX ' +
+        'XX   XX   XX        XX  XX   XX    XX   XX X XX XX   XX XX   XX ' +
+        'XX   XX  XXXX       XX  XX   XX   XXXX  XX X XX XX   XX  XXXXX  ' +
+        '                  XXX                                           ' +
+
+        '                                                                ' +
+        '                                  XX                            ' +
+        'XXXXXX   XXXXX  XX XXX   XXXXXX   XX    XX   XX XX   XX XX   XX ' +
+        'XX   XX XX  XX  XXXX XX XX      XXXXXXX XX   XX XX   XX XX   XX ' +
+        'XX   XX XX  XX  XX       XXXXX    XX    XX   XX XX   XX XX X XX ' +
+        'XXXXXX   XXXXX  XX           XX   XX XX XX   XX  XX XX  XX X XX ' +
+        'XX          XX  XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
+        'XX          XX                                                  ' +
+
+        '                             XX   XX    XX                 X    ' +
+        '                           XX     XX      XX     XXX XX   XXX   ' +
+        'XX   XX XX   XX XXXXXXX    XX     XX      XX    XX XXX   XX XX  ' +
+        ' XX XX  XX   XX    XXX    XX      XX       XX           XX   XX ' +
+        '  XXX   XX   XX   XXX      XX     XX      XX            XX   XX ' +
+        ' XX XX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
+        'XX   XX      XX XXXXXXX      XX   XX    XX              XXXXXXX ' +
+        '         XXXXX                                                  ' +
+
+        ' XXXXXX                                                  XXXXXX ' +
+        'XX      XX   XX                                         XX      ' +
+        'XX               XXXX    XXXXXX  XXXXXX  XXXXX   XXXXXX XX      ' +
+        'XX      XX   XX XX  XX  XX   XX XX   XX XX   XX XX   XX XX      ' +
+        'XX      XX   XX XXXXXX  XX   XX XX   XX XX   XX XX   XX XX      ' +
+        'XX      XX   XX XX      XX   XX XX   XX XX   XX XX   XX XX      ' +
+        ' XXXXXX  XXXXXX  XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
+        '                                                                ' +
+
+        '                          XX      XX      XX      XXX     XXX   ' +
+        '                          XX      XX      XX     XX XX   XX XX  ' +
+        ' XXXX    XXXX    XXXX                           XX   XX XX   XX ' +
+        'XX  XX  XX  XX  XX  XX   XXX     XXX     XXX    XXXXXXX XXXXXXX ' +
+        'XXXXXX  XXXXXX  XXXXXX    XX      XX      XX    XX   XX XX   XX ' +
+        'XX      XX      XX        XX      XX      XX    XX   XX XX   XX ' +
+        ' XXXXX   XXXXX   XXXXX   XXXX    XXXX    XXXX   XX   XX XX   XX ' +
+        '                                                                ' +
+
+        'XXXXXXX XXXXXXX XXXXXXX                                         ' +
+        'XX      XX      XX                                              ' +
+        'XX      XX      XX                                              ' +
+        'XXXXX   XXXXX   XXXXX    XXXXX   XXXXX   XXXXX  XX   XX XX   XX ' +
+        'XX      XX      XX      XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+        'XX      XX      XX      XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+        'XXXXXXX XXXXXXX XXXXXXX  XXXXX   XXXXX   XXXXX   XXXXXX  XXXXXX ' +
+        '                                                                ' +
+
+        '         XXXXX  XX   XX  XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
+        '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+        'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+        'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+        'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+        ' XXXXXX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
+        '     XX  XXXXX   XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
+        ' XXXXX                                                          ' +
+
+        '          XX                                                    ' +
+        '          XX                                                    ' +
+        ' XXXXXX          XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
+        'XX   XX  XXX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+        'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+        'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
+        ' XXXXXX  XXXX    XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
+        '                                                                ' +
+
+        '   XX                   X       X          XX                   ' +
+        '                        X  X    X  X              XX XX XX XX   ' +
+        '   XX                     X       X        XX    XX XX   XX XX  ' +
+        ' XXX    XXXXXXX XXXXXXX  X XX    X XX      XX   XX XX     XX XX ' +
+        'XX      XX           XX      X       X     XX    XX XX   XX XX  ' +
+        'XX   XX XX           XX     X       X      XX     XX XX XX XX   ' +
+        ' XXXXX                     XXXX    XXXX    XX                   ' +
+        '                                                                ' +
+
+        'X   X    X X X X XXX XXX   X       X       X      X X           ' +
+        '  X   X X X X X XX XXX X   X       X       X      X X           ' +
+        'X   X    X X X X XXX XXX   X       X    XXXX      X X           ' +
+        '  X   X X X X X XX XXX X   X    XXXX       X    XXX X   XXXXX   ' +
+        'X   X    X X X X XXX XXX   X       X    XXXX      X X     X X   ' +
+        '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
+        'X   X    X X X X XXX XXX   X       X       X      X X     X X   ' +
+        '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
+
+        '          X X     X X             X X     X X      X            ' +
+        '          X X     X X             X X     X X      X            ' +
+        'XXXX    XXX X     X X   XXXXX   XXX X     X X   XXXX            ' +
+        '   X        X     X X       X       X   XXXXX      X    XXXX    ' +
+        'XXXX    XXX X     X X   XXX X   XXXXX           XXXX       X    ' +
+        '   X      X X     X X     X X                              X    ' +
+        '   X      X X     X X     X X                              X    ' +
+        '   X      X X     X X     X X                              X    ' +
+
+        '   X       X               X               X       X      X X   ' +
+        '   X       X               X               X       X      X X   ' +
+        '   X       X               X               X       XXXXX  X X   ' +
+        '   XXXXXXXXXXXXXXXXXXXXX   XXXXXXXXXXXXXXXXXXXXX   X      X XXXX' +
+        '                   X       X               X       XXXXX  X X   ' +
+        '                   X       X               X       X      X X   ' +
+        '                   X       X               X       X      X X   ' +
+        '                   X       X               X       X      X X   ' +
+
+        '  X X             X X             X X             X X      X    ' +
+        '  X X             X X             X X             X X      X    ' +
+        '  X XXXX  XXXXXXXXX XXXXXXXXXXXX  X XXXXXXXXXXXXXXX XXXXXXXXXXXX' +
+        '  X       X                       X                             ' +
+        '  XXXXXX  X XXXXXXXXXXXXXXX XXXX  X XXXXXXXXXXXXXXX XXXXXXXXXXXX' +
+        '          X X             X X     X X             X X           ' +
+        '          X X             X X     X X             X X           ' +
+        '          X X             X X     X X             X X           ' +
+
+        '  X X                     X X      X                      X X   ' +
+        '  X X                     X X      X                      X X   ' +
+        '  X X   XXXXXXXX          X X      XXXXX   XXXXX          X X   ' +
+        'XXXXXXXX        XXXXXXXX  XXXXXX   X       X      XXXXXXXXXXXXXX' +
+        '        XXXXXXXX  X X              XXXXX   XXXXX  X X     X X   ' +
+        '           X      X X                      X      X X     X X   ' +
+        '           X      X X                      X      X X     X X   ' +
+        '           X      X X                      X      X X     X X   ' +
+
+        '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
+        '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
+        'XXXXXXXX   X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
+        '        XXXX       XXXXXXXXXXXXX        XXXX        XXXXXXXXXXXX' +
+        'XXXXXXXX           X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+        '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+        '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+        '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
+
+        '          XXX    XXXXXX          XXXXXX                         ' +
+        ' XX   X  X   X   X               X                              ' +
+        'X  X X   X  X    X                X                             ' +
+        'X   X    XXXXX   X       XXXXXX    X     XXXXXX                 ' +
+        'X  X X   X    X  X        X  X    X     X    X                  ' +
+        ' XX   X  X    X  X        X  X   X      X    X                  ' +
+        '        X XXXX   X        X  X   XXXXXX  XXXX                   ' +
+        '                                                                ' +
+
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '                                                                ' +
+
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '                                                                ' +
+
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XX   XX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XX   XX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
+        'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
+        '                                                                ' +
+        '';
+
+      if (height == 8) {
+        return LoadFont(FONT8, 1);
+      } else if (height == 16) {
+        return LoadFont(FONT8, 2);
+      } else {
+        return RenderFont(ctx, height);
       }
     }
 
-    Screen(0);
-    var compiled_ok = false;
-    try {
-      Compile();
-      compiled_ok = true;
-    } catch (e) {
-      if (canvas) {
-        Locate(1, 1);
-        Color(15);
-        Print([e.toString(), ';']);
-      } else {
-        console.error(e.toString());
-      }
-      if (e.stack !== undefined) {
-        console.info(e.stack);
-      }
-    }
+    bindings.Screen(0);
     InitEvents();
     Render();
-    if (compiled_ok) {
-      Run(Pace);
-    }
-  }
-
-  function SetupCanvas(tag, full_window) {
-    if (full_window) {
-      document.body.style.width = '100%';
-      document.body.style.height = '100%';
-      document.body.style.margin = '0';
-      document.body.style.border = '0';
-      document.body.style.overflow = 'hidden';
-      document.body.style.display = 'block';
-    }
-    var canvas = document.createElement('canvas');
-    canvas.width = 800;
-    canvas.height = 600;
-    if (full_window) {
-      document.body.appendChild(canvas);
-    } else {
-      tag.insertAdjacentElement('beforebegin', canvas);
-    }
-    var context = canvas.getContext('2d');
-    context.fillStyle = 'black';
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = 'white';
-    context.strokeStyle = 'white';
-    return canvas;
-  }
-
-  var timer_halted = 0;
-  var timer_offset = 0;
-
-  function GetTimer() {
-    var t = new Date().getTime() / 1000;
-    return t + timer_offset;
-  }
-
-  function Init() {
-    var tags = document.getElementsByTagName('script');
-    var count = 0;
-    for (var t = 0; t < tags.length; ++t) {
-      if (tags[t].type != 'text/basic') {
-        continue;
-      }
-      ++count;
-    }
-    var full_window = count == 1 && document.body.innerText == '';
-    for (var t = 0; t < tags.length; ++t) {
-      if (tags[t].type != 'text/basic') {
-        continue;
-      }
-      var tag = tags[t];
-      var canvas = SetupCanvas(tag, full_window);
-      if (tags[t].src) {
-        var request = new XMLHttpRequest();
-        request.addEventListener('load', function(e) {
-          Interpret(request.responseText, canvas, true);
-        }, false);
-        request.open('GET', tag.src);
-        request.send();
-      } else {
-        Interpret(tag.text, canvas, true);
-      }
-    }
-  }
-
-  function Main() {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('load', Init);
-      window.addEventListener('focusout', function() {
-        timer_halted = GetTimer();
-      });
-      window.addEventListener('focusin', function() {
-        timer_offset = timer_halted - (new Date().getTime() / 1000);
-      });
-      window.Basic = Interpret;
-    } else {
-      exports.Basic = function(code) {
-        Interpret(code, null);
-      };
-    }
-  }
-
-  Main();
-
-  function CreateFont(ctx, height) {
-    function RenderFont(ctx, height) {
-      const CHARSET =
-        '\u0020\u263a\u263b\u2665\u2666\u2663\u2660\u2022' +
-        '\u25d8\u25cb\u25d9\u2642\u2640\u266a\u266b\u263c' +
-        '\u25ba\u25c4\u2195\u203c\u00b6\u00a7\u25ac\u21a8' +
-        '\u2191\u2193\u2192\u2190\u221f\u2194\u25b2\u25bc' +
-        '\u0020\u0021\u0022\u0023\u0024\u0025\u0026\u0027' +
-        '\u0028\u0029\u002a\u002b\u002c\u002d\u002e\u002f' +
-        '\u0030\u0031\u0032\u0033\u0034\u0035\u0036\u0037' +
-        '\u0038\u0039\u003a\u003b\u003c\u003d\u003e\u003f' +
-        '\u0040\u0041\u0042\u0043\u0044\u0045\u0046\u0047' +
-        '\u0048\u0049\u004a\u004b\u004c\u004d\u004e\u004f' +
-        '\u0050\u0051\u0052\u0053\u0054\u0055\u0056\u0057' +
-        '\u0058\u0059\u005a\u005b\u005c\u005d\u005e\u005f' +
-        '\u0060\u0061\u0062\u0063\u0064\u0065\u0066\u0067' +
-        '\u0068\u0069\u006a\u006b\u006c\u006d\u006e\u006f' +
-        '\u0070\u0071\u0072\u0073\u0074\u0075\u0076\u0077' +
-        '\u0078\u0079\u007a\u007b\u007c\u007d\u007e\u2302' +
-        '\u00c7\u00fc\u00e9\u00e2\u00e4\u00e0\u00e5\u00e7' +
-        '\u00ea\u00eb\u00e8\u00ef\u00ee\u00ec\u00c4\u00c5' +
-        '\u00c9\u00e6\u00c6\u00f4\u00f6\u00f2\u00fb\u00f9' +
-        '\u00ff\u00d6\u00dc\u00a2\u00a3\u00a5\u20a7\u0192' +
-        '\u00e1\u00ed\u00f3\u00fa\u00f1\u00d1\u00aa\u00ba' +
-        '\u00bf\u2310\u00ac\u00bd\u00bc\u00a1\u00ab\u00bb' +
-        '\u2591\u2592\u2593\u2502\u2524\u2561\u2562\u2556' +
-        '\u2555\u2563\u2551\u2557\u255d\u255c\u255b\u2510' +
-        '\u2514\u2534\u252c\u251c\u2500\u253c\u255e\u255f' +
-        '\u255a\u2554\u2569\u2566\u2560\u2550\u256c\u2567' +
-        '\u2568\u2564\u2565\u2559\u2558\u2552\u2553\u256b' +
-        '\u256a\u2518\u250c\u2588\u0020\u258c\u2590\u2580' +
-        '\u03b1\u00df\u0393\u03c0\u03a3\u03c3\u00b5\u03c4' +
-        '\u03a6\u0398\u03a9\u03b4\u221e\u03c6\u03b5\u2229' +
-        '\u2261\u00b1\u2265\u2264\u2320\u2321\u00f7\u2248' +
-        '\u00b0\u2219\u00b7\u221a\u207f\u00b2\u25a0\u0020';
-      var data = new Uint8Array(256 * 8 * height);
-      var pos = 0;
-      for (var i = 0; i < 256; ++i) {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, 16, 32);
-        ctx.textBaseline = 'top';
-        ctx.font = 'bold 16px monospace';
-        ctx.save();
-        ctx.scale(1, height / 16);
-        ctx.fillStyle = '#fff';
-        ctx.fillText(CHARSET.charAt(i), 0, 0);
-        ctx.restore();
-        var pix = ctx.getImageData(0, 0, 8, height);
-        var pdata = pix.data;
-        for (var j = 0; j < pdata.length; j += 4) {
-          var level = pdata[j] * 0.1140 +
-                      pdata[j + 1] * 0.5870 +
-                      pdata[j + 2] * 0.2989;
-          data[pos++] = level > 128 ? 255 : 0;
-        }
-      }
-      return data;
-    }
-
-    function LoadFont(s, dup) {
-      var data = new Uint8Array(s.length * dup);
-      var pos = 0;
-      for (var i = 0; i < 256; ++i) {
-        var row = Math.floor(i / 8);
-        var col = i % 8;
-        for (var y = 0; y < 8; ++y) {
-          for (var d = 0; d < dup; ++d) {
-            for (var x = 0; x < 8; ++x) {
-              data[pos++] = s[x + y * 8 * 8 + col * 8 + row * 64 * 8]
-                != ' ' ? 255 : 0;
-            }
-          }
-        }
-      }
-      return data;
-    }
-
-    var FONT8 =
-      'x     x   XXX     XXX   xx   xx x     x                         ' +
-      '         X   X   XXXXX                                          ' +
-      '        X X X X XX X XX            x                            ' +
-      '        X     X XXXXXXX                                         ' +
-      '        X XXX X XX   XX                                         ' +
-      '         X   X   XXXXX                                          ' +
-      'x     x   XXX     XXX   xx   xx x     x                         ' +
-      '                                                                ' +
-
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '                                                                ' +
-
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '                                                                ' +
-
-      '   X       X                    XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '  XXX      X        X     X     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      ' XXXXX     X        XX   XX     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '   X       X    XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '   X     XXXXX      XX   XX     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '   X      XXX       X     X     XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '   X       X                    XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '                                                                ' +
-
-      '           XX    XX XX   XX XX   XX XX  XX       XXX       XX   ' +
-      '           XX    XX XX   XX XX  XXXXXXX XX  XX  XX XX      XX   ' +
-      '           XX           XXXXXXX XX         XX    XXX            ' +
-      '           XX            XX XX   XXXXX    XX    XXXX XX         ' +
-      '           XX           XXXXXXX      XX  XX     XX XXX          ' +
-      '                         XX XX  XXXXXXX XX  XX  XX XXX          ' +
-      '           XX            XX XX   XX XX      XX   XXX XX         ' +
-      '                                                                ' +
-
-      '   XX     XX                                                    ' +
-      '  XX       XX   XX X XX   XX                                 XX ' +
-      ' XX         XX    XXX     XX                                XX  ' +
-      ' XX         XX  XXXXXXX XXXXXX           XXXXX             XX   ' +
-      ' XX         XX    XXX     XX                              XX    ' +
-      '  XX       XX   XX X XX   XX       XX                    XX     ' +
-      '   XX     XX                       XX              XX   XX      ' +
-      '                                  XX               XX           ' +
-
-      ' XXXXX     XX    XXXXX   XXXXX  XX  XX  XXXXXXX  XXXXX  XXXXXXX ' +
-      'XX  XXX   XXX   XX   XX XX   XX XX  XX  XX      XX   XX      XX ' +
-      'XX XXXX  XXXX        XX      XX XX  XX  XX      XX          XX  ' +
-      'XXXX XX    XX      XXX    XXXX  XXXXXXX  XXXXX  XXXXXX     XX   ' +
-      'XX   XX    XX    XXX         XX     XX       XX XX   XX   XX    ' +
-      'XX   XX    XX   XX      XX   XX     XX  XX   XX XX   XX   XX    ' +
-      ' XXXXX  XXXXXXX XXXXXXX  XXXXX      XX   XXXXX   XXXXX    XX    ' +
-      '                                                                ' +
-
-      ' XXXXX   XXXXX                                           XXXXX  ' +
-      'XX   XX XX   XX    XX      XX       XXX         XXX     XX   XX ' +
-      'XX   XX XX   XX    XX      XX     XXX   XXXXXXX   XXX   XX   XX ' +
-      ' XXXXX   XXXXXX                 XXX                 XXX     XX  ' +
-      'XX   XX      XX    XX      XX     XXX   XXXXXXX   XXX      XX   ' +
-      'XX   XX XX   XX    XX      XX       XXX         XXX             ' +
-      ' XXXXX   XXXXX            XX                               XX   ' +
-      '                                                                ' +
-
-      ' XXXXX    XXX   XXXXXX   XXXXXX XXXXXX  XXXXXXX XXXXXXX  XXXXX  ' +
-      'XX  XXX  XX XX  XX   XX XX      XX   XX XX      XX      XX   XX ' +
-      'XX XXXX XX   XX XX   XX XX      XX   XX XX      XX      XX      ' +
-      'XX XXXX XXXXXXX XXXXXX  XX      XX   XX XXXXX   XXXXX   XX XXXX ' +
-      'XX  XXX XX   XX XX   XX XX      XX   XX XX      XX      XX   XX ' +
-      'XX      XX   XX XX   XX XX      XX   XX XX      XX      XX   XX ' +
-      ' XXXXX  XX   XX XXXXXX   XXXXXX XXXXXX  XXXXXXX XX       XXXXX  ' +
-      '                                                                ' +
-
-      'XX   XX XXXXXXX      XX XX   XX XX      XX   XX XX   XX  XXXXX  ' +
-      'XX   XX   XXX        XX XX  XX  XX      XXX XXX XXX  XX XX   XX ' +
-      'XX   XX   XXX        XX XX XX   XX      XXXXXXX XXXX XX XX   XX ' +
-      'XXXXXXX   XXX        XX XXXX    XX      XX X XX XXXXXXX XX   XX ' +
-      'XX   XX   XXX   XX   XX XX XX   XX      XX   XX XX XXXX XX   XX ' +
-      'XX   XX   XXX   XX   XX XX  XX  XX      XX   XX XX  XXX XX   XX ' +
-      'XX   XX XXXXXXX  XXXXX  XX   XX XXXXXXX XX   XX XX   XX  XXXXX  ' +
-      '                                                                ' +
-
-      'XXXXXX   XXXXX  XXXXXX   XXXXX  XXXXXXX XX   XX XX   XX XX   XX ' +
-      'XX   XX XX   XX XX   XX XX   XX   XXX   XX   XX XX   XX XX   XX ' +
-      'XX   XX XX   XX XX   XX XX        XXX   XX   XX XX   XX XX   XX ' +
-      'XXXXXX  XX   XX XXXXXX   XXXXX    XXX   XX   XX XX   XX XX   XX ' +
-      'XX      XXXX XX XX   XX      XX   XXX   XX   XX XX   XX XX X XX ' +
-      'XX      XX XXX  XX   XX XX   XX   XXX   XX   XX  XX XX  XX X XX ' +
-      'XX       XXX XX XX   XX  XXXXX    XXX    XXXXX    XXX    XX XX  ' +
-      '                                                                ' +
-
-      'XX   XX XX   XX XXXXXXX  XXXXX           XXXXX     XX           ' +
-      'XX   XX XX   XX      XX  XX     XX          XX    XXXX          ' +
-      ' XX XX   XX XX      XX   XX      XX         XX   XX  XX         ' +
-      '  XXX     XXX     XXX    XX       XX        XX                  ' +
-      ' XX XX    XXX    XX      XX        XX       XX                  ' +
-      'XX   XX   XXX   XX       XX         XX      XX                  ' +
-      'XX   XX   XXX   XXXXXXX  XXXXX       XX  XXXXX                  ' +
-      '                                                        XXXXXXX ' +
-
-      '  XX            XX                   XX            XXXX         ' +
-      '   XX           XX                   XX           XX            ' +
-      '         XXXXXX XX       XXXXX       XX  XXXX     XX     XXXXX  ' +
-      '        XX   XX XXXXXX  XX       XXXXXX XX  XX  XXXXXXX XX   XX ' +
-      '        XX   XX XX   XX XX      XX   XX XXXXXX    XX    XX   XX ' +
-      '        XX   XX XX   XX XX      XX   XX XX        XX     XXXXXX ' +
-      '         XXXXXX XXXXXX   XXXXX   XXXXXX  XXXXX    XX         XX ' +
-      '                                                         XXXXX  ' +
-
-      'XX        XX       XX   XX        XXX                           ' +
-      'XX                      XX   XX    XX                           ' +
-      'XXXXXX   XXX      XXXX  XX  XX     XX   XXXXXX  XXXXXX   XXXXX  ' +
-      'XX   XX   XX        XX  XXXXX      XX   XX X XX XX   XX XX   XX ' +
-      'XX   XX   XX        XX  XX  XX     XX   XX X XX XX   XX XX   XX ' +
-      'XX   XX   XX        XX  XX   XX    XX   XX X XX XX   XX XX   XX ' +
-      'XX   XX  XXXX       XX  XX   XX   XXXX  XX X XX XX   XX  XXXXX  ' +
-      '                  XXX                                           ' +
-
-      '                                                                ' +
-      '                                  XX                            ' +
-      'XXXXXX   XXXXX  XX XXX   XXXXXX   XX    XX   XX XX   XX XX   XX ' +
-      'XX   XX XX  XX  XXXX XX XX      XXXXXXX XX   XX XX   XX XX   XX ' +
-      'XX   XX XX  XX  XX       XXXXX    XX    XX   XX XX   XX XX X XX ' +
-      'XXXXXX   XXXXX  XX           XX   XX XX XX   XX  XX XX  XX X XX ' +
-      'XX          XX  XX      XXXXXX     XXX   XXXXXX   XXX    XXXXX  ' +
-      'XX          XX                                                  ' +
-
-      '                             XX   XX    XX                 X    ' +
-      '                           XX     XX      XX     XXX XX   XXX   ' +
-      'XX   XX XX   XX XXXXXXX    XX     XX      XX    XX XXX   XX XX  ' +
-      ' XX XX  XX   XX    XXX    XX      XX       XX           XX   XX ' +
-      '  XXX   XX   XX   XXX      XX     XX      XX            XX   XX ' +
-      ' XX XX   XXXXXX  XXX       XX     XX      XX            XX   XX ' +
-      'XX   XX      XX XXXXXXX      XX   XX    XX              XXXXXXX ' +
-      '         XXXXX                                                  ' +
-
-      ' XXXXXX                                                  XXXXXX ' +
-      'XX      XX   XX                                         XX      ' +
-      'XX               XXXX    XXXXXX  XXXXXX  XXXXX   XXXXXX XX      ' +
-      'XX      XX   XX XX  XX  XX   XX XX   XX XX   XX XX   XX XX      ' +
-      'XX      XX   XX XXXXXX  XX   XX XX   XX XX   XX XX   XX XX      ' +
-      'XX      XX   XX XX      XX   XX XX   XX XX   XX XX   XX XX      ' +
-      ' XXXXXX  XXXXXX  XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
-      '                                                                ' +
-
-      '                          XX      XX      XX      XXX     XXX   ' +
-      '                          XX      XX      XX     XX XX   XX XX  ' +
-      ' XXXX    XXXX    XXXX                           XX   XX XX   XX ' +
-      'XX  XX  XX  XX  XX  XX   XXX     XXX     XXX    XXXXXXX XXXXXXX ' +
-      'XXXXXX  XXXXXX  XXXXXX    XX      XX      XX    XX   XX XX   XX ' +
-      'XX      XX      XX        XX      XX      XX    XX   XX XX   XX ' +
-      ' XXXXX   XXXXX   XXXXX   XXXX    XXXX    XXXX   XX   XX XX   XX ' +
-      '                                                                ' +
-
-      'XXXXXXX XXXXXXX XXXXXXX                                         ' +
-      'XX      XX      XX                                              ' +
-      'XX      XX      XX                                              ' +
-      'XXXXX   XXXXX   XXXXX    XXXXX   XXXXX   XXXXX  XX   XX XX   XX ' +
-      'XX      XX      XX      XX   XX XX   XX XX   XX XX   XX XX   XX ' +
-      'XX      XX      XX      XX   XX XX   XX XX   XX XX   XX XX   XX ' +
-      'XXXXXXX XXXXXXX XXXXXXX  XXXXX   XXXXX   XXXXX   XXXXXX  XXXXXX ' +
-      '                                                                ' +
-
-      '         XXXXX  XX   XX  XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
-      '        XX   XX XX   XX XX      XX      XX      XX      XX      ' +
-      'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
-      'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
-      'XX   XX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
-      ' XXXXXX XX   XX XX   XX XX      XX      XX      XX      XX      ' +
-      '     XX  XXXXX   XXXXX   XXXXXX  XXXXXX  XXXXXX  XXXXXX  XXXXXX ' +
-      ' XXXXX                                                          ' +
-
-      '          XX                                                    ' +
-      '          XX                                                    ' +
-      ' XXXXXX          XXXXX  XX   XX XXXXXX  XXXXXX   XXXXXX  XXXXX  ' +
-      'XX   XX  XXX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
-      'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
-      'XX   XX   XX    XX   XX XX   XX XX   XX XX   XX XX   XX XX   XX ' +
-      ' XXXXXX  XXXX    XXXXX   XXXXXX XX   XX XX   XX  XXXXXX  XXXXX  ' +
-      '                                                                ' +
-
-      '   XX                   X       X          XX                   ' +
-      '                        X  X    X  X              XX XX XX XX   ' +
-      '   XX                     X       X        XX    XX XX   XX XX  ' +
-      ' XXX    XXXXXXX XXXXXXX  X XX    X XX      XX   XX XX     XX XX ' +
-      'XX      XX           XX      X       X     XX    XX XX   XX XX  ' +
-      'XX   XX XX           XX     X       X      XX     XX XX XX XX   ' +
-      ' XXXXX                     XXXX    XXXX    XX                   ' +
-      '                                                                ' +
-
-      'X   X    X X X X XXX XXX   X       X       X      X X           ' +
-      '  X   X X X X X XX XXX X   X       X       X      X X           ' +
-      'X   X    X X X X XXX XXX   X       X    XXXX      X X           ' +
-      '  X   X X X X X XX XXX X   X    XXXX       X    XXX X   XXXXX   ' +
-      'X   X    X X X X XXX XXX   X       X    XXXX      X X     X X   ' +
-      '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
-      'X   X    X X X X XXX XXX   X       X       X      X X     X X   ' +
-      '  X   X X X X X XX XXX X   X       X       X      X X     X X   ' +
-
-      '          X X     X X             X X     X X      X            ' +
-      '          X X     X X             X X     X X      X            ' +
-      'XXXX    XXX X     X X   XXXXX   XXX X     X X   XXXX            ' +
-      '   X        X     X X       X       X   XXXXX      X    XXXX    ' +
-      'XXXX    XXX X     X X   XXX X   XXXXX           XXXX       X    ' +
-      '   X      X X     X X     X X                              X    ' +
-      '   X      X X     X X     X X                              X    ' +
-      '   X      X X     X X     X X                              X    ' +
-
-      '   X       X               X               X       X      X X   ' +
-      '   X       X               X               X       X      X X   ' +
-      '   X       X               X               X       XXXXX  X X   ' +
-      '   XXXXXXXXXXXXXXXXXXXXX   XXXXXXXXXXXXXXXXXXXXX   X      X XXXX' +
-      '                   X       X               X       XXXXX  X X   ' +
-      '                   X       X               X       X      X X   ' +
-      '                   X       X               X       X      X X   ' +
-      '                   X       X               X       X      X X   ' +
-
-      '  X X             X X             X X             X X      X    ' +
-      '  X X             X X             X X             X X      X    ' +
-      '  X XXXX  XXXXXXXXX XXXXXXXXXXXX  X XXXXXXXXXXXXXXX XXXXXXXXXXXX' +
-      '  X       X                       X                             ' +
-      '  XXXXXX  X XXXXXXXXXXXXXXX XXXX  X XXXXXXXXXXXXXXX XXXXXXXXXXXX' +
-      '          X X             X X     X X             X X           ' +
-      '          X X             X X     X X             X X           ' +
-      '          X X             X X     X X             X X           ' +
-
-      '  X X                     X X      X                      X X   ' +
-      '  X X                     X X      X                      X X   ' +
-      '  X X   XXXXXXXX          X X      XXXXX   XXXXX          X X   ' +
-      'XXXXXXXX        XXXXXXXX  XXXXXX   X       X      XXXXXXXXXXXXXX' +
-      '        XXXXXXXX  X X              XXXXX   XXXXX  X X     X X   ' +
-      '           X      X X                      X      X X     X X   ' +
-      '           X      X X                      X      X X     X X   ' +
-      '           X      X X                      X      X X     X X   ' +
-
-      '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
-      '   X       X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
-      'XXXXXXXX   X            XXXXXXXX        XXXX        XXXXXXXXXXXX' +
-      '        XXXX       XXXXXXXXXXXXX        XXXX        XXXXXXXXXXXX' +
-      'XXXXXXXX           X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
-      '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
-      '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
-      '   X               X    XXXXXXXXXXXXXXXXXXXX        XXXX        ' +
-
-      '          XXX    XXXXXX          XXXXXX                         ' +
-      ' XX   X  X   X   X               X                              ' +
-      'X  X X   X  X    X                X                             ' +
-      'X   X    XXXXX   X       XXXXXX    X     XXXXXX                 ' +
-      'X  X X   X    X  X        X  X    X     X    X                  ' +
-      ' XX   X  X    X  X        X  X   X      X    X                  ' +
-      '        X XXXX   X        X  X   XXXXXX  XXXX                   ' +
-      '                                                                ' +
-
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '                                                                ' +
-
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '                                                                ' +
-
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XX   XX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XX   XX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXX XXX XXXXXXX XXXXXXX ' +
-      'XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX XXXXXXX ' +
-      '                                                                ' +
-      '';
-
-    if (height == 8) {
-      return LoadFont(FONT8, 1);
-    } else if (height == 16) {
-      return LoadFont(FONT8, 2);
-    } else {
-      return RenderFont(ctx, height);
-    }
+    return bindings;
   }
 })();
