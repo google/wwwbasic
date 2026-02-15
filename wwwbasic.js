@@ -72,8 +72,6 @@
       font_data = CreateFont(sctx, font_height);
     }
 
-    Screen(0);
-
     var debugging_mode = typeof debug == 'boolean' && debug;
     // Parsing and Run State.
     var labels = {};
@@ -3128,14 +3126,17 @@
       // TODO: Implement Mouse Clip!
     }
 
-    function Run() {
-      var speed = 100000;
+    function Pace() {
+      if (screen_mode > 0 && screen_mode <= 2) {
+        return 1;
+      } else {
+        return 100000;
+      }
+    }
+
+    function Run(pace) {
       for (;;) {
-        if (screen_mode > 0 && screen_mode <= 2) {
-          speed = 1;
-        } else {
-          speed = 100000;
-        }
+        var speed = pace !== undefined ? pace() : 100000;
         for (var i = 0; i < speed; ++i) {
           ops[ip++]();
           if (yielding) {
@@ -3146,14 +3147,13 @@
             break;
           }
         }
-        if (canvas) {
-          setTimeout(Run, delay);
-          delay = 0;
-          break;
-        }
+        setTimeout(function() { Run(pace); }, delay);
+        delay = 0;
+        break;
       }
     }
 
+    Screen(0);
     var compiled_ok = false;
     try {
       Compile();
@@ -3173,7 +3173,7 @@
     InitEvents();
     Render();
     if (compiled_ok) {
-      Run();
+      Run(Pace);
     }
   }
 
