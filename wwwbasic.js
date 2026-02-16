@@ -874,7 +874,7 @@
           if (pos != 0) {
             curop += ', ';
           }
-          if (k == 'p' || k == 'P') {
+          if (kl == 'p') {
             curop += vals[i][0];
             curop += ', ';
             curop += vals[i][1];
@@ -943,6 +943,7 @@
           ret.push([x, y]);
         } else if (k == 'd') {
           Skip('-');
+          ret.push(undefined);
         } else {
           Error('Bad binding');
         }
@@ -1834,42 +1835,7 @@
           curop += a + ' = LineValue();\n';
           return;
         }
-        var x1 = null;
-        var y1 = null;
-        if (tok == '(') {
-          Skip('(');
-          x1 = Expression();
-          Skip(',');
-          y1 = Expression();
-          Skip(')');
-        }
-        Skip('-');
-        Skip('(');
-        var x2 = Expression();
-        Skip(',');
-        var y2 = Expression();
-        Skip(')');
-        var c = 'undefined';
-        var fill = 0;
-        if (tok == ',') {
-          Skip(',');
-          if (tok != ',') {
-            c = Expression();
-          }
-          if (tok == ',') {
-            Skip(',');
-            if (tok == 'b') {
-              fill = 1;
-            } else if (tok == 'bf') {
-              fill = 2;
-            } else {
-              Error('Unexpected ' + tok);
-            }
-            Next();
-          }
-        }
-        curop += 'Line((' +
-          [x1, y1, x2, y2, c, fill].join('), (') + '));\n';
+        Invoke('Line', Arguments('PdpIS'));
       } else if (tok == 'get') {
         Skip('get');
         Skip('(');
@@ -2903,22 +2869,22 @@
       }
     }
 
+    // Not bound direct otherwise would be statement_line_PdpIS.
     bindings.Line = function(x1, y1, x2, y2, c, fill) {
       c = c === undefined ? default_fg_color : (c & max_color);
-      if (x1 === null) {
+      if (x1 === undefined) {
         x1 = pen_x;
         y1 = pen_y;
       }
-      if (fill == 0) {
-        // Should be line.
-        RawLine(x1, y1, x2, y2, c);
-      } else if (fill == 1) {
+      if (fill == 'bf') {
+        Box(x1, y1, x2, y2, c);
+      } else if (fill == 'b') {
         Box(x1, y1, x2, y1, c);
         Box(x1, y2, x2, y2, c);
         Box(x1, y1, x1, y2, c);
         Box(x2, y1, x2, y2, c);
       } else {
-        Box(x1, y1, x2, y2, c);
+        RawLine(x1, y1, x2, y2, c);
       }
     };
 
