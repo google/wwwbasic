@@ -1998,36 +1998,6 @@
         var e = Expression();
         curop += 'Sleep(' + e + ');\n';
         NewOp();
-      } else if (tok == 'width') {
-        Skip('width');
-        var w = Expression();
-        if (tok == ',') {
-          Skip(',');
-          var n = Expression();
-          // TODO
-        }
-        curop += 'Width(' + w + ');\n';
-      } else if (tok == 'color') {
-        Skip('color');
-        var fg;
-        var bg;
-        if (tok != ',') fg = Expression();
-        if (tok == ',') {
-          Skip(',');
-          bg = Expression();
-        }
-        if (tok == ',') {
-          Skip(',');
-          var cursor = Expression();
-          // TODO: Support cursor
-        }
-        curop += 'Color(' + fg + ',' + bg + ');\n';
-      } else if (tok == 'palette') {
-        Skip('palette');
-        var c = Expression();
-        Skip(',');
-        var p = Expression();
-        curop += 'Palette(' + c + ',' + p + ');\n';
       } else if (tok == 'swap') {
         Skip('swap');
         var a = GetVar();
@@ -2492,7 +2462,7 @@
     } catch (e) {
       if (bindings.Render) {
         bindings.statement_locate_iiI(1, 1);
-        bindings.Color(15);
+        bindings.statement_color_iII(15);
         Print([e.toString(), ';']);
       } else {
         console.error(e.toString());
@@ -2786,7 +2756,8 @@
       bindings.statement_cls_I(0);
     }
 
-    bindings.Width = function(w) {
+    bindings.statement_width_iI = function(w, h) {
+      // TODO: support height?
       if (screen_mode == 0 && (w == 80 || w == 40)) {
         SetupDisplay(w * 8, display.height, w == 80 ? 2.4 : 1.2, font_height);
       }
@@ -2926,14 +2897,15 @@
         ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) | (c & 0x00ff00);
     }
 
-    bindings.Palette = function(c, p) {
+    bindings.statement_palette_ii = function(c, p) {
       var r = 85 * (((p >> 1) & 2) | (p >> 5) & 1);
       var g = 85 * ((p & 2) | (p >> 4) & 1);
       var b = 85 * (((p << 1) & 2) | (p >> 3) & 1);
       palette[c] = RGB(r, g, b);
     };
 
-    bindings.Color = function(fg, bg) {
+    bindings.statement_color_iII = function(fg, bg, border) {
+      // TODO: support border
       if (screen_mode == 2) {
         Error('Illegal function call');
         return;
