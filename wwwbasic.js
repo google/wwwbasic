@@ -870,7 +870,7 @@
       for (var i = 0; i < kind.length; i++) {
         var k = kind.charAt(i);
         var kl = k.toLowerCase();
-        if (kl == 'i' || kl == 's' || kl == 'p') {
+        if (kl == 'i' || kl == 's' || kl == 'p' || kl == 'v') {
           if (pos != 0) {
             curop += ', ';
           }
@@ -878,6 +878,9 @@
             curop += vals[i][0];
             curop += ', ';
             curop += vals[i][1];
+          } else if (kl == 'v') {
+            curop += 'buffer, ';
+            curop += vals[i];
           } else {
             curop += vals[i];
           }
@@ -911,6 +914,7 @@
       // p - point (x, y) / P - optional point
       // s - string flag / S - optional string flag
       // d - dash
+      // v - varptr
       var ret = [];
       for (var i = 0; i < kind.length; i++) {
         var k = kind.charAt(i);
@@ -944,6 +948,10 @@
         } else if (k == 'd') {
           Skip('-');
           ret.push(undefined);
+        } else if (k == 'v') {
+          var name = tok;
+          Next();
+          ret.push(ArrayPart(ReserveArrayCell(name).offset, 0));
         } else {
           Error('Bad binding');
         }
@@ -1836,53 +1844,8 @@
           return;
         }
         Invoke('Line', Arguments('PdpIS'));
-      } else if (tok == 'get') {
-        Skip('get');
-        Skip('(');
-        var x1 = Expression();
-        Skip(',');
-        var y1 = Expression();
-        Skip(')');
-        Skip('-');
-        Skip('(');
-        var x2 = Expression();
-        Skip(',');
-        var y2 = Expression();
-        Skip(')');
-        Skip(',');
-        var name = tok;
-        Next();
-        var v = ArrayPart(ReserveArrayCell(name).offset, 0);
-        curop += 'GetImage(' + x1 + ', ' + y1 + ', ' +
-          x2 + ', ' + y2 + ', buffer, ' + v + ');\n';
-      } else if (tok == 'put') {
-        Skip('put');
-        Skip('(');
-        var x = Expression();
-        Skip(',');
-        var y = Expression();
-        Skip(')');
-        Skip(',');
-        var name = tok;
-        Next();
-        var v = ArrayPart(ReserveArrayCell(name).offset, 0);
-        var mode = 'xor';
-        if (tok == ',') {
-          Skip(',');
-          if (tok == 'pset' || tok == 'preset' || tok == 'and' ||
-              tok == 'or' || tok == 'xor') {
-            mode = tok;
-            Next();
-          } else {
-            Error('Invalid put mode');
-          }
-        }
-        curop += 'PutImage(' + x + ', ' + y + ', buffer, ' +
-          v + ', "' + mode + '");\n';
       } else if (tok == 'sleep') {
-        Skip('sleep');
-        var e = Expression();
-        curop += 'Sleep(' + e + ');\n';
+        Invoke('Sleep', Arguments('i'));
         NewOp();
       } else if (tok == 'swap') {
         Skip('swap');
@@ -2967,7 +2930,7 @@
     }
     bindings.statement_circle_piIIIIS = Paint;
 
-    bindings.GetImage = function(x1, y1, x2, y2, buffer, offset) {
+    bindings.statement_get_pdpv = function(x1, y1, x2, y2, buffer, offset) {
       x1 = x1 | 0;
       y1 = y1 | 0;
       x2 = x2 | 0;
@@ -3017,9 +2980,10 @@
       }
     };
 
-    bindings.PutImage = function(x1, y1, buffer, offset, mode) {
+    bindings.statement_put_pvS = function(x1, y1, buffer, offset, mode) {
       x1 = x1 | 0;
       y1 = y1 | 0;
+      mode = mode === undefined ? 'xor' : mode;
       var s16 = new Uint16Array(buffer);
       var x2;
       if (screen_bpp <= 2) {
