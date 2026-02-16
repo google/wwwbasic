@@ -1696,20 +1696,6 @@
           Error('Expected on/off');
         }
         // Implement this?
-      } else if (tok == 'sound') {
-        Skip('sound');
-        var freq = Expression();
-        Skip(',');
-        var duration = Expression();
-        // TODO: Implement this.
-      } else if (tok == 'play') {
-        Skip('play');
-        var notes = Expression();
-        // TODO: Implement this.
-      } else if (tok == 'draw') {
-        Skip('draw');
-        var cmds = Expression();
-        curop += 'Draw(' + cmds + ');\n';
       } else if (tok == 'chain') {
         Skip('chain');
         var filename = Expression();
@@ -1927,22 +1913,6 @@
         }
         curop += 'PutImage(' + x + ', ' + y + ', buffer, ' +
           v + ', "' + mode + '");\n';
-      } else if (tok == 'screen') {
-        Skip('screen');
-        var ret = 'Screen(';
-        var e = Expression();
-        ret += '(' + e + ')';
-        while (tok == ',') {
-          Skip(',');
-          if (tok != ',' && !EndOfStatement()) {
-            var e = Expression();
-            ret += ', (' + e + ')';
-          } else {
-            ret += ', null';
-          }
-        }
-        ret += ');\n'
-        curop += ret;
       } else if (tok == 'sleep') {
         Skip('sleep');
         var e = Expression();
@@ -2074,30 +2044,6 @@
           }
         }
         flow.push(f);
-      } else if (tok == 'getmouse') {
-        Skip('getmouse');
-        curop += 'Yield();';
-        NewOp();
-        curop += 'var t = GetMouse();\n';
-        curop += GetVar() + ' = t[0];\n';
-        Skip(',');
-        curop += GetVar() + ' = t[1];\n';
-        if (tok == ',') {
-          Skip(',');
-          if (tok != ',') {
-            curop += GetVar() + ' = t[2];\n';
-          }
-        }
-        if (tok == ',') {
-          Skip(',');
-          if (tok != ',') {
-            curop += GetVar() + ' = t[3];\n';
-          }
-        }
-        if (tok == ',') {
-          Skip(',');
-          curop += GetVar() + ' = t[4];\n';
-        }
       } else if (tok == '') {
         return;
       } else if (tok == 'call' || (functions[tok] !== undefined &&
@@ -2596,8 +2542,8 @@
     var mouse_wheel = 0;
     var mouse_clip = 0;
 
-    // TODO: Cleanup
-    bindings.GetMouse = function() {
+    bindings.statement_getmouse_ooOOO = function() {
+      bindings.Yield();
       return [mouse_x, mouse_y, mouse_wheel, mouse_buttons, mouse_clip];
     };
 
@@ -2647,7 +2593,8 @@
       RGB(0xCC, 0xCC, 0xCC), RGB(0xFF, 0xFF, 0xFF),
     ];
 
-    bindings.Screen = function(mode) {
+    bindings.statement_screen_iIII = function(mode, cswitch, active, visual) {
+      // TODO: Support pages.
       if (!canvas) {
         return;
       }
@@ -3001,6 +2948,14 @@
       pen_y = y;
     }
 
+    bindings.statement_sound_ii = function(freq, duration) {
+      // TODO: implement.
+    };
+
+    bindings.statement_play_i = function(cmds) {
+      // TODO: implement.
+    };
+
     function Paint(x, y, r, c, start, end, aspect, fill) {
       c = c === undefined ? default_fg_color : (c & max_color);
       start = start === undefined ? 0 : start;
@@ -3197,7 +3152,7 @@
       StepUnscaled(dx * draw_state.scale, dy * draw_state.scale);
     }
 
-    bindings.Draw = function(cmds) {
+    bindings.statement_draw_i = function(cmds) {
       cmds = cmds.toLowerCase();
       var m;
       while (cmds.length) {
@@ -3841,7 +3796,7 @@
       }
     }
 
-    bindings.Screen(0);
+    bindings.statement_screen_iIII(0);
     InitEvents();
     Render();
     return bindings;
