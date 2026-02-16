@@ -19,6 +19,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
 cd ${SCRIPT_DIR}/..
 
+# Update .mjs
+./tools/to_mjs.js
+
 # Run tests.
 for x in $(ls ./test/*-test.js); do
   node $x

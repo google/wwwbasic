@@ -26,7 +26,7 @@ You can include wwwBASIC directly in Web pages:
 
 You can also import wwwBASIC as a Node.js module.
 
-Either install  it via [npm](https://www.npmjs.com/): `npm install -S wwwbasic`
+Either install it via [npm](https://www.npmjs.com/): `npm install -S wwwbasic`
 
 or clone the repository: `git clone https://github.com/google/wwwbasic.git`
 
@@ -34,6 +34,9 @@ Then run your code:
 ```js
 var basic = require('wwwbasic'); // from NPM
 // var basic = require('./wwwbasic.js'); // from within the cloned repository directory
+
+// An ESM import is also available from wwwbasic.mjs
+// import basic from "wwwbasic.mjs";
 
 basic.Basic(
 `
@@ -50,11 +53,6 @@ It supports a range of features including:
    * Graphics: 24-bit color, PSET, LINE, CIRCLE.
    * Input: INKEY$, GETMOUSE.
    * Source is parsed and compiled to JavaScript at load time.
-
-## Test Suite
-
-wwwBASIC has a "work in progress" test suite.
-It can be run with: `./tests/run-tests.sh`.
 
 ## Examples
 
@@ -79,6 +77,55 @@ It can be run with: `./tests/run-tests.sh`.
 * [Editor](https://google.github.io/wwwbasic/examples/editor.html)
   ([source](examples/editor.html)) - Live editor using
   [Ace](https://ace.c9.io/).
+
+## Options
+
+While by default wwwBASIC processes script tags of type="text/basic",
+the interpreter can also be invoked with various options.
+
+```js
+basic.Basic(codeText, {
+  debug: true  // or false,
+  bindings: {
+    // a dictionary of external bindings, see below.
+    name: myfunc,
+  },
+});
+```
+
+Default bindings are available from `basic.ConsoleBindings()`.
+Bindings for a canvas are available from `basic.GraphicsBindings(canvas)`.
+
+NOTE: **External bindings are currently consindered a semi-unstable feature,
+use with caution.**
+
+A Bindings can be custom (see below), but a few are foundational:
+
+* PutCh(ch) - Print one character. PutCh(undefined) must flush.
+* Halt() - Print any final message at END.
+* TODO: Bindings for input!
+
+Additionally, custom statements and procedures can be added with
+the following naming convention:
+
+* `kind_name_arguments`
+* **kind** = statement / call
+* **name** = the name of the subroutine or statement in lowercase
+* **arguements** = argument spec see below
+
+The argument spec uses one character per argument:
+
+* i - input / I - optional input
+* o - output / O - optional output
+* p - point (x, y) / P - optional point (passes 2 values)
+* s - string flag / S - optional string flag (e.g. BF for LINE)
+* d - dash (e.g. in words like LINE)
+* v - varptr (e.g. in words list GET / PUT, passes buffer, offset)
+
+## Test Suite
+
+wwwBASIC has a "work in progress" test suite.
+It can be run with: `./tests/run-tests.sh`.
 
 ## But Why?
 

@@ -14,6 +14,7 @@
 
 'use strict';
 
+// ESM:
 (function() {
   var DYNAMIC_HEAP_SIZE = 1024 * 1024 * 16;
   var STACK_SIZE = 64 * 1024;
@@ -36,8 +37,19 @@
     return String.fromCharCode(ch.charCodeAt(0) + 1);
   }
 
-  function Interpret(code, from_tag, bindings) {
-    var debugging_mode = typeof debug == 'boolean' && debug;
+  function DecodeTag(code) {
+    code = code.replace(/&lt;/g, '<');
+    code = code.replace(/&gt;/g, '>');
+    code = code.replace(/&amp;/g, '&');
+    return code;
+  }
+
+  function Basic(code, options) {
+    options = options === undefined ? {} : options;
+    var bindings = options.bindings;
+    bindings = bindings === undefined ? ConsoleBindings() : bindings;
+    var debugging_mode = options.debug || (typeof debug == 'boolean' && debug);
+
     // Parsing and Run State.
     var labels = {};
     var data_labels = {};
@@ -96,11 +108,6 @@
     ];
     code = code.replace(/\r/g, ' ');
     code = code.replace(/\t/g, ' ');
-    if (from_tag) {
-      code = code.replace(/&lt;/g, '<');
-      code = code.replace(/&gt;/g, '>');
-      code = code.replace(/&amp;/g, '&');
-    }
 
     var tok = null;
     var tok_count = 0;
@@ -911,10 +918,10 @@
     function Arguments(kind) {
       // i - input / I - optional input
       // o - output / O - optional output
-      // p - point (x, y) / P - optional point
-      // s - string flag / S - optional string flag
-      // d - dash
-      // v - varptr
+      // p - point (x, y) / P - optional point (passes 2 values)
+      // s - string flag / S - optional string flag (e.g. BF for LINE)
+      // d - dash (e.g. in words like LINE)
+      // v - varptr (e.g. in words list GET / PUT, passes buffer, offset)
       var ret = [];
       for (var i = 0; i < kind.length; i++) {
         var k = kind.charAt(i);
@@ -2127,7 +2134,7 @@
 
     function Print(items) {
       if (items.length == 0) {
-        bindings.PutCh(null);
+        bindings.PutCh();
         return;
       }
       for (var i = 0; i < items.length; i += 2) {
@@ -2146,7 +2153,7 @@
           PutCh(' ');
         }
         if (items[i + 1] != ';' && items[i + 1] != ',') {
-          bindings.PutCh(null);
+          bindings.PutCh();
         }
       }
     }
@@ -2313,6 +2320,7 @@
     var canvas = document.createElement('canvas');
     canvas.width = 800;
     canvas.height = 600;
+    canvas.fromWWWBasic = true;
     if (full_window) {
       document.body.appendChild(canvas);
     } else {
@@ -2350,16 +2358,16 @@
       }
       var tag = tags[t];
       var canvas = SetupCanvas(tag, full_window);
-      var bindings = GraphicsBindings(canvas, true);
+      var bindings = GraphicsBindings(canvas);
       if (tags[t].src) {
         var request = new XMLHttpRequest();
         request.addEventListener('load', function(e) {
-          Interpret(request.responseText, true, bindings);
+          Basic(request.responseText, {bindings: bindings});
         }, false);
         request.open('GET', tag.src);
         request.send();
       } else {
-        Interpret(tag.text, true, bindings);
+        Basic(DecodeTag(tag.text), {bindings: bindings});
       }
     }
   }
@@ -2374,16 +2382,14 @@
         timer_offset = timer_halted - (new Date().getTime() / 1000);
       });
       window.Basic = function(code, canvas) {
-        Interpret(code, false, GraphicsBindings(canvas, false));
+        Basic(code, {bindings: GraphicsBindings(canvas)});
       };
     } else {
-      exports.Basic = function(code) {
-        Interpret(code, false, ConsoleBindings());
-      };
+      for (var key in basic) {
+        exports[key] = basic[key];
+      }
     }
   }
-
-  Main();
 
   function ConsoleBindings() {
     var bindings = {};
@@ -2392,7 +2398,7 @@
 
     // TODO: Cleanup, this should be hidden.
     bindings.PutCh = function(ch) {
-      if (ch == null) {
+      if (ch === undefined) {
         console.log(output_buffer);
         output_buffer = '';
       } else {
@@ -2402,14 +2408,14 @@
 
     bindings.Halt = function() {
       if (output_buffer != '') {
-        bindings.PutCh(null);
+        bindings.PutCh();
       }
     };
 
     return bindings;
   }
 
-  function GraphicsBindings(canvas, from_tag) {
+  function GraphicsBindings(canvas) {
     var bindings = {};
 
     const BLACK = 0xff000000;
@@ -2659,7 +2665,7 @@
 
     // TODO: Cleanup, this should be hidden.
     bindings.PutCh = function(ch) {
-      if (ch == null) {
+      if (ch === undefined) {
         text_x = 0;
         text_y++;
         return;
@@ -2697,7 +2703,7 @@
         if (key == String.fromCharCode(13)) {
           --text_x;
           bindings.PutCh(' ');
-          bindings.PutCh(null);
+          bindings.PutCh();
           return 0;
         }
         if (key == String.fromCharCode(8) && input_string.length > 0) {
@@ -3181,7 +3187,7 @@
     var viewport_w, viewport_h;
 
     function Resize() {
-      if (from_tag) {
+      if (canvas.fromWWWBasic) {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
       }
@@ -3257,7 +3263,7 @@
         return;
       }
       Resize();
-      if (from_tag) {
+      if (canvas.fromWWWBasic) {
         window.addEventListener('resize', Resize, false);
       }
       window.addEventListener('keydown', function(e) {
@@ -3731,4 +3737,14 @@
     Render();
     return bindings;
   }
+
+  var basic = {
+    Basic: Basic,
+    GraphicsBindings: GraphicsBindings,
+    ConsoleBindings: ConsoleBindings,
+  };
+
+  // ESM:
+  Main();
+// ESM: export default basic;
 })();
