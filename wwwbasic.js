@@ -869,11 +869,18 @@
       var pos = 0;
       for (var i = 0; i < kind.length; i++) {
         var k = kind.charAt(i);
-        if (k == 'i' || k == 'I') {
+        var kl = k.toLowerCase();
+        if (kl == 'i' || kl == 's' || kl == 'p') {
           if (pos != 0) {
             curop += ', ';
           }
-          curop += vals[i];
+          if (k == 'p' || k == 'P') {
+            curop += vals[i][0];
+            curop += ', ';
+            curop += vals[i][1];
+          } else {
+            curop += vals[i];
+          }
           pos++;
         }
       }
@@ -882,7 +889,7 @@
       for (var i = 0; i < kind.length; i++) {
         var k = kind.charAt(i);
         if (k == 'o' || k == 'O') {
-          if (vals[i] !== null) {
+          if (vals[i] !== undefined) {
             curop += '  ' + vals[i] + ' = t[' + pos + '];';
           }
           pos++;
@@ -899,19 +906,42 @@
     }
 
     function Arguments(kind) {
+      // i - input / I - optional input
+      // o - output / O - optional output
+      // p - point (x, y) / P - optional point
+      // s - string flag / S - optional string flag
+      // d - dash
       var ret = [];
       for (var i = 0; i < kind.length; i++) {
         var k = kind.charAt(i);
-        if (k == 'I' || k == 'O') {
+        if (k == 'I' || k == 'O' || k == 'P' || k == 'S') {
           if (tok == ')' || EndOfStatement()) {
-            ret.push(null);
+            if (k == 'P') {
+              ret.push([undefined, undefined]);
+            } else {
+              ret.push(undefined);
+            }
             continue;
           }
         }
         if (k == 'o' || k == 'O') {
           ret.push(GetVar());
-        } else {
+        } else if (k == 'i' || k == 'I') {
           ret.push(Expression());
+        } else if (k == 's' || k == 'S') {
+          ret.push('"' + tok + '"');
+          Next();
+        } else if (k == 'p' || k == 'P') {
+          Skip('(');
+          var x = Expression();
+          Skip(',');
+          var y = Expression();
+          Skip(')');
+          ret.push([x, y]);
+        } else if (k == 'd') {
+          Skip('-');
+        } else {
+          Error('Bad binding');
         }
         if (tok == ',' && i != kind.length - 1) {
           Skip(',');
@@ -1790,25 +1820,6 @@
         var z = Expression();
         curop += a + ' = MidReplace(' + a + ', ' + x + ', ' +
                  y + ', ' + z + ');\n'
-      } else if (tok == 'paint') {
-        Skip('paint');
-        Skip('(');
-        var x = Expression();
-        Skip(',');
-        var y = Expression();
-        Skip(')');
-        var paint;
-        if (tok == ',') {
-          Skip(',');
-          paint = Expression();
-        }
-        var border;
-        if (tok == ',') {
-          Skip(',');
-          border = Expression();
-        }
-        curop += 'Paint((' + x + '), (' + y + '), (' +
-          paint + '), (' + border + '));\n';
       } else if (tok == 'circle') {
         Skip('circle');
         Skip('(');
@@ -1853,26 +1864,6 @@
         }
         curop += 'Circle((' +
           [x, y, r, c, start, end, aspect, fill].join('), (') + '));\n';
-      } else if (tok == 'pset' || tok == 'preset') {
-        Next();
-        Skip('(');
-        var x = Expression();
-        Skip(',');
-        var y = Expression();
-        Skip(')');
-        var extra = [];
-        if (tok == ',') {
-          Skip(',');
-          extra.push(Expression());
-          while (tok == ',') {
-            Skip(',');
-            if (tok != ',' && !EndOfStatement()) {
-              extra.push(Expression());
-            }
-          }
-        }
-        curop += 'Pset((' +
-          [x, y].concat(extra).join('), (') + '));\n';
       } else if (tok == 'line') {
         Skip('line');
         if (tok == 'input') {
@@ -3037,8 +3028,15 @@
       text_y = 0;
     };
 
-    bindings.Pset = function(x, y, c) {
+    bindings.statement_pset_pI = function(x, y, c) {
       c = c === undefined ? default_fg_color : (c & max_color);
+      display_data[x + y * display.width] = c;
+      pen_x = x;
+      pen_y = y;
+    }
+
+    bindings.statement_preset_pI = function(x, y, c) {
+      c = c === undefined ? 0 : (c & max_color);
       display_data[x + y * display.width] = c;
       pen_x = x;
       pen_y = y;
@@ -3046,6 +3044,8 @@
 
     bindings.Circle = function(x, y, r, c, start, end, aspect, fill) {
       c = c === undefined ? default_fg_color : (c & max_color);
+      start = start === undefined ? 0 : start;
+      end = end == undefined ? Math.PI * 2 : end;
       x += 0.5;
       y += 0.5;
       var complete = false;
@@ -3082,7 +3082,7 @@
         RawLine(x, y, xx, yy, c);
       }
       if (fill && start == 0 && end == Math.PI * 2) {
-        bindings.Paint(x, y, c, c);
+        bindings.statement_paint_pII(x, y, c, c);
       }
     };
 
@@ -3301,7 +3301,7 @@
       }
     };
 
-    bindings.Paint = function(x, y, paint, border) {
+    bindings.statement_paint_pII = function(x, y, paint, border) {
       if (paint === undefined) {
         paint = default_fg_color;
       }
