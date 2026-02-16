@@ -915,11 +915,14 @@
       for (var i = 0; i < kind.length; i++) {
         var k = kind.charAt(i);
         if (k == 'I' || k == 'O' || k == 'P' || k == 'S') {
-          if (tok == ')' || EndOfStatement()) {
+          if (tok == ')' || tok == ',' || EndOfStatement()) {
             if (k == 'P') {
               ret.push([undefined, undefined]);
             } else {
               ret.push(undefined);
+            }
+            if (tok == ',') {
+              Skip(',');
             }
             continue;
           }
@@ -1820,50 +1823,6 @@
         var z = Expression();
         curop += a + ' = MidReplace(' + a + ', ' + x + ', ' +
                  y + ', ' + z + ');\n'
-      } else if (tok == 'circle') {
-        Skip('circle');
-        Skip('(');
-        var x = Expression();
-        Skip(',');
-        var y = Expression();
-        Skip(')');
-        Skip(',');
-        var r = Expression();
-        Skip(',');
-        var c = Expression();
-        var start = 0;
-        var end = Math.PI * 2;
-        var aspect = 'null';
-        var fill = 0;
-        if (tok == ',') {
-          Skip(',');
-          if (tok != ',' && !EndOfStatement()) {
-            start = Expression();
-          }
-        }
-        if (tok == ',') {
-          Skip(',');
-          if (tok != ',' && !EndOfStatement()) {
-            end = Expression();
-          }
-        }
-        if (tok == ',') {
-          Skip(',');
-          if (tok != ',' && !EndOfStatement()) {
-            aspect = Expression();
-          }
-        }
-        if (tok == ',') {
-          Skip(',');
-          if (tok == 'f') {
-            fill = 1;
-            Next();
-          } else {
-            Error('Expected F got ' + tok);
-          }
-        }
-        curop += 'Circle((' +
-          [x, y, r, c, start, end, aspect, fill].join('), (') + '));\n';
       } else if (tok == 'line') {
         Skip('line');
         if (tok == 'input') {
@@ -3042,7 +3001,7 @@
       pen_y = y;
     }
 
-    bindings.Circle = function(x, y, r, c, start, end, aspect, fill) {
+    function Paint(x, y, r, c, start, end, aspect, fill) {
       c = c === undefined ? default_fg_color : (c & max_color);
       start = start === undefined ? 0 : start;
       end = end == undefined ? Math.PI * 2 : end;
@@ -3084,7 +3043,8 @@
       if (fill && start == 0 && end == Math.PI * 2) {
         bindings.statement_paint_pII(x, y, c, c);
       }
-    };
+    }
+    bindings.statement_circle_piIIIIS = Paint;
 
     bindings.GetImage = function(x1, y1, x2, y2, buffer, offset) {
       x1 = x1 | 0;
