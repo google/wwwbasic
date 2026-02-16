@@ -104,7 +104,7 @@
 
     var tok = null;
     var tok_count = 0;
-    var line = bindings.Locate ? 0 : 1;
+    var line = bindings.Render ? 0 : 1;
 
     function Next() {
       tok = '';
@@ -860,6 +860,64 @@
           global: vars === global_vars,
         };
       }
+    }
+
+    function Invoke(name, kind_vals) {
+      var kind = kind_vals[0];
+      var vals = kind_vals[1];
+      curop += 'var t = ' + name + '(';
+      var pos = 0;
+      for (var i = 0; i < kind.length; i++) {
+        var k = kind.charAt(i);
+        if (k == 'i' || k == 'I') {
+          if (pos != 0) {
+            curop += ', ';
+          }
+          curop += vals[i];
+          pos++;
+        }
+      }
+      curop += ');';
+      pos = 0;
+      for (var i = 0; i < kind.length; i++) {
+        var k = kind.charAt(i);
+        if (k == 'o' || k == 'O') {
+          if (vals[i] !== null) {
+            curop += '  ' + vals[i] + ' = t[' + pos + '];';
+          }
+          pos++;
+        }
+      }
+      curop += '\n';
+    }
+
+    function ParenArguments(kind) {
+      Skip('(');
+      var ret = Arguments(kind);
+      Skip(')');
+      return ret;
+    }
+
+    function Arguments(kind) {
+      var ret = [];
+      for (var i = 0; i < kind.length; i++) {
+        var k = kind.charAt(i);
+        if (k == 'I' || k == 'O') {
+          if (tok == ')' || EndOfStatement()) {
+            ret.push(null);
+            continue;
+          }
+        }
+        if (k == 'o' || k == 'O') {
+          ret.push(GetVar());
+        } else {
+          ret.push(Expression());
+        }
+        if (tok == ',' && i != kind.length - 1) {
+          Skip(',');
+        }
+      }
+      return [kind, ret];
     }
 
     function IndexVariable(name, assignable, argument_to_function) {
@@ -1935,30 +1993,11 @@
         }
         ret += ');\n'
         curop += ret;
-      } else if (tok == 'cls') {
-        Skip('cls');
-        var mode = '0';
-        if (tok == '0' || tok == '1' || tok == '2') {
-          mode = tok;
-          Next();
-        }
-        curop += 'Cls(' + mode + ');\n';
       } else if (tok == 'sleep') {
         Skip('sleep');
         var e = Expression();
         curop += 'Sleep(' + e + ');\n';
         NewOp();
-      } else if (tok == 'locate') {
-        Skip('locate');
-        var y = Expression();
-        Skip(',');
-        var x = Expression();
-        if (tok == ',') {
-          Skip(',');
-          var cursor = Expression();
-          // TODO: Support cursor + start + stop
-        }
-        curop += 'Locate(' + x + ', ' + y + ');\n';
       } else if (tok == 'width') {
         Skip('width');
         var w = Expression();
@@ -2148,6 +2187,15 @@
         if (name == 'call') {
           name = tok;
           Next();
+          for (var method in bindings) {
+            var parts = method.split('_');
+            if (parts.length == 3 && parts[0] == 'call') {
+              if (name == parts[1]) {
+                Invoke(method, ParenArguments(parts[2]));
+                return;
+              }
+            }
+          }
           FunctionCall(name, {is_subroutine: true, is_call: true});
         } else {
           FunctionCall(name, {is_subroutine: true});
@@ -2155,6 +2203,15 @@
       } else {
         var name = tok;
         Next();
+        for (var method in bindings) {
+          var parts = method.split('_');
+          if (parts.length == 3 && parts[0] == 'statement') {
+            if (name == parts[1]) {
+              Invoke(method, Arguments(parts[2]));
+              return;
+            }
+          }
+        }
         if (tok == ':') {
           Skip(':');
           AddLabel(name);
@@ -2433,8 +2490,8 @@
       Compile();
       compiled_ok = true;
     } catch (e) {
-      if (bindings.Locate) {
-        bindings.Locate(1, 1);
+      if (bindings.Render) {
+        bindings.statement_locate_iiI(1, 1);
         bindings.Color(15);
         Print([e.toString(), ';']);
       } else {
@@ -2647,17 +2704,27 @@
     }
 
     const L = 0x55, M = 0xAA, H = 0xFF;
-    const RGBA16 = [
+    const EGA16 = [
       RGB(0, 0, 0), RGB(0, 0, M), RGB(0, M, 0), RGB(0, M, M),
       RGB(M, 0, 0), RGB(M, 0, M), RGB(M, L, 0), RGB(M, M, M),
       RGB(L, L, L), RGB(L, L, H), RGB(L, H, L), RGB(L, H, H),
       RGB(H, L, L), RGB(H, L, H), RGB(H, H, L), RGB(H, H, H),
     ];
     const CGA1 = [
-      [RGBA16[0], RGBA16[2], RGBA16[4], RGBA16[6]],
-      [RGBA16[0], RGBA16[3], RGBA16[5], RGBA16[7]],
-      [RGBA16[0], RGBA16[10], RGBA16[12], RGBA16[14]],
-      [RGBA16[0], RGBA16[11], RGBA16[13], RGBA16[15]],
+      [EGA16[0], EGA16[2], EGA16[4], EGA16[6]],
+      [EGA16[0], EGA16[3], EGA16[5], EGA16[7]],
+      [EGA16[0], EGA16[10], EGA16[12], EGA16[14]],
+      [EGA16[0], EGA16[11], EGA16[13], EGA16[15]],
+    ];
+    const TI99 = [
+      0, RGB(0x00, 0x00, 0x00),
+      RGB(0x21, 0xC8, 0x42), RGB(0x5E, 0xDC, 0x78),
+      RGB(0x54, 0x55, 0xED), RGB(0x7D, 0x76, 0xFC),
+      RGB(0xD4, 0x52, 0x4D), RGB(0x42, 0xEB, 0xF5),
+      RGB(0xFC, 0x55, 0x54), RGB(0xFF, 0x79, 0x78),
+      RGB(0xD4, 0xC1, 0x54), RGB(0xE6, 0xCE, 0x80),
+      RGB(0x21, 0xB0, 0x3B), RGB(0xC9, 0x5B, 0xBA),
+      RGB(0xCC, 0xCC, 0xCC), RGB(0xFF, 0xFF, 0xFF),
     ];
 
     bindings.Screen = function(mode) {
@@ -2668,16 +2735,15 @@
         return;
       }
       var monochrome = [BLACK, WHITE];
-      var rgba = RGBA16;
       var modes = {
-        0: [640, 200, 2.4, 8, rgba, 4],
+        0: [640, 200, 2.4, 8, EGA16, 4],
         1: [320, 200, 1.2, 8, CGA1[1], 2],
         2: [640, 200, 2.4, 8, monochrome, 1],
-        7: [320, 200, 1.2, 8, rgba, 4],
-        8: [640, 200, 2.4, 8, rgba, 4],
-        9: [640, 350, 480 / 350, 14, rgba, 4],
+        7: [320, 200, 1.2, 8, EGA16, 4],
+        8: [640, 200, 2.4, 8, EGA16, 4],
+        9: [640, 350, 480 / 350, 14, EGA16, 4],
         11: [640, 480, 1, 16, monochrome, 2],
-        12: [640, 480, 1, 16, rgba, 4],
+        12: [640, 480, 1, 16, EGA16, 4],
         13: [320, 200, 1.2, 8, undefined, 24],
         14: [320, 240, 1, 16, undefined, 24],
         15: [400, 300, 1, 16, undefined, 24],
@@ -2687,6 +2753,7 @@
         19: [800, 600, 1, 16, undefined, 24],
         20: [1024, 768, 1, 16, undefined, 24],
         21: [1280, 1024, 1, 16, undefined, 24],
+        100: [256, 192, 1, 8, TI99, 6],
       };
       var m = modes[mode];
       if (m === undefined) {
@@ -2708,10 +2775,15 @@
           palette[i] = color_map[i] | 0;
         }
       }
+      if (mode == 100) {
+        for (var i = 0; i < 32; i++) {
+          bindings.call_color_iii(i, 2, 4);
+        }
+      }
       screen_mode = mode;
       pen_x = display.width / 2;
       pen_y = display.height / 2;
-      bindings.Cls(0);
+      bindings.statement_cls_I(0);
     }
 
     bindings.Width = function(w) {
@@ -2725,21 +2797,84 @@
     };
 
     // TODO: Cleanup, this should be hidden.
+    bindings.DrawChar = function(col, row, ch, fg, bg) {
+      var ch = (ch & 0xff) >>> 0;
+      var chpos = ch * font_height * 8;
+      for (var y = 0; y < font_height; ++y) {
+        var pos = col * 8 + (y + row * font_height) * display.width;
+        for (var x = 0; x < 8; ++x) {
+          display_data[pos++] = font_data[chpos++] ? fg : bg;
+        }
+      }
+    };
+
+    // TODO: Separate.
+    bindings.call_screen_i = function(col) {
+      // TODO: This isn't right.
+      palette[0] = TI99[col - 1];
+    };
+
+    // TODO: Separate.
+    bindings.call_color_iii = function(bank, fg, bg) {
+      palette[bank * 2 + 0] = TI99[fg - 1];
+      palette[bank * 2 + 1] = TI99[bg - 1];
+    };
+
+    // TODO: Separate.
+    bindings.call_hchar_iiiI = function(row, col, ch, n) {
+      n = n === undefined ? 1 : n;
+      row -= 1;
+      col -= 1;
+      var c = (ch >> 3) * 2;
+      if (n < 0) { Error('Bad value'); }
+      for (var i = 0; i < n; i++) {
+        bindings.DrawChar(col, row, ch, c, c + 1);
+        ++col;
+        if (col >= 32) {
+          col = 0;
+          ++row;
+          if (row >= 24) {
+            row = 0;
+          }
+        }
+      }
+    };
+
+    // TODO: Separate.
+    bindings.call_vchar_iiiI = function(row, col, ch, n) {
+      n = n === undefined ? 1 : n;
+      row -= 1;
+      col -= 1;
+      var c = (ch >> 3) * 2;
+      if (n < 0) { Error('Bad value'); }
+      for (var i = 0; i < n; i++) {
+        bindings.DrawChar(col, row, ch, c, c + 1);
+        ++row;
+        if (row >= 24) {
+          row = 0;
+          ++col;
+          if (col >= 24) {
+            col = 0;
+          }
+        }
+      }
+    };
+
+    // TODO: Cleanup, this should be hidden.
     bindings.PutCh = function(ch) {
       if (ch == null) {
         text_x = 0;
         text_y++;
         return;
       }
-      var fg = fg_color;
-      var bg = bg_color;
-      var chcode = (ch.charCodeAt(0) & 0xff) >>> 0;
-      var chpos = chcode * font_height * 8;
-      for (var y = 0; y < font_height; ++y) {
-        var pos = text_x * 8 + (y + text_y * font_height) * display.width;
-        for (var x = 0; x < 8; ++x) {
-          display_data[pos++] = font_data[chpos++] ? fg : bg;
-        }
+      var code = ch.charCodeAt(0);
+      if (screen_mode == 100) {
+        // TI
+        var bank = ch >> 3 * 2;
+        bindings.DrawChar(text_x, text_y, code, bank, bank + 1);
+      } else {
+        // PC
+        bindings.DrawChar(text_x, text_y, code, fg_color, bg_color);
       }
       text_x++;
       if (text_x >= text_width) {
@@ -2805,7 +2940,7 @@
       }
       if (screen_mode == 1) {
         if (fg !== undefined) {
-          palette[0] = RGBA16[fg & 15];
+          palette[0] = EGA16[fg & 15];
         }
         if (bg !== undefined) {
           for (var i = 1; i < 4; ++i) {
@@ -2822,7 +2957,8 @@
       }
     };
 
-    bindings.Locate = function(x, y) {
+    bindings.statement_locate_iiI = function(y, x, cursor) {
+      // TODO: Support cursor?
       text_x = x - 1;
       text_y = y - 1;
       // Hack to yield more often (for NIBBLES.BAS)
@@ -2917,9 +3053,14 @@
       }
     };
 
-    bindings.Cls = function(mode) {
+    bindings.statement_cls_I = function(mode) {
       // TODO: Handle mode.
-      Box(0, 0, display.width, display.height, bg_color);
+      if (screen_mode == 100) {
+        // 5 = 32 / 8 + 1
+        Box(0, 0, display.width, display.height, 5);
+      } else {
+        Box(0, 0, display.width, display.height, bg_color);
+      }
       text_x = 0;
       text_y = 0;
     };
