@@ -1988,7 +1988,7 @@
         var c = Expression();
         Skip(',');
         var p = Expression();
-        // TODO: Implement.
+        curop += 'Palette(' + c + ',' + p + ');\n';
       } else if (tok == 'swap') {
         Skip('swap');
         var a = GetVar();
@@ -2564,7 +2564,7 @@
     const WHITE = 0xffffffff;
 
     // Display Info (in browser only).
-    var screen_mode = 0;
+    var screen_mode = -1;
     var screen_bpp = 4;
     var text_width = 80;
     var text_height = 60;
@@ -2574,6 +2574,8 @@
     var ctx;
     var display;
     var display_data;
+    var display_rgba;
+    var palette = new Uint32Array(256);
     var scale_canvas;
 
     function SetupDisplay(width, height, aspect, fheight) {
@@ -2582,7 +2584,8 @@
       }
       ctx = canvas.getContext('2d', { alpha: false });
       display = ctx.createImageData(width, height);
-      display_data = new Uint32Array(display.data.buffer);
+      display_rgba = new Uint32Array(display.data.buffer);
+      display_data = new Uint32Array(display_rgba.length);
       if (!scale_canvas) {
         scale_canvas = document.createElement('canvas');
       }
@@ -2598,9 +2601,10 @@
 
     // Drawing and Console State
     var color_map;
-    var reverse_color_map;
-    var fg_color = WHITE;
-    var bg_color = BLACK;
+    var fg_color = 7;
+    var bg_color = 0;
+    var default_fg_color = 7;
+    var max_color = 15;
     var text_x = 0;
     var text_y = 0;
     var pen_x = 0;
@@ -2642,25 +2646,32 @@
       return BLACK | r | (g << 8) | (b << 16);
     }
 
+    const L = 0x55, M = 0xAA, H = 0xFF;
+    const RGBA16 = [
+      RGB(0, 0, 0), RGB(0, 0, M), RGB(0, M, 0), RGB(0, M, M),
+      RGB(M, 0, 0), RGB(M, 0, M), RGB(M, L, 0), RGB(M, M, M),
+      RGB(L, L, L), RGB(L, L, H), RGB(L, H, L), RGB(L, H, H),
+      RGB(H, L, L), RGB(H, L, H), RGB(H, H, L), RGB(H, H, H),
+    ];
+    const CGA1 = [
+      [RGBA16[0], RGBA16[2], RGBA16[4], RGBA16[6]],
+      [RGBA16[0], RGBA16[3], RGBA16[5], RGBA16[7]],
+      [RGBA16[0], RGBA16[10], RGBA16[12], RGBA16[14]],
+      [RGBA16[0], RGBA16[11], RGBA16[13], RGBA16[15]],
+    ];
+
     bindings.Screen = function(mode) {
       if (!canvas) {
         return;
       }
-      // TODO: Handle color right in CGA, EGA, VGA modes.
-      var L = 0x55, M = 0xAA, H = 0xFF;
+      if (mode == screen_mode) {
+        return;
+      }
       var monochrome = [BLACK, WHITE];
-      var rgba = [
-        RGB(0, 0, 0), RGB(0, 0, M), RGB(0, M, 0), RGB(0, M, M),
-        RGB(M, 0, 0), RGB(M, 0, M), RGB(M, L, 0), RGB(M, M, M),
-        RGB(L, L, L), RGB(L, L, H), RGB(L, H, L), RGB(L, H, H),
-        RGB(H, L, L), RGB(H, L, H), RGB(H, H, L), RGB(H, H, H),
-      ];
-      var screen1 = [
-        BLACK, RGB(0, M, M), RGB(M, 0, M), RGB(M, M, M),
-      ];
+      var rgba = RGBA16;
       var modes = {
         0: [640, 200, 2.4, 8, rgba, 4],
-        1: [320, 200, 1.2, 8, screen1, 2],
+        1: [320, 200, 1.2, 8, CGA1[1], 2],
         2: [640, 200, 2.4, 8, monochrome, 1],
         7: [320, 200, 1.2, 8, rgba, 4],
         8: [640, 200, 2.4, 8, rgba, 4],
@@ -2684,16 +2695,18 @@
       SetupDisplay(m[0], m[1], m[2], m[3]);
       color_map = m[4];
       screen_bpp = m[5];
-      reverse_color_map = {};
-      if (color_map !== undefined) {
-        for (var i = 0; i < color_map.length; ++i) {
-          reverse_color_map[color_map[i]] = i;
-        }
-        fg_color = color_map[color_map.length - 1];
-        bg_color = color_map[0];
+      if (color_map === undefined || color_map.length == 16) {
+        default_fg_color = 7;
       } else {
-        fg_color = WHITE;
-        bg_color = BLACK;
+        default_fg_color = color_map.length - 1;
+      }
+      max_color = (1 << screen_bpp) - 1;
+      fg_color = default_fg_color;
+      bg_color = 0;
+      if (color_map !== undefined) {
+        for (var i = 0; i < 256; ++i) {
+          palette[i] = color_map[i] | 0;
+        }
       }
       screen_mode = mode;
       pen_x = display.width / 2;
@@ -2778,32 +2791,34 @@
         ((c & 0xff0000) >> 16) | ((c & 0xff) << 16) | (c & 0x00ff00);
     }
 
-    function FixupColor(c) {
-      if (c === undefined) {
-        if (color_map) {
-          return color_map[color_map.length - 1];
-        } else {
-          return WHITE;
-        }
-      }
-      c = c | 0;
-      if (color_map !== undefined) {
-        return color_map[c] || BLACK;
-      } else {
-        return ColorFlip(c);
-      }
-    }
+    bindings.Palette = function(c, p) {
+      var r = 85 * (((p >> 1) & 2) | (p >> 5) & 1);
+      var g = 85 * ((p & 2) | (p >> 4) & 1);
+      var b = 85 * (((p << 1) & 2) | (p >> 3) & 1);
+      palette[c] = RGB(r, g, b);
+    };
 
     bindings.Color = function(fg, bg) {
-      if (screen_mode == 0 || screen_mode > 2) {
-        if (fg != undefined) fg_color = FixupColor(fg);
-      } else {
-        fg_color = FixupColor(undefined);
+      if (screen_mode == 2) {
+        Error('Illegal function call');
+        return;
       }
+      if (screen_mode == 1) {
+        if (fg !== undefined) {
+          palette[0] = RGBA16[fg & 15];
+        }
+        if (bg !== undefined) {
+          for (var i = 1; i < 4; ++i) {
+            palette[i] = CGA1[bg & 3][i];
+          }
+        }
+        return;
+      }
+      fg_color = fg === undefined ? default_fg_color : fg;
       if (screen_mode > 0) {
-        bg_color = BLACK;
+        bg_color = 0;
       } else {
-        if (bg != undefined) bg_color = FixupColor(bg);
+        bg_color = bg === undefined ? 0 : bg;
       }
     };
 
@@ -2884,21 +2899,21 @@
     }
 
     bindings.Line = function(x1, y1, x2, y2, c, fill) {
+      c = c === undefined ? default_fg_color : (c & max_color);
       if (x1 === null) {
         x1 = pen_x;
         y1 = pen_y;
       }
-      var pen_color = FixupColor(c);
       if (fill == 0) {
         // Should be line.
-        RawLine(x1, y1, x2, y2, pen_color);
+        RawLine(x1, y1, x2, y2, c);
       } else if (fill == 1) {
-        Box(x1, y1, x2, y1, pen_color);
-        Box(x1, y2, x2, y2, pen_color);
-        Box(x1, y1, x1, y2, pen_color);
-        Box(x2, y1, x2, y2, pen_color);
+        Box(x1, y1, x2, y1, c);
+        Box(x1, y2, x2, y2, c);
+        Box(x1, y1, x1, y2, c);
+        Box(x2, y1, x2, y2, c);
       } else {
-        Box(x1, y1, x2, y2, pen_color);
+        Box(x1, y1, x2, y2, c);
       }
     };
 
@@ -2910,16 +2925,16 @@
     };
 
     bindings.Pset = function(x, y, c) {
-      var pen_color = FixupColor(c);
-      display_data[x + y * display.width] = pen_color;
+      c = c === undefined ? default_fg_color : (c & max_color);
+      display_data[x + y * display.width] = c;
       pen_x = x;
       pen_y = y;
     }
 
     bindings.Circle = function(x, y, r, c, start, end, aspect, fill) {
+      c = c === undefined ? default_fg_color : (c & max_color);
       x += 0.5;
       y += 0.5;
-      var pen_color = FixupColor(c);
       var complete = false;
       if (start < 0) { start = -start; complete = true; }
       if (end < 0) { end = -end; complete = true; }
@@ -2940,18 +2955,18 @@
       var oxx = x + Math.cos(start) * rx;
       var oyy = y - Math.sin(start) * ry;
       if (complete) {
-        RawLine(x, y, oxx, oyy, pen_color);
+        RawLine(x, y, oxx, oyy, c);
       }
       for (var ang = start; ang <= end; ang += 0.03) {
         var xx = x + Math.cos(ang) * rx;
         var yy = y - Math.sin(ang) * ry;
         if (ang == start) { oxx = xx; oyy = yy; }
-        RawLine(oxx, oyy, xx, yy, pen_color);
+        RawLine(oxx, oyy, xx, yy, c);
         oxx = xx;
         oyy = yy;
       }
       if (complete) {
-        RawLine(x, y, xx, yy, pen_color);
+        RawLine(x, y, xx, yy, c);
       }
       if (fill && start == 0 && end == Math.PI * 2) {
         bindings.Paint(x, y, c, c);
@@ -2991,7 +3006,7 @@
           var srcpos = x1 + y * display.width;
           for (var x = x1; x <= x2; ++x) {
             shift -= screen_bpp;
-            var cc = reverse_color_map[src[srcpos++] | BLACK] | 0;
+            var cc = src[srcpos++];
             v |= (cc << shift);
             if (shift == 0) {
               d[dstpos++] = v;
@@ -3059,7 +3074,7 @@
             }
             shift -= screen_bpp;
             var cc = (v >> shift) & mask;
-            var old = reverse_color_map[dst[dstpos] | BLACK] | 0;
+            var old = dst[dstpos] | 0;
             if (mode == 'xor') {
               cc ^= old;
             } else if (mode == 'preset') {
@@ -3069,10 +3084,9 @@
             } else if (mode == 'or') {
               cc |= old;
             }
-            var px = color_map[cc] | 0;
             // TODO: Optimize
             if (y >= 0 && y < display.height && x >= 0 && x < display.width) {
-              dst[dstpos++] = px;
+              dst[dstpos++] = cc;
             } else {
               dstpos++;
             }
@@ -3118,7 +3132,7 @@
           var op = m[1];
           var n = m[2] == '' ? 1 : parseInt(m[2]);
           if (op == 'c') {
-            draw_state.color = n;
+            draw_state.color = n & max_color;
           } else if (op == 'a') {
             draw_state.angle = n;
             // TODO: Implement.
@@ -3175,13 +3189,14 @@
     };
 
     bindings.Paint = function(x, y, paint, border) {
-      paint = FixupColor(paint);
+      if (paint === undefined) {
+        paint = default_fg_color;
+      }
       if (border === undefined) {
         border = paint;
-      } else {
-        border = FixupColor(border) & 0xffffff;
       }
-      var fpaint = paint & 0xffffff;
+      paint = paint & max_color;
+      border = border & max_color;
       var data = display_data;
       var pending = [];
       pending.push([Math.floor(x), Math.floor(y)]);
@@ -3192,8 +3207,8 @@
           continue;
         }
         var pos = p[0] + p[1] * display.width;
-        if ((data[pos] & 0xffffff) == border ||
-            (data[pos] & 0xffffff) == fpaint) {
+        if ((data[pos] | 0) == border ||
+            (data[pos] | 0) == paint) {
           continue;
         }
         data[pos] = paint;
@@ -3236,6 +3251,16 @@
       var scale_ctx = scale_canvas.getContext('2d');
       scale_ctx.fillStyle = '#000';
       scale_ctx.fillRect(0, 0, scale_canvas.width, scale_canvas.height);
+      var sz = display_rgba.length;
+      if (screen_bpp < 24) {
+        for (var i = 0; i < sz; ++i) {
+          display_rgba[i] = palette[display_data[i]];
+        }
+      } else {
+        for (var i = 0; i < sz; ++i) {
+          display_rgba[i] = ColorFlip(display_data[i]);
+        }
+      }
       scale_ctx.putImageData(display, 0, 0);
       var ctx = canvas.getContext('2d');
       ctx.fillStyle = '#111';
@@ -3361,7 +3386,7 @@
 
     bindings.Pace = function() {
       if (screen_mode > 0 && screen_mode <= 2) {
-        return 1;
+        return 3;
       } else {
         return 100000;
       }
