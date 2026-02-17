@@ -122,6 +122,21 @@ The argument spec uses one character per argument:
 * d - dash (e.g. in words like LINE)
 * v - varptr (e.g. in words list GET / PUT, passes buffer, offset)
 
+EXAMPLE:
+
+```js
+var bindings = GraphicsBindings(canvas);
+bindings.statement_foo_pIS = function(x, y, color, style) {
+  // x and y: are always available
+  // color: might be undefined
+  // style: might be undefined and is a literal string
+};
+basic.Basic(
+`
+foo (10, 20), 1, dashed
+`, { bindings: mybindings });
+```
+
 ## Test Suite
 
 wwwBASIC has a "work in progress" test suite.

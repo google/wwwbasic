@@ -2360,12 +2360,12 @@ function Init() {
     if (tags[t].src) {
       var request = new XMLHttpRequest();
       request.addEventListener('load', function(e) {
-        Basic(request.responseText, {bindings: bindings});
+        Basic(request.responseText, { bindings: bindings });
       }, false);
       request.open('GET', tag.src);
       request.send();
     } else {
-      Basic(DecodeTag(tag.text), {bindings: bindings});
+      Basic(DecodeTag(tag.text), { bindings: bindings });
     }
   }
 }
@@ -2380,7 +2380,7 @@ function Main() {
       timer_offset = timer_halted - (new Date().getTime() / 1000);
     });
     window.Basic = function(code, canvas) {
-      Basic(code, {bindings: GraphicsBindings(canvas)});
+      Basic(code, { bindings: GraphicsBindings(canvas) });
     };
   } else {
     for (var key in basic) {
