@@ -2654,7 +2654,21 @@
     };
 
     // TODO: Separate.
+    bindings.call_char_ii = function(ch, pattern) {
+      pattern = (pattern + '0000000000000000').substr(0, 16);
+      var chpos = ch * font_height * 8;
+      for (var i = 0; i < 16; i++) {
+        var code = parseInt(pattern.substr(i, 1), 16);
+        for (var j = 0; j < 4; j++) {
+          font_data[chpos++] = code & (0x8 >> j) ? 255 : 0;
+        }
+      }
+    };
+
+    // TODO: Separate.
     bindings.call_color_iii = function(bank, fg, bg) {
+      // Bank 1 is 32.
+      bank += 3;
       prepalette[bank * 2 + 0] = fg - 1;
       prepalette[bank * 2 + 1] = bg - 1;
     };
