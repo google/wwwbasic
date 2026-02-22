@@ -909,6 +909,9 @@
     }
 
     function ParenArguments(kind) {
+      if (kind.length == 0) {
+        return [[], []];
+      }
       Skip('(');
       var ret = Arguments(kind);
       Skip(')');
@@ -2424,6 +2427,7 @@
     // Display Info (in browser only).
     var screen_mode = -1;
     var screen_bpp = 4;
+    var text_mode = false;
     var text_width = 80;
     var text_height = 60;
     var font_height = 16;
@@ -2433,6 +2437,10 @@
     var display;
     var display_data;
     var display_rgba;
+    var display_text;
+    var display_fg;
+    var display_bg;
+    var prepalette = new Uint32Array(256);
     var palette = new Uint32Array(256);
     var scale_canvas;
 
@@ -2451,6 +2459,9 @@
       scale_canvas.height = height;
       text_width = Math.floor(width / 8);
       text_height = Math.floor(height / fheight);
+      display_text = new Uint8Array(text_width * text_height);
+      display_fg = new Uint8Array(text_width * text_height);
+      display_bg = new Uint8Array(text_width * text_height);
       screen_aspect = aspect;
       font_height = fheight;
       var sctx = scale_canvas.getContext('2d', { alpha: false});
@@ -2555,12 +2566,13 @@
         19: [800, 600, 1, 16, undefined, 24],
         20: [1024, 768, 1, 16, undefined, 24],
         21: [1280, 1024, 1, 16, undefined, 24],
-        100: [256, 192, 1, 8, TI99, 6],
+        100: [256, 192, 1, 8, TI99, 6]
       };
       var m = modes[mode];
       if (m === undefined) {
         Error('Invalid mode ' + mode);
       }
+      text_mode = mode == 0 || mode == 100;
       SetupDisplay(m[0], m[1], m[2], m[3]);
       color_map = m[4];
       screen_bpp = m[5];
@@ -2574,13 +2586,17 @@
       bg_color = 0;
       if (color_map !== undefined) {
         for (var i = 0; i < 256; ++i) {
+          prepalette[i] = i;
           palette[i] = color_map[i] | 0;
         }
       }
+      // TI default palette setup.
       if (mode == 100) {
+        bindings.call_screen_i(4);
         for (var i = 0; i < 32; i++) {
-          bindings.call_color_iii(i, 2, 4);
+          bindings.call_color_iii(i, 2, 1);
         }
+        bindings.call_clear_();
       }
       screen_mode = mode;
       pen_x = display.width / 2;
@@ -2611,16 +2627,36 @@
       }
     };
 
+    function SetChar(x, y, ch, fg, bg) {
+      var pos = x + y * text_width;
+      display_text[pos] = ch;
+      display_fg[pos] = fg;
+      display_bg[pos] = bg;
+    }
+
+    function SetTiChar(x, y, ch) {
+      var bank = (ch >> 3) << 1;
+      SetChar(x, y, ch, bank, bank + 1);
+    }
+
     // TODO: Separate.
     bindings.call_screen_i = function(col) {
-      // TODO: This isn't right.
       palette[0] = TI99[col - 1];
     };
 
     // TODO: Separate.
+    bindings.call_clear_ = function() {
+      for (var j = 0; j < text_height; ++j) {
+        for (var i = 0; i < text_width; ++i) {
+          SetTiChar(i, j, 32);
+        }
+      }
+    };
+
+    // TODO: Separate.
     bindings.call_color_iii = function(bank, fg, bg) {
-      palette[bank * 2 + 0] = TI99[fg - 1];
-      palette[bank * 2 + 1] = TI99[bg - 1];
+      prepalette[bank * 2 + 0] = fg - 1;
+      prepalette[bank * 2 + 1] = bg - 1;
     };
 
     // TODO: Separate.
@@ -2628,10 +2664,9 @@
       n = n === undefined ? 1 : n;
       row -= 1;
       col -= 1;
-      var c = (ch >> 3) * 2;
       if (n < 0) { Error('Bad value'); }
       for (var i = 0; i < n; i++) {
-        bindings.DrawChar(col, row, ch, c, c + 1);
+        SetTiChar(col, row, ch);
         ++col;
         if (col >= 32) {
           col = 0;
@@ -2648,10 +2683,9 @@
       n = n === undefined ? 1 : n;
       row -= 1;
       col -= 1;
-      var c = (ch >> 3) * 2;
       if (n < 0) { Error('Bad value'); }
       for (var i = 0; i < n; i++) {
-        bindings.DrawChar(col, row, ch, c, c + 1);
+        SetTiChar(col, row, ch);
         ++row;
         if (row >= 24) {
           row = 0;
@@ -2671,12 +2705,14 @@
         return;
       }
       var code = ch.charCodeAt(0);
-      if (screen_mode == 100) {
+      if (screen_mode == 0) {
+        // PC - text
+        SetChar(text_x, text_y, code, fg_color, bg_color);
+      } else if (screen_mode == 100) {
         // TI
-        var bank = ch >> 3 * 2;
-        bindings.DrawChar(text_x, text_y, code, bank, bank + 1);
+        SetTiChar(text_x, text_y, code);
       } else {
-        // PC
+        // PC - graphics
         bindings.DrawChar(text_x, text_y, code, fg_color, bg_color);
       }
       text_x++;
@@ -3208,6 +3244,35 @@
       }
     }
 
+    function RenderTextMode() {
+      if (!text_mode) {
+        return;
+      }
+      var pos = 0;
+      for (var j = 0; j < text_height; ++j) {
+        for (var i = 0; i < text_width; ++i) {
+          var ch = display_text[pos];
+          var fg = display_fg[pos];
+          var bg = display_bg[pos];
+          bindings.DrawChar(i, j, ch, fg, bg);
+          ++pos;
+        }
+      }
+    }
+
+    function TranslatePalette() {
+      var sz = display_rgba.length;
+      if (screen_bpp < 24) {
+        for (var i = 0; i < sz; ++i) {
+          display_rgba[i] = palette[prepalette[display_data[i]]];
+        }
+      } else {
+        for (var i = 0; i < sz; ++i) {
+          display_rgba[i] = ColorFlip(display_data[i]);
+        }
+      }
+    }
+
     function Render() {
       if (!canvas) {
         return;
@@ -3215,16 +3280,8 @@
       var scale_ctx = scale_canvas.getContext('2d');
       scale_ctx.fillStyle = '#000';
       scale_ctx.fillRect(0, 0, scale_canvas.width, scale_canvas.height);
-      var sz = display_rgba.length;
-      if (screen_bpp < 24) {
-        for (var i = 0; i < sz; ++i) {
-          display_rgba[i] = palette[display_data[i]];
-        }
-      } else {
-        for (var i = 0; i < sz; ++i) {
-          display_rgba[i] = ColorFlip(display_data[i]);
-        }
-      }
+      RenderTextMode();
+      TranslatePalette();
       scale_ctx.putImageData(display, 0, 0);
       var ctx = canvas.getContext('2d');
       ctx.fillStyle = '#111';

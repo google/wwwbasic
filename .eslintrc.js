@@ -214,7 +214,8 @@ module.exports = {
     'no-undef-init': 'error',
     'no-undef': 'off',
     'no-undefined': 'off',
-    'no-underscore-dangle': 'error',
+    // Allowed to support things like call_clear_
+    'no-underscore-dangle': 'off',
     'no-unmodified-loop-condition': 'off',
     'no-unneeded-ternary': 'error',
     'no-unused-vars': 'off',
