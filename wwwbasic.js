@@ -2466,6 +2466,7 @@
     var display_bg;
     var prepalette = new Uint32Array(256);
     var palette = new Uint32Array(256);
+    var border_color = 0;
     var scale_canvas;
 
     function SetupDisplay(width, height, aspect, fheight) {
@@ -2486,6 +2487,7 @@
       display_text = new Uint8Array(text_width * text_height);
       display_fg = new Uint8Array(text_width * text_height);
       display_bg = new Uint8Array(text_width * text_height);
+      border_color = 0;
       screen_aspect = aspect;
       font_height = fheight;
       var sctx = scale_canvas.getContext('2d', { alpha: false});
@@ -2672,6 +2674,7 @@
     // TODO: Separate.
     bindings.call_screen_i = function(col) {
       palette[0] = TI99[col - 1];
+      border_color = palette[0];
     };
 
     // TODO: Separate.
@@ -2983,7 +2986,9 @@
     };
 
     bindings.statement_color_iII = function(fg, bg, border) {
-      // TODO: support border
+      if (screen_mode == 0) {
+        border_color = EGA16[border];
+      }
       if (screen_mode == 2) {
         Error('Illegal function call');
         return;
@@ -3104,10 +3109,18 @@
     };
 
     bindings.statement_cls_I = function(mode) {
-      // TODO: Handle mode.
       if (screen_mode == 100) {
-        // 5 = 32 / 8 + 1
-        Box(0, 0, display.width, display.height, 5);
+        for (var j = 0; j < text_height; ++j) {
+          for (var i = 0; i < text_width; ++i) {
+            SetTiChar(i, j, 32);
+          }
+        }
+      } else if (text_mode) {
+        for (var j = 0; j < text_height; ++j) {
+          for (var i = 0; i < text_width; ++i) {
+            SetChar(i, j, 32, fg_color, bg_color);
+          }
+        }
       } else {
         Box(0, 0, display.width, display.height, bg_color);
       }
@@ -3439,19 +3452,20 @@
       }
       var raspect = canvas.width / canvas.height;
       var aspect = display.width / (display.height * screen_aspect);
+      const non_border = 0.9;
       if (raspect > aspect) {
         viewport_w = Math.floor(
-          display.width * canvas.height / (display.height * screen_aspect));
-        viewport_h = canvas.height;
-        viewport_x = Math.floor((canvas.width - viewport_w) / 2);
-        viewport_y = 0;
+          display.width * canvas.height /
+          (display.height * screen_aspect) * non_border);
+        viewport_h = Math.floor(canvas.height * non_border);
       } else {
-        viewport_w = canvas.width;
+        viewport_w = Math.floor(canvas.width * non_border);
         viewport_h = Math.floor(
-          (display.height * screen_aspect) * canvas.width / display.width);
-        viewport_x = 0;
-        viewport_y = Math.floor((canvas.height - viewport_h) / 2);
+          (display.height * screen_aspect) * canvas.width /
+          display.width * non_border);
       }
+      viewport_x = Math.floor((canvas.width - viewport_w) / 2);
+      viewport_y = Math.floor((canvas.height - viewport_h) / 2);
     }
 
     function RenderTextMode() {
@@ -3483,6 +3497,15 @@
       }
     }
 
+    function ToHex(c) {
+      c = ColorFlip(c) & 0xffffff;
+      var ret = c.toString(16);
+      while (ret.length < 6) {
+        ret = '0' + ret;
+      }
+      return '#' + ret;
+    }
+
     function Render() {
       if (!canvas) {
         return;
@@ -3494,7 +3517,7 @@
       TranslatePalette();
       scale_ctx.putImageData(display, 0, 0);
       var ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#111';
+      ctx.fillStyle = ToHex(border_color);
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       //      ctx.imageSmoothingQuality = 'low';
       //      ctx.imageSmoothingEnabled = false;
@@ -3588,7 +3611,7 @@
       }
       window.addEventListener('keydown', function(e) {
         key_buffer.push(e);
-        if (!e.ctrlKey || !e.shiftKey) {
+        if (canvas.fromWWWBasic && (!e.ctrlKey || !e.shiftKey)) {
           e.preventDefault();
         }
       }, false);
