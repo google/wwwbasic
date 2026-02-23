@@ -1878,6 +1878,7 @@
         }
         Invoke('Line', Arguments('PdpIS'));
       } else if (tok == 'sleep') {
+        Next();
         Invoke('Sleep', Arguments('i'));
         NewOp();
       } else if (tok == 'swap') {
