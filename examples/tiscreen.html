@@ -1,0 +1,31 @@
+<!--
+Copyright 2018 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<!DOCTYPE html>
+<script src="../wwwbasic.js"></script>
+<script type="text/basic">
+
+10 CALL CLEAR
+20 FOR I=1 to 32
+30 CALL HCHAR(1,I,INT(I/10)+48)
+31 CALL HCHAR(2,I,I-INT(I/10)*10+48)
+40 NEXT I
+50 FOR I=1 to 24
+60 CALL HCHAR(I,1,INT(I/10)+48)
+61 CALL HCHAR(I,2,I-INT(I/10)*10+48)
+70 NEXT I
+
+</script>
+

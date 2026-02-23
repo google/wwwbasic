@@ -1318,6 +1318,7 @@
           NewOp();
           if (tok == 'else') {
             Skip('else');
+            Else();
             // TI style else.
             if (tok.match(/^[0-9]+$/)) {
               var name = tok;
@@ -1327,7 +1328,6 @@
               EndIf();
               return;
             }
-            Else();
             Statement();
             while (tok == ':') {
               Skip(':');
