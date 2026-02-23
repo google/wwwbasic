@@ -758,6 +758,60 @@
       return global_vars[name];
     }
 
+    function ImplicitDimArray(name) {
+      var dimensions = [[option_base, 10]];
+      DimArrayVariable(name, ImplicitType(name), false, dimensions, []);
+    }
+
+    function DimArrayVariable(
+      name, type_name, is_declare, dimensions, defaults) {
+      if (dimensions.length > MAX_DIMENSIONS) {
+        Error('Too many dimensions');
+      }
+      var offset = ReserveArrayCell(name).offset;
+      var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
+      var parts = [];
+      for (var i = 0; i < dimensions.length; i++) {
+        parts.push('((' + dimensions[i][1] + ')-(' + dimensions[i][0] + ')+1)');
+      }
+      if (!is_declare) {
+        if (!vars[name].global) {
+          offset = '(bp+' + offset + ')';
+        }
+        curop += '// Allocate ' + name + '\n';
+        curop += 'if (' + ArrayPart(offset, 0) + ' === 0) {\n';
+        curop += '  ' + ArrayPart(offset, 0) + ' = Allocate(' +
+          [info.size].concat(parts).join('*') + ');\n';
+        for (var i = 0; i < dimensions.length; i++) {
+          curop += '  ' + ArrayPart(offset, i * 2 + 1) + ' = ' +
+            dimensions[i][0] + ';\n';
+          curop += '  ' + ArrayPart(offset, i * 2 + 2) + ' = ' +
+            [info.size].concat(parts).slice(0, i + 1).join('*') + ';\n';
+        }
+        if (defaults.length > 0) {
+          if (dimensions.length > 1) {
+            Error('Only 1-d array defaults supported');
+          }
+          if (!SIMPLE_TYPE_INFO[type_name]) {
+            Error('Only simple type array defaults supported');
+          }
+          for (var i = 0; i < defaults.length; i++) {
+            curop += '  ' + info.view + '[' +
+              ' + (' + ArrayPart(offset, 0) + ' >> ' + info.shift + ') + '
+              + i + '] = (' + defaults[i] + ');\n';
+          }
+        }
+        curop += '}\n';
+        NewOp();
+      }
+      vars[name] = {
+        offset: offset,
+        dimensions: dimensions.length > 0 ? dimensions.length : -1,
+        type_name: type_name,
+        global: vars === global_vars,
+      };
+    }
+
     function DimVariable(default_tname, redim, is_declare) {
       var name = tok;
       Next();
@@ -821,51 +875,7 @@
       if (is_scalar) {
         DimScalarVariable(name, type_name, defaults);
       } else {
-        if (dimensions.length > MAX_DIMENSIONS) {
-          Error('Too many dimensions');
-        }
-        var offset = ReserveArrayCell(name).offset;
-        var info = types[type_name] || SIMPLE_TYPE_INFO[type_name];
-        var parts = [];
-        for (var i = 0; i < dimensions.length; i++) {
-          parts.push('((' + dimensions[i][1] + ')-(' +
-            dimensions[i][0] + ')+1)');
-        }
-        if (!is_declare) {
-          if (!vars[name].global) {
-            offset = '(bp+' + offset + ')';
-          }
-          curop += '// Allocate ' + name + '\n';
-          curop += 'if (' + ArrayPart(offset, 0) + ' === 0) {\n';
-          curop += '  ' + ArrayPart(offset, 0) + ' = Allocate(' +
-            [info.size].concat(parts).join('*') + ');\n';
-          for (var i = 0; i < dimensions.length; i++) {
-            curop += '  ' + ArrayPart(offset, i * 2 + 1) + ' = ' +
-              dimensions[i][0] + ';\n';
-            curop += '  ' + ArrayPart(offset, i * 2 + 2) + ' = ' +
-              [info.size].concat(parts).slice(0, i + 1).join('*') + ';\n';
-          }
-          if (defaults.length > 0) {
-            if (dimensions.length > 1) {
-              Error('Only 1-d array defaults supported');
-            }
-            if (!SIMPLE_TYPE_INFO[type_name]) {
-              Error('Only simple type array defaults supported');
-            }
-            for (var i = 0; i < defaults.length; i++) {
-              curop += '  ' + info.view + '[' +
-                ' + (' + ArrayPart(offset, 0) + ' >> ' + info.shift + ') + '
-                + i + '] = (' + defaults[i] + ');\n';
-            }
-          }
-          curop += '}\n';
-        }
-        vars[name] = {
-          offset: offset,
-          dimensions: dimensions.length > 0 ? dimensions.length : -1,
-          type_name: type_name,
-          global: vars === global_vars,
-        };
+        DimArrayVariable(name, type_name, is_declare, dimensions, defaults);
       }
     }
 
@@ -1004,7 +1014,7 @@
           var noffset = '(';
           noffset += ArrayPart(offset, 0) + ' + (';
           if (v.dimensions !== -1 && dims.length != v.dimensions) {
-            v.dimensions = [[option_base, 10]];
+            ImplicitDimArray(name);
             // TODO: This is sus.
             //Error('Array dimension expected ' + v.dimensions +
             //      ' but found ' + dims.length + ', array named: ' + name);

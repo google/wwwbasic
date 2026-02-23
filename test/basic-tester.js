@@ -45,7 +45,8 @@ function BASIC_TEST(suite, name, code, expected_log, expected_error) {
     console.error = function(msg) {
       result_error += msg + '\n';
     };
-    basic.Basic(code);
+    const debug = false;
+    basic.Basic(code, {debug: debug});
     if (result_log != expected_log ||
         (expected_error !== undefined && result_error != expected_error)) {
       throw 'Result:\n' + result_log +

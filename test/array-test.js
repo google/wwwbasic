@@ -198,3 +198,46 @@ done
 hi
 `);
 
+basic_test.BASIC_TEST('Array', 'AutoDim10', `
+option base 1
+for i = 1 to 10
+sn(i) = i * 2
+next i
+for i = 1 to 10
+print sn(i)
+next i
+`, `
+2
+4
+6
+8
+10
+12
+14
+16
+18
+20
+`);
+
+basic_test.BASIC_TEST('Array', 'AutoDimRead10', `
+option base 1
+for i = 1 to 10
+read sn(i)
+next i
+for i = 1 to 10
+print sn(i)
+next i
+data 11,22,33,44,55,66,77,88,99,100
+`, `
+11
+22
+33
+44
+55
+66
+77
+88
+99
+100
+`);
+
