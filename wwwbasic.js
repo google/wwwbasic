@@ -2996,6 +2996,7 @@
       if (screen_mode == 1) {
         if (fg !== undefined) {
           palette[0] = EGA16[fg & 15];
+          border_color = palette[0];
         }
         if (bg !== undefined) {
           for (var i = 1; i < 4; ++i) {
