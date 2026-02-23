@@ -2295,6 +2295,7 @@
 
     function Run(pace) {
       for (;;) {
+        var last_time = new Date().getTime();
         var speed = pace !== undefined ? pace() : 100000;
         for (var i = 0; i < speed; ++i) {
           ops[ip++]();
@@ -2306,7 +2307,7 @@
             break;
           }
         }
-        setTimeout(function() { Run(pace); }, delay);
+        setTimeout(function() { Run(pace); }, delay + 16);
         delay = 0;
         break;
       }
@@ -3625,7 +3626,7 @@
 
     bindings.Pace = function() {
       if ((screen_mode > 0 && screen_mode <= 2) || screen_mode == 100) {
-        return 1;
+        return 2;
       } else {
         return 100000;
       }
