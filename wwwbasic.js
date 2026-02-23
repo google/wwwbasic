@@ -2164,9 +2164,9 @@
           bindings.PutCh(text[j]);
         }
         if (items[i + 1] == ',') {
-          PutCh(' ');
-          PutCh(' ');
-          PutCh(' ');
+          bindings.PutCh(' ');
+          bindings.PutCh(' ');
+          bindings.PutCh(' ');
         }
         if (items[i + 1] != ';' && items[i + 1] != ',') {
           bindings.PutCh();
@@ -2493,7 +2493,8 @@
     var pen_y = 0;
 
     // Input State
-    var keys = [];
+    var key_buffer = [];
+    var ti_key_mode = 3;
     var input_string = '';
     var mouse_x = 0;
     var mouse_y = 0;
@@ -2508,11 +2509,11 @@
 
     bindings.Inkey = function() {
       bindings.Yield();
-      if (keys.length > 0) {
-        return keys.shift();
-      } else {
+      if (key_buffer.length == 0) {
         return '';
       }
+      var e = key_buffer.shift();
+      return DecodeKey(e);
     };
 
     bindings.Point = function(x, y) {
@@ -2605,6 +2606,8 @@
         }
       }
       screen_mode = mode;
+      text_x = 0;
+      text_y = mode == 100 ? text_height - 1 : 0;
       pen_x = display.width / 2;
       pen_y = display.height / 2;
       // TI default palette setup.
@@ -2684,10 +2687,113 @@
       }
     };
 
+    function DecodeTiKeyPos(e) {
+      const base_map = [
+        '1234567890=',
+        'qwertyuiop/',
+        'asdfghjkl;\n',
+        'zxcvbnm,.',
+      ];
+      for (var j = 0; j < base_map.length; j++) {
+        for (var i = 0; i < base_map[j].length; ++i) {
+          if (e.key == base_map[j][i]) {
+            return [i, j, i < 5 ? 1 : 2];
+          }
+        }
+      }
+      return [-1, -1, -1];
+    }
+
+    function DecodeTiCtrl(ch) {
+      if (ch.length != 1) {
+        return -1;
+      } else if (ch == '.') {
+        return 27;
+      } else if (ch == ';') {
+        return 28;
+      } else if (ch == '=') {
+        return 29;
+      } else if (ch == '8') {
+        return 30;
+      } else if (ch == '9') {
+        return 31;
+      }
+      var k = ch.toUpperCase().charCodeAt(0);
+      if (k >= 65 && k <= 90) {
+        return k - 64;
+      }
+      return -1;
+    }
+
+    function DecodeTiFunction(e) {
+      const map3 = [
+        [3, 4, 7, 2, 14, 12, 1, 6, 15, -1, 5],
+        [-1, -1, 11, -1, -1, -1, -1, -1, -1, -1, -1],
+        [-1, 8, 9, -1, -1, -1, -1, -1, -1, -1, 13],
+        [-1, 10, -1, -1, -1, -1, -1, -1, -1],
+      ];
+      // [col, row, side]
+      var pos = DecodeTiKeyPos(e);
+      if (pos[0] == -1) {
+        return -1;
+      }
+      return map3[pos[1]][pos[0]];
+    }
+
+    function DecodeTiSide(e, side) {
+      const map12 = [
+        [19, 7, 8, 9, 10, 19, 7, 8, 9, 10, -1],
+        [18, 4, 5, 6, 11, 18, 4, 5, 6, 11, 16],
+        [1, 2, 3, 12, 17, 1, 2, 3, 12, 17, -1],
+        [15, 0, 14, 13, 16, 15, 0, 14, 13],
+      ];
+      // [col, row, side]
+      var pos = DecodeTiKeyPos(e);
+      if (pos[0] == -1 || pos[2] != side) {
+        return -1;
+      }
+      return map12[pos[1]][pos[0]];
+    }
+
     // TODO: Separate.
     bindings.call_key_ioo = function(key_unit) {
-      // TODO: Implement.
-      return [65, 0];
+      // TODO: Hold state better + allow sides to be independent.
+      ti_key_mode = key_unit != 0 ? key_unit : ti_key_mode;
+      bindings.Yield();
+      if (key_buffer.length == 0) {
+        return [-1, 0];
+      }
+      var e = key_buffer.shift();
+      var state = e.repeat ? -1 : 1;
+
+      if (ti_key_mode == 1 || ti_key_mode == 2) {
+        var k = DecodeTiSide(e, ti_key_mode);
+        if (k >= 0) {
+          return [k, state];
+        }
+      } else if (ti_key_mode >= 3 && ti_key_mode <= 5) {
+        if (e.key == 'Enter') {
+          return [13, state];
+        }
+        if (e.altKey) {
+          var k = DecodeTiFunction(e);
+          if (k >= 0) {
+            return [k + (ti_key_mode == 4 ? 128 : 0), state];
+          }
+        } else if (e.ctrlKey && ti_key_mode >= 4) {
+          if (e.key == '/' && ti_key_mode == 5) {
+            return [187, state];
+          }
+          var k = DecodeTiCtrl(e.key);
+          if (k >= 0) {
+            return [k + (ti_key_mode == 5 ? 128 : 0), state];
+          }
+        } else if (!e.altKey && !e.ctrlKey && e.key.length == 1) {
+          var ch = ti_key_mode == 3 ? e.key.toUpperCase() : e.key;
+          return [ch.charCodeAt(0), state];
+        }
+      }
+      return [-1, 0];
     };
 
     // TODO: Separate.
@@ -2749,9 +2855,49 @@
       return [display_text[col + row * text_width]];
     };
 
+    function ScrollUp() {
+      for (var j = 0; j < text_height - 1; ++j) {
+        if (text_mode) {
+          var pos = j * text_width;
+          for (var i = 0; i < text_width; ++i) {
+            display_text[i + pos] = display_text[i + pos + text_width];
+            display_fg[i + pos] = display_fg[i + pos + text_width];
+            display_bg[i + pos] = display_bg[i + pos + text_width];
+          }
+        } else {
+          var pos = j * text_width * text_height;
+          var offset = text_width * font_height * 8;
+          for (var k = 0; k < font_height; ++k) {
+            for (var i = 0; i < text_width; ++i) {
+              display_data[i + pos] = display_data[i + pos + offset];
+            }
+          }
+        }
+      }
+      if (text_mode) {
+        var pos = (text_height - 1) * text_width;
+        for (var i = 0; i < text_width; ++i) {
+          display_text[i + pos] = 32;
+          display_fg[i + pos] = fg_color;
+          display_bg[i + pos] = bg_color;
+        }
+      } else {
+        for (var i = 0; i < text_width; ++i) {
+          bindings.DrawChar(i, text_height - 1, 32, fg_color, bg_color);
+        }
+      }
+    }
+
     // TODO: Cleanup, this should be hidden.
     bindings.PutCh = function(ch) {
       if (ch === undefined) {
+        if (text_mode) {
+          var n = text_width - text_x;
+          for (var i = 0; i < n; ++i) {
+            bindings.PutCh(' ');
+          }
+          return;
+        }
         text_x = 0;
         text_y++;
         return;
@@ -2773,7 +2919,8 @@
         text_x = 0;
       }
       if (text_y >= text_height) {
-        text_y = 0;
+        ScrollUp();
+        --text_y;
       }
     };
 
@@ -2786,8 +2933,8 @@
     };
 
     bindings.LineInput = function() {
-      while (keys.length > 0) {
-        const key = keys.shift();
+      while (key_buffer.length > 0) {
+        const key = DecodeKey(key_buffer.shift());
         if (key == String.fromCharCode(13)) {
           --text_x;
           bindings.PutCh(' ');
@@ -3345,15 +3492,16 @@
       requestAnimationFrame(Render);
     }
 
-    function RegularKey(n) {
-      keys.push(String.fromCharCode(n));
-    }
+    // Decode PC Keycode.
+    function DecodeKey(e) {
+      function RegularKey(n) {
+        return String.fromCharCode(n);
+      }
 
-    function ExtendedKey(n) {
-      keys.push(String.fromCharCode(0) + String.fromCharCode(n));
-    }
+      function ExtendedKey(n) {
+        return String.fromCharCode(0) + String.fromCharCode(n);
+      }
 
-    function InitEvents() {
       const SIMPLE_KEYMAP = {
         // BACKSPACE, ENTER, ESCAPE
         8: { regular: 8 }, 13: { regular: 13 }, 27: { regular: 27 },
@@ -3368,6 +3516,58 @@
         // HOME, END
         36: { extended: 71 }, 35: { extended: 79 },
       };
+      if (e.keyCode >= 112 && e.keyCode <= 123) {
+        // F1 - F10
+        if (e.altKey) {
+          return ExtendedKey(e.keyCode - 112 + 104);
+        } else if (e.ctrlKey) {
+          return ExtendedKey(e.keyCode - 112 + 94);
+        } else if (e.shiftKey) {
+          return ExtendedKey(e.keyCode - 112 + 84);
+        } else {
+          return ExtendedKey(e.keyCode - 112 + 59);
+        }
+      } else if (e.keyCode == 9) {
+        // TAB, Shift-TAB
+        if (e.shiftKey) {
+          return RegularKey(15);
+        } else {
+          return RegularKey(9);
+        }
+      } else if (SIMPLE_KEYMAP[e.keyCode]) {
+        if (SIMPLE_KEYMAP[e.keyCode].regular) {
+          return RegularKey(SIMPLE_KEYMAP[e.keyCode].regular);
+        } else {
+          return ExtendedKey(SIMPLE_KEYMAP[e.keyCode].extended);
+        }
+      } else if (e.ctrlKey && e.keyCode >= 65 && e.keyCode <= 90) {
+        // Ctrl-A to Ctrl-Z
+        return RegularKey(e.keyCode - 65 + 1);
+      } else if (e.altKey) {
+        const ch = String.fromCharCode(e.keyCode);
+        const row1 = '1234567890-='.indexOf(ch);
+        const row2 = 'QWERTYUIOP'.indexOf(ch);
+        const row3 = 'ASDFGHJKL'.indexOf(ch);
+        const row4 = 'ZXCVBNM'.indexOf(ch);
+        if (row1 >= 0) {
+          return ExtendedKey(row1 + 120);
+        } else if (row2 >= 0) {
+          return ExtendedKey(row2 + 16);
+        } else if (row3 >= 0) {
+          return ExtendedKey(row3 + 30);
+        } else if (row4 >= 0) {
+          return ExtendedKey(row4 + 44);
+        }
+      } else {
+        const code = e.key.charCodeAt(0);
+        if (e.key.length == 1 && code >= 32 && code <= 126) {
+          return RegularKey(code);
+        }
+      }
+      return '';
+    }
+
+    function InitEvents() {
       if (!canvas) {
         return;
       }
@@ -3376,53 +3576,9 @@
         window.addEventListener('resize', Resize, false);
       }
       window.addEventListener('keydown', function(e) {
-        if (e.keyCode >= 112 && e.keyCode <= 123) {
-          // F1 - F10
-          if (e.altKey) {
-            ExtendedKey(e.keyCode - 112 + 104);
-          } else if (e.ctrlKey) {
-            ExtendedKey(e.keyCode - 112 + 94);
-          } else if (e.shiftKey) {
-            ExtendedKey(e.keyCode - 112 + 84);
-          } else {
-            ExtendedKey(e.keyCode - 112 + 59);
-          }
-        } else if (e.keyCode == 9) {
-          // TAB, Shift-TAB
-          if (e.shiftKey) {
-            RegularKey(15);
-          } else {
-            RegularKey(9);
-          }
-        } else if (SIMPLE_KEYMAP[e.keyCode]) {
-          if (SIMPLE_KEYMAP[e.keyCode].regular) {
-            RegularKey(SIMPLE_KEYMAP[e.keyCode].regular);
-          } else {
-            ExtendedKey(SIMPLE_KEYMAP[e.keyCode].extended);
-          }
-        } else if (e.ctrlKey && e.keyCode >= 65 && e.keyCode <= 90) {
-          // Ctrl-A to Ctrl-Z
-          RegularKey(e.keyCode - 65 + 1);
-        } else if (e.altKey) {
-          const ch = String.fromCharCode(e.keyCode);
-          const row1 = '1234567890-='.indexOf(ch);
-          const row2 = 'QWERTYUIOP'.indexOf(ch);
-          const row3 = 'ASDFGHJKL'.indexOf(ch);
-          const row4 = 'ZXCVBNM'.indexOf(ch);
-          if (row1 >= 0) {
-            ExtendedKey(row1 + 120);
-          } else if (row2 >= 0) {
-            ExtendedKey(row2 + 16);
-          } else if (row3 >= 0) {
-            ExtendedKey(row3 + 30);
-          } else if (row4 >= 0) {
-            ExtendedKey(row4 + 44);
-          }
-        } else {
-          const code = e.key.charCodeAt(0);
-          if (e.key.length == 1 && code >= 32 && code <= 126) {
-            RegularKey(code);
-          }
+        key_buffer.push(e);
+        if (!e.ctrlKey || !e.shiftKey) {
+          e.preventDefault();
         }
       }, false);
       canvas.addEventListener('mousemove', function(e) {
