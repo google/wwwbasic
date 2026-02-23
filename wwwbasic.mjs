@@ -500,7 +500,7 @@ function Basic(code, options) {
           throw 'impossible';
         }
       }
-      if (name == 'mid$') {
+      if (name == 'mid$' || name == 'seg$') {
         Skip('(');
         var a = Expression();
         Skip(',');
@@ -1002,8 +1002,10 @@ function Basic(code, options) {
         var noffset = '(';
         noffset += ArrayPart(offset, 0) + ' + (';
         if (v.dimensions !== -1 && dims.length != v.dimensions) {
-          Error('Array dimension expected ' + v.dimensions +
-                ' but found ' + dims.length + ', array named: ' + name);
+          v.dimensions = [[option_base, 10]];
+          // TODO: This is sus.
+          //Error('Array dimension expected ' + v.dimensions +
+          //      ' but found ' + dims.length + ', array named: ' + name);
         }
         for (var i = 0; i < dims.length; ++i) {
           noffset += '(((' + dims[i] + ')|0)-' +
@@ -1153,7 +1155,7 @@ function Basic(code, options) {
 
   function FunctionCall(name, options) {
     var func = functions[name];
-    if (options.is_subroutine !== func.is_subroutine) {
+    if (func === undefined || options.is_subroutine !== func.is_subroutine) {
       if (options.is_subroutine) {
         Error('Expected valid subroutine name, found: ' + name);
       } else {
@@ -1314,6 +1316,15 @@ function Basic(code, options) {
         NewOp();
         if (tok == 'else') {
           Skip('else');
+          // TI style else.
+          if (tok.match(/^[0-9]+$/)) {
+            var name = tok;
+            Next();
+            curop += 'ip = labels["' + name + '"];\n';
+            NewOp();
+            EndIf();
+            return;
+          }
           Else();
           Statement();
           while (tok == ':') {
@@ -1695,8 +1706,10 @@ function Basic(code, options) {
       }
     } else if (tok == 'randomize') {
       Skip('randomize');
-      var seed = Expression();
-      // TODO: Implement.
+      if (!EndOfStatement()) {
+        var seed = Expression();
+        // TODO: Implement seed handling.
+      }
     } else if (tok == 'poke') {
       Skip('poke');
       var addr = Expression();
@@ -2538,6 +2551,7 @@ function GraphicsBindings(canvas) {
   ];
 
   bindings.statement_screen_iIII = function(mode, cswitch, active, visual) {
+    // TODO: Factor mode setup better.
     // TODO: Support pages.
     if (!canvas) {
       return;
@@ -2588,18 +2602,20 @@ function GraphicsBindings(canvas) {
         palette[i] = color_map[i] | 0;
       }
     }
+    screen_mode = mode;
+    pen_x = display.width / 2;
+    pen_y = display.height / 2;
     // TI default palette setup.
     if (mode == 100) {
+      // TODO: Factor out by platform.
       bindings.call_screen_i(4);
       for (var i = 0; i < 32; i++) {
         bindings.call_color_iii(i, 2, 1);
       }
       bindings.call_clear_();
+    } else {
+      bindings.statement_cls_I(0);
     }
-    screen_mode = mode;
-    pen_x = display.width / 2;
-    pen_y = display.height / 2;
-    bindings.statement_cls_I(0);
   }
 
   bindings.statement_width_iI = function(w, h) {
@@ -2644,6 +2660,9 @@ function GraphicsBindings(canvas) {
 
   // TODO: Separate.
   bindings.call_clear_ = function() {
+    if (screen_mode != 100) {
+      bindings.statement_screen_iIII(100);
+    }
     for (var j = 0; j < text_height; ++j) {
       for (var i = 0; i < text_width; ++i) {
         SetTiChar(i, j, 32);
@@ -2652,7 +2671,33 @@ function GraphicsBindings(canvas) {
   };
 
   // TODO: Separate.
+  bindings.call_char_ii = function(ch, pattern) {
+    pattern = (pattern + '0000000000000000').substr(0, 16);
+    var chpos = ch * font_height * 8;
+    for (var i = 0; i < 16; i++) {
+      var code = parseInt(pattern.substr(i, 1), 16);
+      for (var j = 0; j < 4; j++) {
+        font_data[chpos++] = code & (0x8 >> j) ? 255 : 0;
+      }
+    }
+  };
+
+  // TODO: Separate.
+  bindings.call_key_ioo = function(key_unit) {
+    // TODO: Implement.
+    return [65, 0];
+  };
+
+  // TODO: Separate.
+  bindings.call_sound_iiiIIIIII = function(
+    duration, f1, v1, f2, v2, f3, v3, f4, v4) {
+    // TODO: Implement.
+  };
+
+  // TODO: Separate.
   bindings.call_color_iii = function(bank, fg, bg) {
+    // Bank 1 is 32.
+    bank += 3;
     prepalette[bank * 2 + 0] = fg - 1;
     prepalette[bank * 2 + 1] = bg - 1;
   };
@@ -2693,6 +2738,13 @@ function GraphicsBindings(canvas) {
         }
       }
     }
+  };
+
+  // TODO: Separate.
+  bindings.call_gchar_iio = function(row, col) {
+    row -= 1;
+    col -= 1;
+    return [display_text[col + row * text_width]];
   };
 
   // TODO: Cleanup, this should be hidden.
@@ -3404,8 +3456,8 @@ function GraphicsBindings(canvas) {
   }
 
   bindings.Pace = function() {
-    if (screen_mode > 0 && screen_mode <= 2) {
-      return 3;
+    if ((screen_mode > 0 && screen_mode <= 2) || screen_mode == 100) {
+      return 1;
     } else {
       return 100000;
     }

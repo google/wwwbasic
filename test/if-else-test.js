@@ -130,3 +130,27 @@ PRINT pz
 1
 `);
 
+basic_test.BASIC_TEST('IfElse', 'IfNumber', `
+10 pz = 0
+20 IF PZ < 1 THEN 40
+30 PRINT "BAD"
+40 PRINT "GOOD"
+`, `
+GOOD
+`);
+
+basic_test.BASIC_TEST('IfElse', 'IfElseNumber', `
+10 FOR I=1 TO 5
+20 IF I MOD 2 = 0 THEN 40 ELSE 30
+30 PRINT "ODD"
+31 GOTO 50
+40 PRINT "EVEN"
+50 NEXT I
+`, `
+ODD
+EVEN
+ODD
+EVEN
+ODD
+`);
+
