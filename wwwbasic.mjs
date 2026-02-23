@@ -2488,7 +2488,7 @@ function GraphicsBindings(canvas) {
     border_color = 0;
     screen_aspect = aspect;
     font_height = fheight;
-    var sctx = scale_canvas.getContext('2d', { alpha: false});
+    var sctx = scale_canvas.getContext('2d', { alpha: false });
     font_data = CreateFont(sctx, font_height);
   }
 
@@ -2994,6 +2994,7 @@ function GraphicsBindings(canvas) {
     if (screen_mode == 1) {
       if (fg !== undefined) {
         palette[0] = EGA16[fg & 15];
+        border_color = palette[0];
       }
       if (bg !== undefined) {
         for (var i = 1; i < 4; ++i) {
@@ -3442,6 +3443,8 @@ function GraphicsBindings(canvas) {
 
   var viewport_x, viewport_y;
   var viewport_w, viewport_h;
+  var border_x, border_y;
+  var border_w, border_h;
 
   function Resize() {
     if (canvas.fromWWWBasic) {
@@ -3452,16 +3455,18 @@ function GraphicsBindings(canvas) {
     var aspect = display.width / (display.height * screen_aspect);
     const non_border = 0.9;
     if (raspect > aspect) {
-      viewport_w = Math.floor(
-        display.width * canvas.height /
-        (display.height * screen_aspect) * non_border);
-      viewport_h = Math.floor(canvas.height * non_border);
+      border_w = Math.floor(
+        display.width * canvas.height / (display.height * screen_aspect));
+      border_h = canvas.height;
     } else {
-      viewport_w = Math.floor(canvas.width * non_border);
-      viewport_h = Math.floor(
-        (display.height * screen_aspect) * canvas.width /
-        display.width * non_border);
+      border_w = canvas.width;
+      border_h = Math.floor(
+        (display.height * screen_aspect) * canvas.width / display.width);
     }
+    border_x = Math.floor((canvas.width - border_w) / 2);
+    border_y = Math.floor((canvas.height - border_h) / 2);
+    viewport_w = Math.floor(border_w * non_border);
+    viewport_h = Math.floor(border_h * non_border);
     viewport_x = Math.floor((canvas.width - viewport_w) / 2);
     viewport_y = Math.floor((canvas.height - viewport_h) / 2);
   }
@@ -3509,14 +3514,14 @@ function GraphicsBindings(canvas) {
       return;
     }
     var scale_ctx = scale_canvas.getContext('2d');
-    scale_ctx.fillStyle = '#000';
-    scale_ctx.fillRect(0, 0, scale_canvas.width, scale_canvas.height);
     RenderTextMode();
     TranslatePalette();
     scale_ctx.putImageData(display, 0, 0);
     var ctx = canvas.getContext('2d');
-    ctx.fillStyle = ToHex(border_color);
+    ctx.fillStyle = '#111';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = ToHex(border_color);
+    ctx.fillRect(border_x, border_y, border_w, border_h);
     //      ctx.imageSmoothingQuality = 'low';
     //      ctx.imageSmoothingEnabled = false;
     ctx.drawImage(scale_canvas, viewport_x, viewport_y,
